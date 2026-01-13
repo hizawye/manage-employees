@@ -19,6 +19,7 @@ import {
   getMonthRange,
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForPeriod } from '../../../src/services/WageCalculationService';
+import { t } from '../../../src/i18n';
 
 type PeriodType = 'week' | 'month';
 
@@ -82,11 +83,11 @@ export default function EmployeeWageDetailScreen() {
   const getStatusLabel = (status: AttendanceStatus) => {
     switch (status) {
       case AttendanceStatus.PRESENT:
-        return 'Present';
+        return t('attendance.present');
       case AttendanceStatus.HALF_DAY:
-        return 'Half Day';
+        return t('attendance.halfDay');
       case AttendanceStatus.ABSENT:
-        return 'Absent';
+        return t('attendance.absent');
       default:
         return status;
     }
@@ -125,7 +126,7 @@ export default function EmployeeWageDetailScreen() {
   if (!employee || !wageData) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>Employee not found</Text>
+        <Text style={styles.error}>{t('employee.employeeNotFound')}</Text>
       </View>
     );
   }
@@ -137,7 +138,7 @@ export default function EmployeeWageDetailScreen() {
           {employee.name}
         </Text>
         <Text variant="bodyMedium" style={styles.employeeInfo}>
-          {employee.role} • {employee.wageType === WageType.DAILY ? 'Daily' : 'Hourly'}: {formatCurrency(employee.wageRate)}
+          {employee.role} • {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
         </Text>
       </View>
 
@@ -146,8 +147,8 @@ export default function EmployeeWageDetailScreen() {
           value={period}
           onValueChange={(value) => setPeriod(value as PeriodType)}
           buttons={[
-            { value: 'week', label: 'This Week' },
-            { value: 'month', label: 'This Month' },
+            { value: 'week', label: t('wages.thisWeek') },
+            { value: 'month', label: t('wages.thisMonth') },
           ]}
         />
       </View>
@@ -156,7 +157,7 @@ export default function EmployeeWageDetailScreen() {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text variant="bodySmall" style={styles.summaryLabel}>
-              Total Wage
+              {t('wages.totalWage')}
             </Text>
             <Text variant="headlineSmall" style={styles.totalWage}>
               {formatCurrency(wageData.totalWage)}
@@ -169,7 +170,7 @@ export default function EmployeeWageDetailScreen() {
               {wageData.totalDaysPresent}
             </Text>
             <Text variant="bodySmall" style={styles.statLabel}>
-              Present
+              {t('wages.daysPresent')}
             </Text>
           </View>
           <View style={styles.statItem}>
@@ -177,7 +178,7 @@ export default function EmployeeWageDetailScreen() {
               {wageData.totalHalfDays}
             </Text>
             <Text variant="bodySmall" style={styles.statLabel}>
-              Half Days
+              {t('wages.halfDays')}
             </Text>
           </View>
           <View style={styles.statItem}>
@@ -185,7 +186,7 @@ export default function EmployeeWageDetailScreen() {
               {wageData.totalDaysAbsent}
             </Text>
             <Text variant="bodySmall" style={styles.statLabel}>
-              Absent
+              {t('wages.daysAbsent')}
             </Text>
           </View>
           {employee.wageType === WageType.HOURLY && (
@@ -194,7 +195,7 @@ export default function EmployeeWageDetailScreen() {
                 {wageData.totalHoursWorked?.toFixed(1) || 0}
               </Text>
               <Text variant="bodySmall" style={styles.statLabel}>
-                Hours
+                {t('wages.hours')}
               </Text>
             </View>
           )}
@@ -202,12 +203,12 @@ export default function EmployeeWageDetailScreen() {
       </Surface>
 
       <Text variant="titleSmall" style={styles.breakdownTitle}>
-        Daily Breakdown
+        {t('wages.dailyBreakdown')}
       </Text>
 
       {wageData.details.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No attendance records</Text>
+          <Text style={styles.emptyText}>{t('wages.noAttendanceRecords')}</Text>
         </View>
       ) : (
         <FlatList

@@ -18,6 +18,7 @@ import {
   getMonthRange,
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
+import { t } from '../../../src/i18n';
 
 type PeriodType = 'week' | 'month';
 
@@ -87,7 +88,7 @@ export default function WageSummaryScreen() {
               {item.employeeName}
             </Text>
             <Text variant="bodySmall" style={styles.details}>
-              {item.totalDaysPresent} days present • {item.totalHalfDays} half days
+              {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
             </Text>
           </View>
           <Text variant="titleMedium" style={styles.wage}>
@@ -113,8 +114,8 @@ export default function WageSummaryScreen() {
           value={period}
           onValueChange={(value) => setPeriod(value as PeriodType)}
           buttons={[
-            { value: 'week', label: 'This Week' },
-            { value: 'month', label: 'This Month' },
+            { value: 'week', label: t('wages.thisWeek') },
+            { value: 'month', label: t('wages.thisMonth') },
           ]}
         />
         <Text variant="bodySmall" style={styles.dateRange}>
@@ -125,7 +126,7 @@ export default function WageSummaryScreen() {
       <Surface style={styles.summaryCard} elevation={2}>
         <View style={styles.summaryItem}>
           <Text variant="bodySmall" style={styles.summaryLabel}>
-            Total Wages
+            {t('wages.totalWages')}
           </Text>
           <Text variant="headlineSmall" style={styles.summaryValue}>
             {formatCurrency(totalWages)}
@@ -134,7 +135,7 @@ export default function WageSummaryScreen() {
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text variant="bodySmall" style={styles.summaryLabel}>
-            Days Worked
+            {t('wages.daysWorked')}
           </Text>
           <Text variant="headlineSmall" style={styles.summaryValue}>
             {totalDaysWorked.toFixed(1)}
@@ -143,7 +144,7 @@ export default function WageSummaryScreen() {
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text variant="bodySmall" style={styles.summaryLabel}>
-            Employees
+            {t('wages.employees')}
           </Text>
           <Text variant="headlineSmall" style={styles.summaryValue}>
             {calculations.length}
@@ -153,9 +154,9 @@ export default function WageSummaryScreen() {
 
       {calculations.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No wage data</Text>
+          <Text style={styles.emptyText}>{t('wages.noWageData')}</Text>
           <Text style={styles.emptySubtext}>
-            Mark attendance to see wage calculations
+            {t('wages.noWageDataHint')}
           </Text>
         </View>
       ) : (

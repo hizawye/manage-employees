@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { colors } from '../../../src/constants/theme';
+import { t } from '../../../src/i18n';
 
 export default function AttendanceLayout() {
   return (
@@ -12,11 +13,11 @@ export default function AttendanceLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: 'Mark Attendance' }}
+        options={{ title: t('attendance.title') }}
       />
       <Stack.Screen
         name="history"
-        options={{ title: 'Attendance History' }}
+        options={{ title: t('attendance.history') }}
       />
     </Stack>
   );

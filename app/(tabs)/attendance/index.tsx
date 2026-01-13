@@ -15,6 +15,7 @@ import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../s
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
 import { addDays, parseISO } from 'date-fns';
+import { t } from '../../../src/i18n';
 
 export default function AttendanceScreen() {
   const router = useRouter();
@@ -73,7 +74,7 @@ export default function AttendanceScreen() {
                 {item.name}
               </Text>
               <Text variant="bodySmall" style={styles.role}>
-                {item.role} • {item.wageType === WageType.DAILY ? 'Daily' : 'Hourly'}
+                {item.role} • {item.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}
               </Text>
             </View>
             {isSaving && <ActivityIndicator size="small" />}
@@ -92,21 +93,21 @@ export default function AttendanceScreen() {
               buttons={[
                 {
                   value: AttendanceStatus.PRESENT,
-                  label: 'Present',
+                  label: t('attendance.present'),
                   style: currentAttendance?.status === AttendanceStatus.PRESENT
                     ? { backgroundColor: colors.present + '20' }
                     : undefined,
                 },
                 {
                   value: AttendanceStatus.HALF_DAY,
-                  label: 'Half Day',
+                  label: t('attendance.halfDay'),
                   style: currentAttendance?.status === AttendanceStatus.HALF_DAY
                     ? { backgroundColor: colors.halfDay + '20' }
                     : undefined,
                 },
                 {
                   value: AttendanceStatus.ABSENT,
-                  label: 'Absent',
+                  label: t('attendance.absent'),
                   style: currentAttendance?.status === AttendanceStatus.ABSENT
                     ? { backgroundColor: colors.absent + '20' }
                     : undefined,
@@ -118,7 +119,7 @@ export default function AttendanceScreen() {
           {item.wageType === WageType.HOURLY && currentAttendance?.status === AttendanceStatus.PRESENT && (
             <View style={styles.hoursContainer}>
               <Text variant="bodySmall" style={styles.hoursLabel}>
-                Hours Worked:
+                {t('attendance.hoursWorked')}:
               </Text>
               <TextInput
                 mode="outlined"
@@ -173,22 +174,22 @@ export default function AttendanceScreen() {
           onPress={() => setSelectedDate(getTodayString())}
           style={styles.todayButton}
         >
-          Today
+          {t('common.today')}
         </Button>
         <Button
           mode="text"
           compact
           onPress={() => router.push('/attendance/history')}
         >
-          View History
+          {t('attendance.viewHistory')}
         </Button>
       </View>
 
       {employees.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No active employees</Text>
+          <Text style={styles.emptyText}>{t('attendance.noActiveEmployees')}</Text>
           <Text style={styles.emptySubtext}>
-            Add employees from the Employees tab first
+            {t('attendance.noActiveEmployeesHint')}
           </Text>
         </View>
       ) : (

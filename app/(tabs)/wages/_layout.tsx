@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { colors } from '../../../src/constants/theme';
+import { t } from '../../../src/i18n';
 
 export default function WagesLayout() {
   return (
@@ -12,11 +13,11 @@ export default function WagesLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: 'Wage Summary' }}
+        options={{ title: t('wages.title') }}
       />
       <Stack.Screen
         name="[employeeId]"
-        options={{ title: 'Wage Details' }}
+        options={{ title: t('wages.wageDetails') }}
       />
     </Stack>
   );

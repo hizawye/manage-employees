@@ -6,6 +6,7 @@ import { useEmployees } from '../../../src/hooks';
 import { Employee, EmployeeStatus, WageType } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatCurrency } from '../../../src/utils/dateUtils';
+import { t } from '../../../src/i18n';
 
 export default function EmployeeListScreen() {
   const router = useRouter();
@@ -52,12 +53,16 @@ export default function EmployeeListScreen() {
             ]}
             textStyle={styles.statusText}
           >
-            {item.status}
+            {item.status === EmployeeStatus.ACTIVE
+              ? t('employee.active')
+              : t('employee.inactive')}
           </Chip>
         </View>
         <View style={styles.wageInfo}>
           <Text variant="bodySmall" style={styles.wageLabel}>
-            {item.wageType === WageType.DAILY ? 'Daily Rate' : 'Hourly Rate'}:
+            {item.wageType === WageType.DAILY
+              ? t('employee.dailyRate')
+              : t('employee.hourlyRate')}:
           </Text>
           <Text variant="bodyMedium" style={styles.wageValue}>
             {formatCurrency(item.wageRate)}
@@ -78,7 +83,7 @@ export default function EmployeeListScreen() {
   return (
     <View style={styles.container}>
       <Searchbar
-        placeholder="Search employees..."
+        placeholder={t('employee.searchPlaceholder')}
         onChangeText={onSearch}
         value={searchQuery}
         style={styles.searchBar}
@@ -90,9 +95,9 @@ export default function EmployeeListScreen() {
         </View>
       ) : employees.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No employees found</Text>
+          <Text style={styles.emptyText}>{t('employee.noEmployees')}</Text>
           <Text style={styles.emptySubtext}>
-            Tap the + button to add your first employee
+            {t('employee.noEmployeesHint')}
           </Text>
         </View>
       ) : (

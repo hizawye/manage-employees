@@ -15,15 +15,16 @@ import { useEmployees } from '../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { toISODateString } from '../../../src/utils/dateUtils';
+import { t } from '../../../src/i18n';
 
 const employeeSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(1, 'Phone is required'),
-  role: z.string().min(1, 'Role is required'),
+  name: z.string().min(1, 'validation.nameRequired'),
+  phone: z.string().min(1, 'validation.phoneRequired'),
+  role: z.string().min(1, 'validation.roleRequired'),
   wageType: z.nativeEnum(WageType),
-  wageRate: z.string().min(1, 'Wage rate is required').refine(
+  wageRate: z.string().min(1, 'validation.wageRateRequired').refine(
     (val) => !isNaN(Number(val)) && Number(val) > 0,
-    'Must be a positive number'
+    'validation.invalidNumber'
   ),
   notes: z.string().optional(),
 });
@@ -69,7 +70,7 @@ export default function AddEmployeeScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert('Error', 'Failed to add employee. Please try again.');
+      Alert.alert(t('common.error'), t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={styles.inputContainer}>
             <TextInput
-              label="Name"
+              label={t('employee.name')}
               mode="outlined"
               value={value}
               onChangeText={onChange}
@@ -91,7 +92,7 @@ export default function AddEmployeeScreen() {
               error={!!errors.name}
             />
             {errors.name && (
-              <HelperText type="error">{errors.name.message}</HelperText>
+              <HelperText type="error">{t(errors.name.message || 'validation.required')}</HelperText>
             )}
           </View>
         )}
@@ -103,7 +104,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={styles.inputContainer}>
             <TextInput
-              label="Phone"
+              label={t('employee.phone')}
               mode="outlined"
               value={value}
               onChangeText={onChange}
@@ -112,7 +113,7 @@ export default function AddEmployeeScreen() {
               error={!!errors.phone}
             />
             {errors.phone && (
-              <HelperText type="error">{errors.phone.message}</HelperText>
+              <HelperText type="error">{t(errors.phone.message || 'validation.required')}</HelperText>
             )}
           </View>
         )}
@@ -124,7 +125,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={styles.inputContainer}>
             <TextInput
-              label="Role / Position"
+              label={t('employee.role')}
               mode="outlined"
               value={value}
               onChangeText={onChange}
@@ -132,7 +133,7 @@ export default function AddEmployeeScreen() {
               error={!!errors.role}
             />
             {errors.role && (
-              <HelperText type="error">{errors.role.message}</HelperText>
+              <HelperText type="error">{t(errors.role.message || 'validation.required')}</HelperText>
             )}
           </View>
         )}
@@ -144,14 +145,14 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, value } }) => (
           <View style={styles.inputContainer}>
             <Text variant="labelLarge" style={styles.label}>
-              Wage Type
+              {t('employee.wageType')}
             </Text>
             <SegmentedButtons
               value={value}
               onValueChange={onChange}
               buttons={[
-                { value: WageType.DAILY, label: 'Daily Rate' },
-                { value: WageType.HOURLY, label: 'Hourly Rate' },
+                { value: WageType.DAILY, label: t('employee.dailyRate') },
+                { value: WageType.HOURLY, label: t('employee.hourlyRate') },
               ]}
             />
           </View>
@@ -164,7 +165,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={styles.inputContainer}>
             <TextInput
-              label={wageType === WageType.DAILY ? 'Daily Rate ($)' : 'Hourly Rate ($)'}
+              label={wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
               mode="outlined"
               value={value}
               onChangeText={onChange}
@@ -173,7 +174,7 @@ export default function AddEmployeeScreen() {
               error={!!errors.wageRate}
             />
             {errors.wageRate && (
-              <HelperText type="error">{errors.wageRate.message}</HelperText>
+              <HelperText type="error">{t(errors.wageRate.message || 'validation.required')}</HelperText>
             )}
           </View>
         )}
@@ -185,7 +186,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={styles.inputContainer}>
             <TextInput
-              label="Notes (optional)"
+              label={t('employee.notesOptional')}
               mode="outlined"
               value={value}
               onChangeText={onChange}
@@ -203,7 +204,7 @@ export default function AddEmployeeScreen() {
           onPress={() => router.back()}
           style={styles.button}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           mode="contained"
@@ -212,7 +213,7 @@ export default function AddEmployeeScreen() {
           disabled={loading}
           style={styles.button}
         >
-          Add Employee
+          {t('employee.addEmployee')}
         </Button>
       </View>
     </ScrollView>

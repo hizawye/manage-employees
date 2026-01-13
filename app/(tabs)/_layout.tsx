@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../src/constants/theme';
+import { t } from '../../src/i18n';
 
 export default function TabLayout() {
   return (
@@ -16,7 +17,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="employees"
         options={{
-          title: 'Employees',
+          title: t('tabs.employees'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account-group" size={size} color={color} />
@@ -26,7 +27,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="attendance"
         options={{
-          title: 'Attendance',
+          title: t('tabs.attendance'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="calendar-check" size={size} color={color} />
@@ -36,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wages"
         options={{
-          title: 'Wages',
+          title: t('tabs.wages'),
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="currency-usd" size={size} color={color} />

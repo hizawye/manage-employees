@@ -1,0 +1,109 @@
+export default {
+  // Common
+  common: {
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    add: 'Add',
+    search: 'Search',
+    loading: 'Loading...',
+    error: 'Error',
+    success: 'Success',
+    confirm: 'Confirm',
+    yes: 'Yes',
+    no: 'No',
+    ok: 'OK',
+    goBack: 'Go Back',
+    today: 'Today',
+    noData: 'No data',
+  },
+
+  // Tabs
+  tabs: {
+    employees: 'Employees',
+    attendance: 'Attendance',
+    wages: 'Wages',
+  },
+
+  // Employee
+  employee: {
+    title: 'Employees',
+    addEmployee: 'Add Employee',
+    editEmployee: 'Edit Employee',
+    employeeDetails: 'Employee Details',
+    searchPlaceholder: 'Search employees...',
+    noEmployees: 'No employees found',
+    noEmployeesHint: 'Tap the + button to add your first employee',
+    name: 'Name',
+    phone: 'Phone',
+    role: 'Role / Position',
+    wageType: 'Wage Type',
+    dailyRate: 'Daily Rate',
+    hourlyRate: 'Hourly Rate',
+    joinDate: 'Join Date',
+    status: 'Status',
+    active: 'Active',
+    inactive: 'Inactive',
+    notes: 'Notes',
+    notesOptional: 'Notes (optional)',
+    deleteConfirmTitle: 'Delete Employee',
+    deleteConfirmMessage: 'Are you sure you want to delete {{name}}? This will also delete all their attendance records.',
+    saveChanges: 'Save Changes',
+    employeeNotFound: 'Employee not found',
+  },
+
+  // Attendance
+  attendance: {
+    title: 'Mark Attendance',
+    history: 'Attendance History',
+    viewHistory: 'View History',
+    present: 'Present',
+    absent: 'Absent',
+    halfDay: 'Half Day',
+    hoursWorked: 'Hours Worked',
+    noActiveEmployees: 'No active employees',
+    noActiveEmployeesHint: 'Add employees from the Employees tab first',
+    noRecords: 'No attendance records',
+    noRecordsHint: 'No attendance marked for this week',
+    week: 'Week',
+    daily: 'Daily',
+    hourly: 'Hourly',
+  },
+
+  // Wages
+  wages: {
+    title: 'Wage Summary',
+    wageDetails: 'Wage Details',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    totalWages: 'Total Wages',
+    daysWorked: 'Days Worked',
+    employees: 'Employees',
+    totalWage: 'Total Wage',
+    daysPresent: 'Present',
+    halfDays: 'Half Days',
+    daysAbsent: 'Absent',
+    hours: 'Hours',
+    dailyBreakdown: 'Daily Breakdown',
+    noWageData: 'No wage data',
+    noWageDataHint: 'Mark attendance to see wage calculations',
+    noAttendanceRecords: 'No attendance records',
+  },
+
+  // Validation
+  validation: {
+    required: 'This field is required',
+    invalidNumber: 'Must be a positive number',
+    nameRequired: 'Name is required',
+    phoneRequired: 'Phone is required',
+    roleRequired: 'Role is required',
+    wageRateRequired: 'Wage rate is required',
+  },
+
+  // Currency (Algeria uses Algerian Dinar - DZD)
+  currency: {
+    symbol: 'DZD',
+    format: '{{amount}} DZD',
+  },
+};

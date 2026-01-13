@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { colors } from '../../../src/constants/theme';
+import { t } from '../../../src/i18n';
 
 export default function EmployeesLayout() {
   return (
@@ -12,19 +13,19 @@ export default function EmployeesLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: 'Employees' }}
+        options={{ title: t('employee.title') }}
       />
       <Stack.Screen
         name="add"
-        options={{ title: 'Add Employee', presentation: 'modal' }}
+        options={{ title: t('employee.addEmployee'), presentation: 'modal' }}
       />
       <Stack.Screen
         name="[id]"
-        options={{ title: 'Employee Details' }}
+        options={{ title: t('employee.employeeDetails') }}
       />
       <Stack.Screen
         name="edit/[id]"
-        options={{ title: 'Edit Employee', presentation: 'modal' }}
+        options={{ title: t('employee.editEmployee'), presentation: 'modal' }}
       />
     </Stack>
   );

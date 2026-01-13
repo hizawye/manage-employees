@@ -5,6 +5,7 @@ import { useEmployee, useEmployees } from '../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatDate, formatCurrency } from '../../../src/utils/dateUtils';
+import { t } from '../../../src/i18n';
 
 export default function EmployeeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,12 +15,12 @@ export default function EmployeeDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Employee',
-      `Are you sure you want to delete ${employee?.name}? This will also delete all their attendance records.`,
+      t('employee.deleteConfirmTitle'),
+      t('employee.deleteConfirmMessage', { name: employee?.name || '' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             if (id) {
@@ -43,9 +44,9 @@ export default function EmployeeDetailScreen() {
   if (error || !employee) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>{error || 'Employee not found'}</Text>
+        <Text style={styles.error}>{error || t('employee.employeeNotFound')}</Text>
         <Button mode="outlined" onPress={() => router.back()} style={styles.backButton}>
-          Go Back
+          {t('common.goBack')}
         </Button>
       </View>
     );
@@ -68,7 +69,9 @@ export default function EmployeeDetailScreen() {
               ]}
               textStyle={styles.statusText}
             >
-              {employee.status}
+              {employee.status === EmployeeStatus.ACTIVE
+                ? t('employee.active')
+                : t('employee.inactive')}
             </Chip>
           </View>
 
@@ -79,20 +82,24 @@ export default function EmployeeDetailScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Phone:</Text>
+            <Text style={styles.label}>{t('employee.phone')}:</Text>
             <Text style={styles.value}>{employee.phone}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Wage Type:</Text>
+            <Text style={styles.label}>{t('employee.wageType')}:</Text>
             <Text style={styles.value}>
-              {employee.wageType === WageType.DAILY ? 'Daily Rate' : 'Hourly Rate'}
+              {employee.wageType === WageType.DAILY
+                ? t('employee.dailyRate')
+                : t('employee.hourlyRate')}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>
-              {employee.wageType === WageType.DAILY ? 'Daily Rate:' : 'Hourly Rate:'}
+              {employee.wageType === WageType.DAILY
+                ? t('employee.dailyRate')
+                : t('employee.hourlyRate')}:
             </Text>
             <Text style={[styles.value, styles.wage]}>
               {formatCurrency(employee.wageRate)}
@@ -100,14 +107,14 @@ export default function EmployeeDetailScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Join Date:</Text>
+            <Text style={styles.label}>{t('employee.joinDate')}:</Text>
             <Text style={styles.value}>{formatDate(employee.joinDate)}</Text>
           </View>
 
           {employee.notes && (
             <>
               <Divider style={styles.divider} />
-              <Text style={styles.label}>Notes:</Text>
+              <Text style={styles.label}>{t('employee.notes')}:</Text>
               <Text style={styles.notes}>{employee.notes}</Text>
             </>
           )}
@@ -121,7 +128,7 @@ export default function EmployeeDetailScreen() {
           style={styles.button}
           icon="pencil"
         >
-          Edit
+          {t('common.edit')}
         </Button>
         <Button
           mode="outlined"
@@ -130,7 +137,7 @@ export default function EmployeeDetailScreen() {
           icon="delete"
           textColor={colors.error}
         >
-          Delete
+          {t('common.delete')}
         </Button>
       </View>
     </ScrollView>

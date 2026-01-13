@@ -1,13 +1,19 @@
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
+import { isArabic, t } from '../i18n';
+
+function getDateLocale() {
+  return isArabic() ? ar : enUS;
+}
 
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, 'MMM dd, yyyy');
+  return format(d, 'dd MMM yyyy', { locale: getDateLocale() });
 }
 
 export function formatDateShort(date: string | Date): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, 'MMM dd');
+  return format(d, 'dd MMM', { locale: getDateLocale() });
 }
 
 export function toISODateString(date: Date): string {
@@ -33,5 +39,6 @@ export function getMonthRange(date: Date = new Date()): { start: string; end: st
 }
 
 export function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+  const formatted = amount.toFixed(2);
+  return t('currency.format', { amount: formatted });
 }

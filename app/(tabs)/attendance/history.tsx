@@ -8,6 +8,7 @@ import { colors, sizes } from '../../../src/constants/theme';
 import { formatDate, getWeekRange } from '../../../src/utils/dateUtils';
 import { addWeeks } from 'date-fns';
 import { useEffect } from 'react';
+import { t } from '../../../src/i18n';
 
 interface AttendanceWithEmployee extends Attendance {
   employeeName: string;
@@ -77,11 +78,11 @@ export default function AttendanceHistoryScreen() {
   const getStatusLabel = (status: AttendanceStatus) => {
     switch (status) {
       case AttendanceStatus.PRESENT:
-        return 'Present';
+        return t('attendance.present');
       case AttendanceStatus.HALF_DAY:
-        return 'Half Day';
+        return t('attendance.halfDay');
       case AttendanceStatus.ABSENT:
-        return 'Absent';
+        return t('attendance.absent');
       default:
         return status;
     }
@@ -127,7 +128,7 @@ export default function AttendanceHistoryScreen() {
         />
         <View style={styles.weekInfo}>
           <Text variant="titleSmall" style={styles.weekLabel}>
-            Week
+            {t('attendance.week')}
           </Text>
           <Text variant="bodySmall" style={styles.weekRange}>
             {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
@@ -143,9 +144,9 @@ export default function AttendanceHistoryScreen() {
 
       {attendance.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No attendance records</Text>
+          <Text style={styles.emptyText}>{t('attendance.noRecords')}</Text>
           <Text style={styles.emptySubtext}>
-            No attendance marked for this week
+            {t('attendance.noRecordsHint')}
           </Text>
         </View>
       ) : (
