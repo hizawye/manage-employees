@@ -31,7 +31,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
-    ]
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2d639fab-e399-48ab-94b5-26744343ec55"
+      }
+    }
   }
 }

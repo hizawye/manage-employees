@@ -1,6 +1,9 @@
 import { Stack } from 'expo-router';
+import { I18nManager } from 'react-native';
 import { colors } from '../../../src/constants/theme';
 import { t } from '../../../src/i18n';
+
+const isRTL = I18nManager.isRTL;
 
 export default function EmployeesLayout() {
   return (
@@ -8,7 +11,9 @@ export default function EmployeesLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleStyle: { fontWeight: '600' },
+        headerTitleAlign: 'center',
+        headerBackTitleVisible: false,
       }}
     >
       <Stack.Screen

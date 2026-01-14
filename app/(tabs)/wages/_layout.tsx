@@ -8,7 +8,9 @@ export default function WagesLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleStyle: { fontWeight: '600' },
+        headerTitleAlign: 'center',
+        headerBackTitleVisible: false,
       }}
     >
       <Stack.Screen

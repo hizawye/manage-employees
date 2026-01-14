@@ -24,6 +24,7 @@ export default {
     employees: 'الموظفين',
     attendance: 'الحضور',
     wages: 'الأجور',
+    profile: 'الملف الشخصي',
   },
 
   // Employee - الموظف
@@ -105,5 +106,28 @@ export default {
   currency: {
     symbol: 'د.ج',
     format: '{{amount}} د.ج',
+  },
+
+  // Profile - الملف الشخصي
+  profile: {
+    title: 'الملف الشخصي',
+    stats: 'الإحصائيات',
+    employeeStats: 'إحصائيات الموظفين',
+    totalEmployees: 'إجمالي الموظفين',
+    activeEmployees: 'نشط',
+    inactiveEmployees: 'غير نشط',
+    wageStats: 'إحصائيات الأجور',
+    totalWagesPaid: 'إجمالي الأجور المدفوعة',
+    averageWage: 'المتوسط لكل موظف',
+    attendanceStats: 'إحصائيات الحضور',
+    attendanceRate: 'نسبة الحضور',
+    daysPresent: 'أيام الحضور',
+    totalWorkDays: 'إجمالي أيام العمل',
+    thisWeek: 'هذا الأسبوع',
+    thisMonth: 'هذا الشهر',
+    appInfo: 'معلومات التطبيق',
+    version: 'الإصدار',
+    language: 'اللغة',
+    arabic: 'العربية',
   },
 };

@@ -1,18 +1,28 @@
 import { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
 import { Searchbar, FAB, Card, Text, Chip, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees } from '../../../src/hooks';
 import { Employee, EmployeeStatus, WageType } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatCurrency } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
 
+const isRTL = I18nManager.isRTL;
+
 export default function EmployeeListScreen() {
   const router = useRouter();
   const { employees, loading, error, refresh, search } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -33,7 +43,7 @@ export default function EmployeeListScreen() {
       style={styles.card}
       onPress={() => router.push(`/employees/${item.id}`)}
     >
-      <Card.Content>
+      <Card.Content style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <View style={styles.cardInfo}>
             <Text variant="titleMedium" style={styles.name}>
@@ -87,6 +97,7 @@ export default function EmployeeListScreen() {
         onChangeText={onSearch}
         value={searchQuery}
         style={styles.searchBar}
+        inputStyle={styles.searchInput}
       />
 
       {error ? (
@@ -118,7 +129,7 @@ export default function EmployeeListScreen() {
 
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, isRTL && styles.fabRTL]}
         onPress={() => router.push('/employees/add')}
       />
     </View>
@@ -138,15 +149,24 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     margin: sizes.padding,
+    borderRadius: sizes.borderRadius,
     elevation: 2,
+  },
+  searchInput: {
+    textAlign: isRTL ? 'right' : 'left',
   },
   list: {
     padding: sizes.padding,
     paddingTop: 0,
   },
   card: {
-    marginBottom: sizes.paddingSmall,
+    marginBottom: sizes.padding,
     backgroundColor: colors.surface,
+    borderRadius: sizes.borderRadius,
+    elevation: 2,
+  },
+  cardContent: {
+    padding: sizes.padding,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -155,21 +175,28 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
+    marginEnd: sizes.paddingSmall,
   },
   name: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 17,
+    lineHeight: 24,
+    color: colors.text,
   },
   role: {
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 20,
   },
   statusChip: {
-    height: 24,
+    height: 28,
+    borderRadius: sizes.borderRadius,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#fff',
-    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   activeChip: {
     backgroundColor: colors.success,
@@ -180,32 +207,48 @@ const styles = StyleSheet.create({
   wageInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: sizes.paddingSmall,
+    marginTop: sizes.padding,
+    paddingTop: sizes.paddingSmall,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   wageLabel: {
     color: colors.textSecondary,
+    fontSize: 13,
   },
   wageValue: {
     fontWeight: '600',
-    marginLeft: 4,
+    marginStart: 6,
+    color: colors.primary,
+    fontSize: 15,
   },
   fab: {
     position: 'absolute',
     right: sizes.padding,
     bottom: sizes.padding,
     backgroundColor: colors.primary,
+    borderRadius: sizes.borderRadiusLarge,
+  },
+  fabRTL: {
+    right: undefined,
+    left: sizes.padding,
   },
   error: {
     color: colors.error,
     textAlign: 'center',
+    fontSize: 15,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: colors.textSecondary,
+    textAlign: 'center',
   },
   emptySubtext: {
-    marginTop: 8,
+    marginTop: 12,
     color: colors.textLight,
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

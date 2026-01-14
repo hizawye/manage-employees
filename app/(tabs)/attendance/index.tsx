@@ -10,6 +10,7 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useAttendanceByDate } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
@@ -20,10 +21,17 @@ import { t } from '../../../src/i18n';
 export default function AttendanceScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(getTodayString());
-  const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
   const [refreshing, setRefreshing] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  // Refresh employees when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshEmployees();
+    }, [refreshEmployees])
+  );
 
   const attendanceMap = useMemo(() => {
     const map = new Map<string, { status: AttendanceStatus; hoursWorked?: number }>();

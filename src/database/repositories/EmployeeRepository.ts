@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../index';
 import {
   Employee,
@@ -40,7 +40,7 @@ function mapRowToEmployee(row: EmployeeRow): Employee {
 
 export async function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
   const db = await getDatabase();
-  const id = uuidv4();
+  const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
   await db.runAsync(

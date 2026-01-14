@@ -8,9 +8,19 @@ const theme = {
   colors: {
     ...MD3LightTheme.colors,
     primary: colors.primary,
+    primaryContainer: colors.primary + '20',
     secondary: colors.secondary,
+    secondaryContainer: colors.secondary + '20',
     error: colors.error,
+    errorContainer: colors.error + '20',
+    background: colors.background,
+    surface: colors.surface,
+    surfaceVariant: colors.background,
+    onSurface: colors.text,
+    onSurfaceVariant: colors.textSecondary,
+    outline: colors.border,
   },
+  roundness: 12,
 };
 
 export default function RootLayout() {

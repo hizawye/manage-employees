@@ -33,16 +33,28 @@ UI Components (Screens)
 
 ## Navigation Structure
 ```
-(tabs)
-├── employees/
-│   ├── index.tsx        # Employee list
-│   ├── add.tsx          # Add employee form
-│   ├── [id].tsx         # Employee detail
-│   └── edit/[id].tsx    # Edit employee form
-├── attendance/
-│   ├── index.tsx        # Daily attendance marking
-│   └── history.tsx      # Attendance history
-└── wages/
-    ├── index.tsx        # Wage summary
-    └── [employeeId].tsx # Employee wage detail
+app/
+├── index.tsx            # Entry point (redirects to employees)
+├── _layout.tsx          # Root layout with providers
+└── (tabs)/
+    ├── _layout.tsx      # Tab navigation (RTL-aware order)
+    ├── employees/
+    │   ├── index.tsx        # Employee list
+    │   ├── add.tsx          # Add employee form
+    │   ├── [id].tsx         # Employee detail
+    │   └── edit/[id].tsx    # Edit employee form
+    ├── attendance/
+    │   ├── index.tsx        # Daily attendance marking
+    │   └── history.tsx      # Attendance history
+    ├── wages/
+    │   ├── index.tsx        # Wage summary
+    │   └── [employeeId].tsx # Employee wage detail
+    └── profile/
+        └── index.tsx        # Statistics dashboard
 ```
+
+## Internationalization (i18n)
+- **Default Language**: Arabic (forced on all devices)
+- **RTL Support**: Full RTL layout using I18nManager
+- **RTL Helpers**: Theme includes rtlStyles for consistent RTL behavior
+- **Tab Order**: Reversed for RTL (Profile → Wages → Attendance → Employees)

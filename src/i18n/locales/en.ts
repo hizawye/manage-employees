@@ -24,6 +24,7 @@ export default {
     employees: 'Employees',
     attendance: 'Attendance',
     wages: 'Wages',
+    profile: 'Profile',
   },
 
   // Employee
@@ -105,5 +106,28 @@ export default {
   currency: {
     symbol: 'DZD',
     format: '{{amount}} DZD',
+  },
+
+  // Profile
+  profile: {
+    title: 'Profile',
+    stats: 'Statistics',
+    employeeStats: 'Employee Statistics',
+    totalEmployees: 'Total Employees',
+    activeEmployees: 'Active',
+    inactiveEmployees: 'Inactive',
+    wageStats: 'Wage Statistics',
+    totalWagesPaid: 'Total Wages Paid',
+    averageWage: 'Average per Employee',
+    attendanceStats: 'Attendance Statistics',
+    attendanceRate: 'Attendance Rate',
+    daysPresent: 'Days Present',
+    totalWorkDays: 'Total Work Days',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    appInfo: 'App Information',
+    version: 'Version',
+    language: 'Language',
+    arabic: 'Arabic',
   },
 };

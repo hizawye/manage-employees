@@ -1,5 +1,4 @@
 import { I18n } from 'i18n-js';
-import { getLocales } from 'expo-localization';
 import { I18nManager } from 'react-native';
 import en from './locales/en';
 import ar from './locales/ar';
@@ -9,11 +8,8 @@ const i18n = new I18n({
   ar,
 });
 
-// Get device locale
-const deviceLocale = getLocales()[0]?.languageCode || 'en';
-
-// Set the locale based on device settings
-i18n.locale = deviceLocale;
+// Force Arabic as default language regardless of device settings
+i18n.locale = 'ar';
 i18n.enableFallback = true;
 i18n.defaultLocale = 'en';
 

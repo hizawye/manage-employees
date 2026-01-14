@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, I18nManager } from 'react-native';
 import {
   TextInput,
   Button,
@@ -16,6 +16,8 @@ import { WageType, EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { toISODateString } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
+
+const isRTL = I18nManager.isRTL;
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'validation.nameRequired'),
@@ -90,9 +92,14 @@ export default function AddEmployeeScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               error={!!errors.name}
+              style={styles.input}
+              contentStyle={styles.inputContent}
+              outlineStyle={styles.inputOutline}
             />
             {errors.name && (
-              <HelperText type="error">{t(errors.name.message || 'validation.required')}</HelperText>
+              <HelperText type="error" style={styles.errorText}>
+                {t(errors.name.message || 'validation.required')}
+              </HelperText>
             )}
           </View>
         )}
@@ -111,9 +118,14 @@ export default function AddEmployeeScreen() {
               onBlur={onBlur}
               keyboardType="phone-pad"
               error={!!errors.phone}
+              style={styles.input}
+              contentStyle={styles.inputContent}
+              outlineStyle={styles.inputOutline}
             />
             {errors.phone && (
-              <HelperText type="error">{t(errors.phone.message || 'validation.required')}</HelperText>
+              <HelperText type="error" style={styles.errorText}>
+                {t(errors.phone.message || 'validation.required')}
+              </HelperText>
             )}
           </View>
         )}
@@ -131,9 +143,14 @@ export default function AddEmployeeScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               error={!!errors.role}
+              style={styles.input}
+              contentStyle={styles.inputContent}
+              outlineStyle={styles.inputOutline}
             />
             {errors.role && (
-              <HelperText type="error">{t(errors.role.message || 'validation.required')}</HelperText>
+              <HelperText type="error" style={styles.errorText}>
+                {t(errors.role.message || 'validation.required')}
+              </HelperText>
             )}
           </View>
         )}
@@ -144,7 +161,7 @@ export default function AddEmployeeScreen() {
         name="wageType"
         render={({ field: { onChange, value } }) => (
           <View style={styles.inputContainer}>
-            <Text variant="labelLarge" style={styles.label}>
+            <Text variant="titleSmall" style={styles.label}>
               {t('employee.wageType')}
             </Text>
             <SegmentedButtons
@@ -154,6 +171,7 @@ export default function AddEmployeeScreen() {
                 { value: WageType.DAILY, label: t('employee.dailyRate') },
                 { value: WageType.HOURLY, label: t('employee.hourlyRate') },
               ]}
+              style={styles.segmentedButtons}
             />
           </View>
         )}
@@ -172,9 +190,15 @@ export default function AddEmployeeScreen() {
               onBlur={onBlur}
               keyboardType="decimal-pad"
               error={!!errors.wageRate}
+              style={styles.input}
+              contentStyle={styles.inputContent}
+              outlineStyle={styles.inputOutline}
+              right={<TextInput.Affix text={t('currency.symbol')} />}
             />
             {errors.wageRate && (
-              <HelperText type="error">{t(errors.wageRate.message || 'validation.required')}</HelperText>
+              <HelperText type="error" style={styles.errorText}>
+                {t(errors.wageRate.message || 'validation.required')}
+              </HelperText>
             )}
           </View>
         )}
@@ -192,7 +216,10 @@ export default function AddEmployeeScreen() {
               onChangeText={onChange}
               onBlur={onBlur}
               multiline
-              numberOfLines={3}
+              numberOfLines={4}
+              style={[styles.input, styles.textArea]}
+              contentStyle={styles.inputContent}
+              outlineStyle={styles.inputOutline}
             />
           </View>
         )}
@@ -203,6 +230,8 @@ export default function AddEmployeeScreen() {
           mode="outlined"
           onPress={() => router.back()}
           style={styles.button}
+          contentStyle={styles.buttonContent}
+          labelStyle={styles.buttonLabel}
         >
           {t('common.cancel')}
         </Button>
@@ -211,7 +240,9 @@ export default function AddEmployeeScreen() {
           onPress={handleSubmit(onSubmit)}
           loading={loading}
           disabled={loading}
-          style={styles.button}
+          style={[styles.button, styles.primaryButton]}
+          contentStyle={styles.buttonContent}
+          labelStyle={styles.buttonLabel}
         >
           {t('employee.addEmployee')}
         </Button>
@@ -227,21 +258,53 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: sizes.padding,
+    paddingBottom: sizes.paddingLarge,
   },
   inputContainer: {
     marginBottom: sizes.padding,
   },
+  input: {
+    backgroundColor: colors.surface,
+  },
+  inputContent: {
+    textAlign: isRTL ? 'right' : 'left',
+  },
+  inputOutline: {
+    borderRadius: sizes.borderRadius,
+  },
+  textArea: {
+    minHeight: 100,
+  },
   label: {
     marginBottom: sizes.paddingSmall,
     color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  segmentedButtons: {
+    borderRadius: sizes.borderRadius,
+  },
+  errorText: {
+    fontSize: 13,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: sizes.padding,
+    marginTop: sizes.paddingLarge,
+    gap: sizes.paddingSmall,
   },
   button: {
     flex: 1,
-    marginHorizontal: sizes.paddingSmall / 2,
+    borderRadius: sizes.borderRadius,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
