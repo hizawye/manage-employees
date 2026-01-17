@@ -58,3 +58,113 @@ export const typography = {
   bold: '700' as const,
 };
 
+// Common reusable styles
+export const commonStyles = {
+  // Layout
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: sizes.padding,
+  },
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+
+  // Cards
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: sizes.borderRadius,
+    elevation: 2,
+    marginBottom: sizes.padding,
+  },
+  cardContent: {
+    padding: sizes.padding,
+  },
+
+  // Text styles
+  title: {
+    fontSize: 20,
+    fontWeight: typography.semibold,
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: typography.medium,
+    color: colors.textSecondary,
+  },
+  body: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  caption: {
+    fontSize: 12,
+    color: colors.textLight,
+  },
+
+  // Inputs
+  input: {
+    backgroundColor: colors.surface,
+  },
+  inputContent: {
+    textAlign: isRTL ? ('right' as const) : ('left' as const),
+  },
+  inputOutline: {
+    borderRadius: sizes.borderRadius,
+  },
+
+  // Buttons
+  button: {
+    borderRadius: sizes.borderRadius,
+  },
+  buttonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 15,
+    fontWeight: typography.semibold,
+  },
+
+  // Lists
+  list: {
+    padding: sizes.padding,
+    paddingTop: 0,
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute' as const,
+    backgroundColor: colors.primary,
+    borderRadius: sizes.borderRadiusLarge,
+  },
+  fabBottom: {
+    bottom: sizes.padding,
+  },
+  fabRight: {
+    right: isRTL ? undefined : sizes.padding,
+    left: isRTL ? sizes.padding : undefined,
+  },
+
+  // Divider
+  divider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  // Shadows
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+};

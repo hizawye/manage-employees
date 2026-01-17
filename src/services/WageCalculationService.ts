@@ -1,6 +1,25 @@
 import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail } from '../models';
 import { getAttendanceByEmployee } from '../database/repositories';
 
+// Cache for wage calculations
+const wageCalculationCache = new Map<string, { result: WageCalculation; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Function to clear cache for specific employee (call when attendance changes)
+export function clearWageCache(employeeId?: string) {
+  if (employeeId) {
+    // Clear all cache entries for this employee
+    for (const key of wageCalculationCache.keys()) {
+      if (key.startsWith(`${employeeId}-`)) {
+        wageCalculationCache.delete(key);
+      }
+    }
+  } else {
+    // Clear all cache
+    wageCalculationCache.clear();
+  }
+}
+
 export function calculateDailyWage(wageRate: number, status: AttendanceStatus): number {
   switch (status) {
     case AttendanceStatus.PRESENT:
@@ -34,6 +53,15 @@ export async function calculateWagesForPeriod(
   startDate: string,
   endDate: string
 ): Promise<WageCalculation> {
+  // Check cache first
+  const cacheKey = `${employee.id}-${startDate}-${endDate}`;
+  const cached = wageCalculationCache.get(cacheKey);
+  const now = Date.now();
+
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    return cached.result;
+  }
+
   const attendanceRecords = await getAttendanceByEmployee(employee.id, startDate, endDate);
 
   const details: WageDetail[] = [];
@@ -72,7 +100,7 @@ export async function calculateWagesForPeriod(
     }
   }
 
-  return {
+  const result: WageCalculation = {
     employeeId: employee.id,
     employeeName: employee.name,
     wageType: employee.wageType,
@@ -85,6 +113,11 @@ export async function calculateWagesForPeriod(
     totalHalfDays,
     totalHoursWorked: employee.wageType === WageType.HOURLY ? totalHoursWorked : undefined,
   };
+
+  // Cache the result
+  wageCalculationCache.set(cacheKey, { result, timestamp: now });
+
+  return result;
 }
 
 export async function calculateWagesForAllEmployees(

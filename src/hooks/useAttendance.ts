@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Attendance, CreateAttendanceInput, AttendanceStatus } from '../models';
-import {
-  getAttendanceByDate,
-  getAttendanceByEmployee,
-  upsertAttendance,
-  deleteAttendance,
-} from '../database/repositories';
+import { AttendanceService } from '../services/AttendanceService';
 
 export function useAttendanceByDate(date: string) {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadAttendance = useCallback(async () => {
+  const loadAttendance = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAttendanceByDate(date);
+      const data = await AttendanceService.getAttendanceByDate(date, forceRefresh);
       setAttendance(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load attendance');
@@ -43,26 +38,30 @@ export function useAttendanceByDate(date: string) {
         hoursWorked,
         notes,
       };
-      const result = await upsertAttendance(input);
-      await loadAttendance();
+      const result = await AttendanceService.markAttendance(input);
+      await loadAttendance(true); // Force refresh after mutation
       return result;
     },
     [date, loadAttendance]
   );
 
   const removeAttendance = useCallback(
-    async (id: string): Promise<void> => {
-      await deleteAttendance(id);
-      await loadAttendance();
+    async (id: string, employeeId?: string): Promise<void> => {
+      await AttendanceService.deleteAttendance(id, employeeId);
+      await loadAttendance(true); // Force refresh after mutation
     },
     [loadAttendance]
   );
+
+  const refresh = useCallback(() => {
+    return loadAttendance(true); // Force refresh on manual pull-to-refresh
+  }, [loadAttendance]);
 
   return {
     attendance,
     loading,
     error,
-    refresh: loadAttendance,
+    refresh,
     markAttendance,
     removeAttendance,
   };
@@ -77,7 +76,7 @@ export function useEmployeeAttendance(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadAttendance = useCallback(async () => {
+  const loadAttendance = useCallback(async (forceRefresh = false) => {
     if (!employeeId) {
       setAttendance([]);
       setLoading(false);
@@ -87,7 +86,12 @@ export function useEmployeeAttendance(
     try {
       setLoading(true);
       setError(null);
-      const data = await getAttendanceByEmployee(employeeId, startDate, endDate);
+      const data = await AttendanceService.getAttendanceByEmployee(
+        employeeId,
+        startDate,
+        endDate,
+        forceRefresh
+      );
       setAttendance(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load attendance');
@@ -100,5 +104,9 @@ export function useEmployeeAttendance(
     loadAttendance();
   }, [loadAttendance]);
 
-  return { attendance, loading, error, refresh: loadAttendance };
+  const refresh = useCallback(() => {
+    return loadAttendance(true);
+  }, [loadAttendance]);
+
+  return { attendance, loading, error, refresh };
 }

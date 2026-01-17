@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, I18nManager } from 'react-native';
 import {
-  TextInput,
   Button,
   SegmentedButtons,
   Text,
-  HelperText,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -16,6 +14,7 @@ import { WageType, EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { toISODateString } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
+import { FormInput } from '../../../src/components';
 
 const isRTL = I18nManager.isRTL;
 
@@ -84,24 +83,14 @@ export default function AddEmployeeScreen() {
         control={control}
         name="name"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.name')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={!!errors.name}
-              style={styles.input}
-              contentStyle={styles.inputContent}
-              outlineStyle={styles.inputOutline}
-            />
-            {errors.name && (
-              <HelperText type="error" style={styles.errorText}>
-                {t(errors.name.message || 'validation.required')}
-              </HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.name')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={!!errors.name}
+            errorMessage={errors.name?.message}
+          />
         )}
       />
 
@@ -109,25 +98,15 @@ export default function AddEmployeeScreen() {
         control={control}
         name="phone"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.phone')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              keyboardType="phone-pad"
-              error={!!errors.phone}
-              style={styles.input}
-              contentStyle={styles.inputContent}
-              outlineStyle={styles.inputOutline}
-            />
-            {errors.phone && (
-              <HelperText type="error" style={styles.errorText}>
-                {t(errors.phone.message || 'validation.required')}
-              </HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.phone')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            keyboardType="phone-pad"
+            error={!!errors.phone}
+            errorMessage={errors.phone?.message}
+          />
         )}
       />
 
@@ -135,24 +114,14 @@ export default function AddEmployeeScreen() {
         control={control}
         name="role"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.role')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={!!errors.role}
-              style={styles.input}
-              contentStyle={styles.inputContent}
-              outlineStyle={styles.inputOutline}
-            />
-            {errors.role && (
-              <HelperText type="error" style={styles.errorText}>
-                {t(errors.role.message || 'validation.required')}
-              </HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.role')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={!!errors.role}
+            errorMessage={errors.role?.message}
+          />
         )}
       />
 
@@ -160,7 +129,7 @@ export default function AddEmployeeScreen() {
         control={control}
         name="wageType"
         render={({ field: { onChange, value } }) => (
-          <View style={styles.inputContainer}>
+          <View style={{ marginBottom: sizes.padding }}>
             <Text variant="titleSmall" style={styles.label}>
               {t('employee.wageType')}
             </Text>
@@ -181,26 +150,15 @@ export default function AddEmployeeScreen() {
         control={control}
         name="wageRate"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              keyboardType="decimal-pad"
-              error={!!errors.wageRate}
-              style={styles.input}
-              contentStyle={styles.inputContent}
-              outlineStyle={styles.inputOutline}
-              right={<TextInput.Affix text={t('currency.symbol')} />}
-            />
-            {errors.wageRate && (
-              <HelperText type="error" style={styles.errorText}>
-                {t(errors.wageRate.message || 'validation.required')}
-              </HelperText>
-            )}
-          </View>
+          <FormInput
+            label={wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            keyboardType="decimal-pad"
+            error={!!errors.wageRate}
+            errorMessage={errors.wageRate?.message}
+          />
         )}
       />
 
@@ -208,20 +166,14 @@ export default function AddEmployeeScreen() {
         control={control}
         name="notes"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.notesOptional')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              multiline
-              numberOfLines={4}
-              style={[styles.input, styles.textArea]}
-              contentStyle={styles.inputContent}
-              outlineStyle={styles.inputOutline}
-            />
-          </View>
+          <FormInput
+            label={t('employee.notesOptional')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            multiline
+            numberOfLines={4}
+          />
         )}
       />
 
@@ -260,21 +212,6 @@ const styles = StyleSheet.create({
     padding: sizes.padding,
     paddingBottom: sizes.paddingLarge,
   },
-  inputContainer: {
-    marginBottom: sizes.padding,
-  },
-  input: {
-    backgroundColor: colors.surface,
-  },
-  inputContent: {
-    textAlign: isRTL ? 'right' : 'left',
-  },
-  inputOutline: {
-    borderRadius: sizes.borderRadius,
-  },
-  textArea: {
-    minHeight: 100,
-  },
   label: {
     marginBottom: sizes.paddingSmall,
     color: colors.textSecondary,
@@ -283,9 +220,7 @@ const styles = StyleSheet.create({
   },
   segmentedButtons: {
     borderRadius: sizes.borderRadius,
-  },
-  errorText: {
-    fontSize: 13,
+    marginBottom: sizes.padding,
   },
   buttonContainer: {
     flexDirection: 'row',

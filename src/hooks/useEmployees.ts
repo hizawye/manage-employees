@@ -5,25 +5,18 @@ import {
   CreateEmployeeInput,
   UpdateEmployeeInput,
 } from '../models';
-import {
-  getAllEmployees,
-  getEmployeeById,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-  searchEmployees,
-} from '../database/repositories';
+import { EmployeeService } from '../services/EmployeeService';
 
 export function useEmployees(statusFilter?: EmployeeStatus) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadEmployees = useCallback(async () => {
+  const loadEmployees = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllEmployees(statusFilter);
+      const data = await EmployeeService.getAllEmployees(statusFilter, forceRefresh);
       setEmployees(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employees');
@@ -37,19 +30,19 @@ export function useEmployees(statusFilter?: EmployeeStatus) {
   }, [loadEmployees]);
 
   const addEmployee = useCallback(async (input: CreateEmployeeInput): Promise<Employee> => {
-    const employee = await createEmployee(input);
-    await loadEmployees();
+    const employee = await EmployeeService.createEmployee(input);
+    await loadEmployees(true); // Force refresh after mutation
     return employee;
   }, [loadEmployees]);
 
   const editEmployee = useCallback(async (id: string, input: UpdateEmployeeInput): Promise<void> => {
-    await updateEmployee(id, input);
-    await loadEmployees();
+    await EmployeeService.updateEmployee(id, input);
+    await loadEmployees(true); // Force refresh after mutation
   }, [loadEmployees]);
 
   const removeEmployee = useCallback(async (id: string): Promise<void> => {
-    await deleteEmployee(id);
-    await loadEmployees();
+    await EmployeeService.deleteEmployee(id);
+    await loadEmployees(true); // Force refresh after mutation
   }, [loadEmployees]);
 
   const search = useCallback(async (query: string): Promise<void> => {
@@ -59,7 +52,7 @@ export function useEmployees(statusFilter?: EmployeeStatus) {
     }
     try {
       setLoading(true);
-      const results = await searchEmployees(query);
+      const results = await EmployeeService.searchEmployees(query);
       setEmployees(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
@@ -68,11 +61,15 @@ export function useEmployees(statusFilter?: EmployeeStatus) {
     }
   }, [loadEmployees]);
 
+  const refresh = useCallback(() => {
+    return loadEmployees(true); // Force refresh on manual pull-to-refresh
+  }, [loadEmployees]);
+
   return {
     employees,
     loading,
     error,
-    refresh: loadEmployees,
+    refresh,
     addEmployee,
     editEmployee,
     removeEmployee,
@@ -85,7 +82,7 @@ export function useEmployee(id: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadEmployee = useCallback(async () => {
+  const loadEmployee = useCallback(async (forceRefresh = false) => {
     if (!id) {
       setEmployee(null);
       setLoading(false);
@@ -95,7 +92,7 @@ export function useEmployee(id: string | undefined) {
     try {
       setLoading(true);
       setError(null);
-      const data = await getEmployeeById(id);
+      const data = await EmployeeService.getEmployeeById(id, forceRefresh);
       setEmployee(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employee');
@@ -108,5 +105,9 @@ export function useEmployee(id: string | undefined) {
     loadEmployee();
   }, [loadEmployee]);
 
-  return { employee, loading, error, refresh: loadEmployee };
+  const refresh = useCallback(() => {
+    return loadEmployee(true);
+  }, [loadEmployee]);
+
+  return { employee, loading, error, refresh };
 }
