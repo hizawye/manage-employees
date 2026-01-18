@@ -57,6 +57,7 @@ export default function EmployeeListScreen() {
         value={searchQuery}
         style={styles.searchBar}
         inputStyle={styles.searchInput}
+        iconColor={colors.primary}
       />
 
       {error ? (
@@ -107,6 +108,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     textAlign: isRTL ? 'right' : 'left',
+    writingDirection: isRTL ? 'rtl' : 'ltr',
   },
   list: {
     padding: sizes.padding,
