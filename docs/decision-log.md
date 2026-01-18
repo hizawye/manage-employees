@@ -526,3 +526,42 @@ if (!hasUserId) {
 **Dependencies:**
 - ✅ @react-native-async-storage/async-storage
 - ✅ expo-crypto
+
+---
+
+## 2026-01-18: RTL Search Bar Fix
+
+### Problem
+Custom TextInput search bar showed placeholder and typed text on LEFT instead of RIGHT for Arabic.
+
+**Root Cause:**
+- Commit 2e93547 replaced `react-native-paper` Searchbar with custom TextInput
+- TextInput needs explicit `writingDirection` prop (not CSS) for RTL cursor/placeholder
+- Previous Searchbar had built-in RTL support via `inputStyle` with `direction: 'rtl'`
+
+### Decision: Revert to react-native-paper Searchbar
+**Rationale:**
+- Searchbar proven to work in commit 6366c3a
+- Built-in RTL support without additional props
+- No need to reinvent the wheel with custom TextInput
+- Production-ready component vs custom debugging
+
+**Implementation:**
+```tsx
+<Searchbar
+  style={[styles.searchBar, isRTL && styles.searchBarRTL]}
+  inputStyle={styles.searchInput}
+  // inputStyle uses: textAlign + direction for RTL
+/>
+```
+
+**Why Not Fix TextInput:**
+- Would need `writingDirection` prop (non-standard)
+- Might have other RTL edge cases
+- Working solution already exists
+
+**Key Lesson:**
+- Use proven library components for RTL support
+- TextInput RTL requires `writingDirection` prop, not just CSS
+- `direction` CSS property works in Searchbar's inputStyle
+
