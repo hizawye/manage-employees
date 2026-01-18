@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl, I18nManager, TextInput } from 'react-native';
 import { Searchbar, FAB } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,6 +16,7 @@ export default function EmployeeListScreen() {
   const { employees, loading, error, refresh, search } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -30,13 +31,32 @@ export default function EmployeeListScreen() {
     setRefreshing(false);
   }, [refresh]);
 
-  const onSearch = useCallback(
-    async (query: string) => {
+  // Debounced search - only search after user stops typing
+  const onSearchChange = useCallback(
+    (query: string) => {
       setSearchQuery(query);
-      await search(query);
+
+      // Clear previous timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // Search after 500ms of no typing
+      searchTimeoutRef.current = setTimeout(() => {
+        search(query);
+      }, 500);
     },
     [search]
   );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const renderEmployee = ({ item }: { item: Employee }) => (
     <EmployeeCard
@@ -53,9 +73,9 @@ export default function EmployeeListScreen() {
     <View style={styles.container}>
       <Searchbar
         placeholder={t('employee.searchPlaceholder')}
-        onChangeText={onSearch}
+        onChangeText={onSearchChange}
         value={searchQuery}
-        style={styles.searchBar}
+        style={[styles.searchBar, isRTL && styles.searchBarRTL]}
         inputStyle={styles.searchInput}
         iconColor={colors.primary}
       />
@@ -106,9 +126,11 @@ const styles = StyleSheet.create({
     borderRadius: sizes.borderRadius,
     elevation: 2,
   },
+  searchBarRTL: {
+    flexDirection: 'row-reverse',
+  },
   searchInput: {
     textAlign: isRTL ? 'right' : 'left',
-    writingDirection: isRTL ? 'rtl' : 'ltr',
   },
   list: {
     padding: sizes.padding,
