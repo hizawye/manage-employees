@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.manageemployees.app"
+      "bundleIdentifier": "com.manageemployees.app",
+      "supportsRTL": true
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +24,8 @@
         "backgroundColor": "#6200ee"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.manageemployees.app"
+      "package": "com.manageemployees.app",
+      "supportsRTL": true
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -35,6 +37,7 @@
       "expo-font"
     ],
     "extra": {
+      "supportsRTL": true,
       "router": {},
       "eas": {
         "projectId": "2d639fab-e399-48ab-94b5-26744343ec55"

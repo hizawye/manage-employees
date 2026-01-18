@@ -16,8 +16,8 @@ i18n.defaultLocale = 'en';
 // Check if the current language is RTL
 export const isRTL = i18n.locale === 'ar';
 
-// Enable RTL layout for Arabic
-if (isRTL && !I18nManager.isRTL) {
+// Enable RTL layout for Arabic (must be called before any UI renders)
+if (isRTL) {
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
 }

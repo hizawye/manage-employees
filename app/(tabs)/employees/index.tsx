@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     textAlign: isRTL ? 'right' : 'left',
-    writingDirection: isRTL ? 'rtl' : 'ltr',
     paddingVertical: 12,
   },
   clearIcon: {
