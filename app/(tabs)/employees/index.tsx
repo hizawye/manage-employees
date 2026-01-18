@@ -77,7 +77,9 @@ export default function EmployeeListScreen() {
         value={searchQuery}
         style={[styles.searchBar, isRTL && styles.searchBarRTL]}
         inputStyle={styles.searchInput}
+        placeholderTextColor={colors.textSecondary}
         iconColor={colors.primary}
+        mode="view"
       />
 
       {error ? (
@@ -131,6 +133,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     textAlign: isRTL ? 'right' : 'left',
+    // Force RTL direction for the input container
+    direction: isRTL ? 'rtl' : 'ltr',
   },
   list: {
     padding: sizes.padding,
