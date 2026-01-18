@@ -22,8 +22,8 @@ export class AttendanceService {
    * Get attendance records for a specific date
    * Uses cache with 5-minute TTL
    */
-  static async getAttendanceByDate(date: string, forceRefresh = false): Promise<Attendance[]> {
-    const cacheKey = `date-${date}`;
+  static async getAttendanceByDate(userId: number, date: string, forceRefresh = false): Promise<Attendance[]> {
+    const cacheKey = `${userId}-date-${date}`;
     const now = Date.now();
     const cached = attendanceCache.get(cacheKey);
 
@@ -31,7 +31,7 @@ export class AttendanceService {
       return cached.data;
     }
 
-    const data = await dbGetAttendanceByDate(date);
+    const data = await dbGetAttendanceByDate(userId, date);
     attendanceCache.set(cacheKey, { data, timestamp: now });
     return data;
   }
@@ -41,12 +41,13 @@ export class AttendanceService {
    * Optionally filter by date range
    */
   static async getAttendanceByEmployee(
+    userId: number,
     employeeId: string,
     startDate?: string,
     endDate?: string,
     forceRefresh = false
   ): Promise<Attendance[]> {
-    const cacheKey = `employee-${employeeId}-${startDate || 'all'}-${endDate || 'all'}`;
+    const cacheKey = `${userId}-employee-${employeeId}-${startDate || 'all'}-${endDate || 'all'}`;
     const now = Date.now();
     const cached = attendanceCache.get(cacheKey);
 
@@ -54,7 +55,7 @@ export class AttendanceService {
       return cached.data;
     }
 
-    const data = await dbGetAttendanceByEmployee(employeeId, startDate, endDate);
+    const data = await dbGetAttendanceByEmployee(userId, employeeId, startDate, endDate);
     attendanceCache.set(cacheKey, { data, timestamp: now });
     return data;
   }
@@ -63,7 +64,7 @@ export class AttendanceService {
    * Mark attendance for an employee
    * Validates input and clears relevant caches
    */
-  static async markAttendance(input: CreateAttendanceInput): Promise<Attendance> {
+  static async markAttendance(userId: number, input: CreateAttendanceInput): Promise<Attendance> {
     // Validation
     if (!input.employeeId) {
       throw new Error('Employee ID is required');
@@ -85,10 +86,10 @@ export class AttendanceService {
       }
     }
 
-    const result = await dbUpsertAttendance(input);
+    const result = await dbUpsertAttendance(userId, input);
 
     // Clear caches after mutation
-    this.clearCache(input.employeeId, input.date);
+    this.clearCache(userId, input.employeeId, input.date);
 
     // Clear wage calculation cache for this employee
     clearWageCache(input.employeeId);
@@ -100,11 +101,11 @@ export class AttendanceService {
    * Delete an attendance record
    * Clears relevant caches
    */
-  static async deleteAttendance(id: string, employeeId?: string): Promise<void> {
-    await dbDeleteAttendance(id);
+  static async deleteAttendance(userId: number, id: string, employeeId?: string): Promise<void> {
+    await dbDeleteAttendance(userId, id);
 
-    // Clear all attendance caches (we don't know the date without querying)
-    attendanceCache.clear();
+    // Clear attendance caches for this user
+    this.clearCache(userId);
 
     // Clear wage cache if we know the employee
     if (employeeId) {
@@ -117,20 +118,25 @@ export class AttendanceService {
   /**
    * Clear cache for specific date/employee or all attendance
    */
-  static clearCache(employeeId?: string, date?: string): void {
+  static clearCache(userId: number, employeeId?: string, date?: string): void {
     if (date) {
-      attendanceCache.delete(`date-${date}`);
+      attendanceCache.delete(`${userId}-date-${date}`);
     }
     if (employeeId) {
-      // Clear all caches for this employee
+      // Clear all caches for this user-employee combination
       for (const key of attendanceCache.keys()) {
-        if (key.startsWith(`employee-${employeeId}-`)) {
+        if (key.startsWith(`${userId}-employee-${employeeId}-`)) {
           attendanceCache.delete(key);
         }
       }
     }
     if (!employeeId && !date) {
-      attendanceCache.clear();
+      // Clear all caches for this user
+      for (const key of attendanceCache.keys()) {
+        if (key.startsWith(`${userId}-`)) {
+          attendanceCache.delete(key);
+        }
+      }
     }
   }
 
@@ -138,6 +144,7 @@ export class AttendanceService {
    * Get attendance statistics for an employee
    */
   static async getAttendanceStats(
+    userId: number,
     employeeId: string,
     startDate: string,
     endDate: string
@@ -148,7 +155,7 @@ export class AttendanceService {
     halfDays: number;
     attendanceRate: number;
   }> {
-    const records = await this.getAttendanceByEmployee(employeeId, startDate, endDate);
+    const records = await this.getAttendanceByEmployee(userId, employeeId, startDate, endDate);
 
     const stats = {
       totalDays: records.length,

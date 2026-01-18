@@ -1,9 +1,10 @@
+import * as SQLite from 'expo-sqlite';
 import { Migration } from './index';
 
 export const initialMigration: Migration = {
   version: 1,
   name: 'initial_schema',
-  up: async (db: any) => {
+  up: async (db: SQLite.SQLiteDatabase) => {
     // Create employees table
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS employees (

@@ -6,60 +6,76 @@ import {
   UpdateEmployeeInput,
 } from '../models';
 import { EmployeeService } from '../services/EmployeeService';
+import { useAuth } from '../auth/useAuth';
 
 export function useEmployees(statusFilter?: EmployeeStatus) {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadEmployees = useCallback(async (forceRefresh = false) => {
+    if (!user) {
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const data = await EmployeeService.getAllEmployees(statusFilter, forceRefresh);
+      const data = await EmployeeService.getAllEmployees(user.id, statusFilter, forceRefresh);
       setEmployees(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employees');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [user, statusFilter]);
 
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
 
   const addEmployee = useCallback(async (input: CreateEmployeeInput): Promise<Employee> => {
-    const employee = await EmployeeService.createEmployee(input);
+    if (!user) throw new Error('User not authenticated');
+    const employee = await EmployeeService.createEmployee(user.id, input);
     await loadEmployees(true); // Force refresh after mutation
     return employee;
-  }, [loadEmployees]);
+  }, [user, loadEmployees]);
 
   const editEmployee = useCallback(async (id: string, input: UpdateEmployeeInput): Promise<void> => {
-    await EmployeeService.updateEmployee(id, input);
+    if (!user) throw new Error('User not authenticated');
+    await EmployeeService.updateEmployee(user.id, id, input);
     await loadEmployees(true); // Force refresh after mutation
-  }, [loadEmployees]);
+  }, [user, loadEmployees]);
 
   const removeEmployee = useCallback(async (id: string): Promise<void> => {
-    await EmployeeService.deleteEmployee(id);
+    if (!user) throw new Error('User not authenticated');
+    await EmployeeService.deleteEmployee(user.id, id);
     await loadEmployees(true); // Force refresh after mutation
-  }, [loadEmployees]);
+  }, [user, loadEmployees]);
 
   const search = useCallback(async (query: string): Promise<void> => {
+    if (!user) {
+      setEmployees([]);
+      return;
+    }
+
     if (!query.trim()) {
       await loadEmployees();
       return;
     }
     try {
       setLoading(true);
-      const results = await EmployeeService.searchEmployees(query);
+      const results = await EmployeeService.searchEmployees(user.id, query);
       setEmployees(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
       setLoading(false);
     }
-  }, [loadEmployees]);
+  }, [user, loadEmployees]);
 
   const refresh = useCallback(() => {
     return loadEmployees(true); // Force refresh on manual pull-to-refresh
@@ -78,12 +94,13 @@ export function useEmployees(statusFilter?: EmployeeStatus) {
 }
 
 export function useEmployee(id: string | undefined) {
+  const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadEmployee = useCallback(async (forceRefresh = false) => {
-    if (!id) {
+    if (!id || !user) {
       setEmployee(null);
       setLoading(false);
       return;
@@ -92,14 +109,14 @@ export function useEmployee(id: string | undefined) {
     try {
       setLoading(true);
       setError(null);
-      const data = await EmployeeService.getEmployeeById(id, forceRefresh);
+      const data = await EmployeeService.getEmployeeById(user.id, id, forceRefresh);
       setEmployee(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employee');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [user, id]);
 
   useEffect(() => {
     loadEmployee();

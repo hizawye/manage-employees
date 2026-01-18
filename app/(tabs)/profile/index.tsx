@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, I18nManager } from 'react-native';
-import { Text, Surface, ActivityIndicator } from 'react-native-paper';
+import { Text, Surface, ActivityIndicator, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEmployees } from '../../../src/hooks';
 import { EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
@@ -9,10 +10,13 @@ import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { t } from '../../../src/i18n';
+import { useAuth } from '../../../src/auth/useAuth';
 
 const isRTL = I18nManager.isRTL;
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const { employees: allEmployees, loading: loadingAll } = useEmployees();
   const { employees: activeEmployees, loading: loadingActive } = useEmployees(EmployeeStatus.ACTIVE);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,12 +30,21 @@ export default function ProfileScreen() {
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   const inactiveCount = useMemo(() => {
     return allEmployees.filter(e => e.status === EmployeeStatus.INACTIVE).length;
   }, [allEmployees]);
 
   const loadStats = useCallback(async () => {
-    if (activeEmployees.length === 0) {
+    if (!user || activeEmployees.length === 0) {
       setWeeklyWages(0);
       setMonthlyWages(0);
       setAttendanceStats({
@@ -51,11 +64,13 @@ export default function ProfileScreen() {
 
       // Calculate wages
       const weeklyCalcs = await calculateWagesForAllEmployees(
+        user.id,
         activeEmployees,
         weekRange.start,
         weekRange.end
       );
       const monthlyCalcs = await calculateWagesForAllEmployees(
+        user.id,
         activeEmployees,
         monthRange.start,
         monthRange.end
@@ -65,8 +80,8 @@ export default function ProfileScreen() {
       setMonthlyWages(getTotalWages(monthlyCalcs));
 
       // Calculate attendance
-      const weeklyAttendance = await getAttendanceInRange(weekRange.start, weekRange.end);
-      const monthlyAttendance = await getAttendanceInRange(monthRange.start, monthRange.end);
+      const weeklyAttendance = await getAttendanceInRange(user.id, weekRange.start, weekRange.end);
+      const monthlyAttendance = await getAttendanceInRange(user.id, monthRange.start, monthRange.end);
 
       const weeklyPresent = weeklyAttendance.filter(a => a.status === 'present').length;
       const weeklyHalf = weeklyAttendance.filter(a => a.status === 'half_day').length;
@@ -84,7 +99,7 @@ export default function ProfileScreen() {
     } finally {
       setLoadingStats(false);
     }
-  }, [activeEmployees]);
+  }, [user, activeEmployees]);
 
   useEffect(() => {
     loadStats();
@@ -248,6 +263,28 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </Surface>
+
+      {/* User Account */}
+      <Surface style={styles.section} elevation={2}>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons name="account-circle" size={26} color={colors.primary} />
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            {t('profile.loggedInAs')}
+          </Text>
+        </View>
+        <Text variant="bodyLarge" style={styles.username}>
+          {user?.username}
+        </Text>
+        <Button
+          mode="contained"
+          icon="logout"
+          onPress={handleLogout}
+          style={styles.logoutButton}
+          buttonColor={colors.error}
+        >
+          {t('profile.logout')}
+        </Button>
+      </Surface>
     </ScrollView>
   );
 }
@@ -366,5 +403,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
     color: colors.text,
+  },
+  username: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: sizes.padding,
+    textAlign: 'center',
+  },
+  logoutButton: {
+    marginTop: sizes.paddingSmall,
   },
 });

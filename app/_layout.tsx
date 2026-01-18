@@ -3,6 +3,7 @@ import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '../src/constants/theme';
 import { ErrorBoundary } from '../src/components';
+import { AuthProvider } from '../src/auth/AuthContext';
 
 const theme = {
   ...MD3LightTheme,
@@ -28,11 +29,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <PaperProvider theme={theme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </PaperProvider>
+        <AuthProvider>
+          <PaperProvider theme={theme}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </PaperProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
   );

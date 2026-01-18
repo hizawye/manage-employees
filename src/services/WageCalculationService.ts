@@ -49,6 +49,7 @@ export function calculateWageForDay(
 }
 
 export async function calculateWagesForPeriod(
+  userId: number,
   employee: Employee,
   startDate: string,
   endDate: string
@@ -62,7 +63,7 @@ export async function calculateWagesForPeriod(
     return cached.result;
   }
 
-  const attendanceRecords = await getAttendanceByEmployee(employee.id, startDate, endDate);
+  const attendanceRecords = await getAttendanceByEmployee(userId, employee.id, startDate, endDate);
 
   const details: WageDetail[] = [];
   let totalWage = 0;
@@ -121,12 +122,13 @@ export async function calculateWagesForPeriod(
 }
 
 export async function calculateWagesForAllEmployees(
+  userId: number,
   employees: Employee[],
   startDate: string,
   endDate: string
 ): Promise<WageCalculation[]> {
   const calculations = await Promise.all(
-    employees.map((emp) => calculateWagesForPeriod(emp, startDate, endDate))
+    employees.map((emp) => calculateWagesForPeriod(userId, emp, startDate, endDate))
   );
   return calculations;
 }

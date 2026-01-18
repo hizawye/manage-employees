@@ -16,6 +16,7 @@ interface AttendanceRow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  user_id: number;
 }
 
 function mapRowToAttendance(row: AttendanceRow): Attendance {
@@ -31,16 +32,17 @@ function mapRowToAttendance(row: AttendanceRow): Attendance {
   };
 }
 
-export async function createAttendance(input: CreateAttendanceInput): Promise<Attendance> {
+export async function createAttendance(userId: number, input: CreateAttendanceInput): Promise<Attendance> {
   const db = await getDatabase();
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
   await db.runAsync(
-    `INSERT INTO attendance (id, employee_id, date, status, hours_worked, notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO attendance (id, user_id, employee_id, date, status, hours_worked, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
+      userId,
       input.employeeId,
       input.date,
       input.status,
@@ -59,23 +61,24 @@ export async function createAttendance(input: CreateAttendanceInput): Promise<At
   };
 }
 
-export async function getAttendanceByDate(date: string): Promise<Attendance[]> {
+export async function getAttendanceByDate(userId: number, date: string): Promise<Attendance[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<AttendanceRow>(
-    'SELECT * FROM attendance WHERE date = ? ORDER BY created_at ASC',
-    [date]
+    'SELECT * FROM attendance WHERE user_id = ? AND date = ? ORDER BY created_at ASC',
+    [userId, date]
   );
   return rows.map(mapRowToAttendance);
 }
 
 export async function getAttendanceByEmployee(
+  userId: number,
   employeeId: string,
   startDate?: string,
   endDate?: string
 ): Promise<Attendance[]> {
   const db = await getDatabase();
-  let query = 'SELECT * FROM attendance WHERE employee_id = ?';
-  const params: string[] = [employeeId];
+  let query = 'SELECT * FROM attendance WHERE user_id = ? AND employee_id = ?';
+  const params: (string | number)[] = [userId, employeeId];
 
   if (startDate) {
     query += ' AND date >= ?';
@@ -93,18 +96,19 @@ export async function getAttendanceByEmployee(
 }
 
 export async function getAttendanceByEmployeeAndDate(
+  userId: number,
   employeeId: string,
   date: string
 ): Promise<Attendance | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<AttendanceRow>(
-    'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
-    [employeeId, date]
+    'SELECT * FROM attendance WHERE user_id = ? AND employee_id = ? AND date = ?',
+    [userId, employeeId, date]
   );
   return row ? mapRowToAttendance(row) : null;
 }
 
-export async function updateAttendance(id: string, input: UpdateAttendanceInput): Promise<void> {
+export async function updateAttendance(userId: number, id: string, input: UpdateAttendanceInput): Promise<void> {
   const db = await getDatabase();
   const now = new Date().toISOString();
 
@@ -133,23 +137,24 @@ export async function updateAttendance(id: string, input: UpdateAttendanceInput)
   fields.push('updated_at = ?');
   values.push(now);
   values.push(id);
+  values.push(userId);
 
   await db.runAsync(
-    `UPDATE attendance SET ${fields.join(', ')} WHERE id = ?`,
+    `UPDATE attendance SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
 }
 
-export async function deleteAttendance(id: string): Promise<void> {
+export async function deleteAttendance(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM attendance WHERE id = ?', [id]);
+  await db.runAsync('DELETE FROM attendance WHERE id = ? AND user_id = ?', [id, userId]);
 }
 
-export async function upsertAttendance(input: CreateAttendanceInput): Promise<Attendance> {
-  const existing = await getAttendanceByEmployeeAndDate(input.employeeId, input.date);
+export async function upsertAttendance(userId: number, input: CreateAttendanceInput): Promise<Attendance> {
+  const existing = await getAttendanceByEmployeeAndDate(userId, input.employeeId, input.date);
 
   if (existing) {
-    await updateAttendance(existing.id, {
+    await updateAttendance(userId, existing.id, {
       status: input.status,
       hoursWorked: input.hoursWorked,
       notes: input.notes,
@@ -161,19 +166,20 @@ export async function upsertAttendance(input: CreateAttendanceInput): Promise<At
     };
   }
 
-  return createAttendance(input);
+  return createAttendance(userId, input);
 }
 
 export async function getAttendanceInRange(
+  userId: number,
   startDate: string,
   endDate: string
 ): Promise<Attendance[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<AttendanceRow>(
     `SELECT * FROM attendance
-     WHERE date >= ? AND date <= ?
+     WHERE user_id = ? AND date >= ? AND date <= ?
      ORDER BY date ASC, employee_id ASC`,
-    [startDate, endDate]
+    [userId, startDate, endDate]
   );
   return rows.map(mapRowToAttendance);
 }

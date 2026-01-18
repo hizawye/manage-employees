@@ -20,6 +20,7 @@ interface EmployeeRow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  user_id: number;
 }
 
 function mapRowToEmployee(row: EmployeeRow): Employee {
@@ -38,16 +39,17 @@ function mapRowToEmployee(row: EmployeeRow): Employee {
   };
 }
 
-export async function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
+export async function createEmployee(userId: number, input: CreateEmployeeInput): Promise<Employee> {
   const db = await getDatabase();
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
   await db.runAsync(
-    `INSERT INTO employees (id, name, phone, role, wage_type, wage_rate, join_date, status, notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO employees (id, user_id, name, phone, role, wage_type, wage_rate, join_date, status, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
+      userId,
       input.name,
       input.phone,
       input.role,
@@ -69,13 +71,13 @@ export async function createEmployee(input: CreateEmployeeInput): Promise<Employ
   };
 }
 
-export async function getAllEmployees(status?: EmployeeStatus): Promise<Employee[]> {
+export async function getAllEmployees(userId: number, status?: EmployeeStatus): Promise<Employee[]> {
   const db = await getDatabase();
-  let query = 'SELECT * FROM employees';
-  const params: string[] = [];
+  let query = 'SELECT * FROM employees WHERE user_id = ?';
+  const params: (string | number)[] = [userId];
 
   if (status) {
-    query += ' WHERE status = ?';
+    query += ' AND status = ?';
     params.push(status);
   }
 
@@ -85,16 +87,16 @@ export async function getAllEmployees(status?: EmployeeStatus): Promise<Employee
   return rows.map(mapRowToEmployee);
 }
 
-export async function getEmployeeById(id: string): Promise<Employee | null> {
+export async function getEmployeeById(userId: number, id: string): Promise<Employee | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<EmployeeRow>(
-    'SELECT * FROM employees WHERE id = ?',
-    [id]
+    'SELECT * FROM employees WHERE id = ? AND user_id = ?',
+    [id, userId]
   );
   return row ? mapRowToEmployee(row) : null;
 }
 
-export async function updateEmployee(id: string, input: UpdateEmployeeInput): Promise<void> {
+export async function updateEmployee(userId: number, id: string, input: UpdateEmployeeInput): Promise<void> {
   const db = await getDatabase();
   const now = new Date().toISOString();
 
@@ -139,26 +141,27 @@ export async function updateEmployee(id: string, input: UpdateEmployeeInput): Pr
   fields.push('updated_at = ?');
   values.push(now);
   values.push(id);
+  values.push(userId);
 
   await db.runAsync(
-    `UPDATE employees SET ${fields.join(', ')} WHERE id = ?`,
+    `UPDATE employees SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
 }
 
-export async function deleteEmployee(id: string): Promise<void> {
+export async function deleteEmployee(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM employees WHERE id = ?', [id]);
+  await db.runAsync('DELETE FROM employees WHERE id = ? AND user_id = ?', [id, userId]);
 }
 
-export async function searchEmployees(query: string): Promise<Employee[]> {
+export async function searchEmployees(userId: number, query: string): Promise<Employee[]> {
   const db = await getDatabase();
   const searchPattern = `%${query}%`;
   const rows = await db.getAllAsync<EmployeeRow>(
     `SELECT * FROM employees
-     WHERE name LIKE ? OR phone LIKE ? OR role LIKE ?
+     WHERE user_id = ? AND (name LIKE ? OR phone LIKE ? OR role LIKE ?)
      ORDER BY name ASC`,
-    [searchPattern, searchPattern, searchPattern]
+    [userId, searchPattern, searchPattern, searchPattern]
   );
   return rows.map(mapRowToEmployee);
 }

@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { CREATE_EMPLOYEES_TABLE, CREATE_ATTENDANCE_TABLE, CREATE_INDEXES } from './schema';
+import { runMigrations } from './migrations';
 
 let database: SQLite.SQLiteDatabase | null = null;
 
@@ -15,13 +15,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 async function initializeDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA foreign_keys = ON;');
-  await db.execAsync(CREATE_EMPLOYEES_TABLE);
-  await db.execAsync(CREATE_ATTENDANCE_TABLE);
-
-  const indexStatements = CREATE_INDEXES.split(';').filter(s => s.trim());
-  for (const statement of indexStatements) {
-    await db.execAsync(statement + ';');
-  }
+  await runMigrations(db);
 }
 
 export async function closeDatabase(): Promise<void> {

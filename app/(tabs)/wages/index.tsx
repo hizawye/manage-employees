@@ -19,11 +19,13 @@ import {
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
 import { t } from '../../../src/i18n';
+import { useAuth } from '../../../src/auth/useAuth';
 
 type PeriodType = 'week' | 'month';
 
 export default function WageSummaryScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [calculations, setCalculations] = useState<WageCalculation[]>([]);
@@ -35,7 +37,7 @@ export default function WageSummaryScreen() {
   }, [period]);
 
   const loadWages = useCallback(async () => {
-    if (employees.length === 0) {
+    if (!user || employees.length === 0) {
       setCalculations([]);
       setLoading(false);
       return;
@@ -44,6 +46,7 @@ export default function WageSummaryScreen() {
     try {
       setLoading(true);
       const results = await calculateWagesForAllEmployees(
+        user.id,
         employees,
         dateRange.start,
         dateRange.end
@@ -54,7 +57,7 @@ export default function WageSummaryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [employees, dateRange]);
+  }, [user, employees, dateRange]);
 
   useEffect(() => {
     loadWages();

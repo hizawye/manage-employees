@@ -1,24 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Attendance, CreateAttendanceInput, AttendanceStatus } from '../models';
 import { AttendanceService } from '../services/AttendanceService';
+import { useAuth } from '../auth/useAuth';
 
 export function useAttendanceByDate(date: string) {
+  const { user } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadAttendance = useCallback(async (forceRefresh = false) => {
+    if (!user) {
+      setAttendance([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const data = await AttendanceService.getAttendanceByDate(date, forceRefresh);
+      const data = await AttendanceService.getAttendanceByDate(user.id, date, forceRefresh);
       setAttendance(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load attendance');
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [user, date]);
 
   useEffect(() => {
     loadAttendance();
@@ -31,6 +39,7 @@ export function useAttendanceByDate(date: string) {
       hoursWorked?: number,
       notes?: string
     ): Promise<Attendance> => {
+      if (!user) throw new Error('User not authenticated');
       const input: CreateAttendanceInput = {
         employeeId,
         date,
@@ -38,19 +47,20 @@ export function useAttendanceByDate(date: string) {
         hoursWorked,
         notes,
       };
-      const result = await AttendanceService.markAttendance(input);
+      const result = await AttendanceService.markAttendance(user.id, input);
       await loadAttendance(true); // Force refresh after mutation
       return result;
     },
-    [date, loadAttendance]
+    [user, date, loadAttendance]
   );
 
   const removeAttendance = useCallback(
     async (id: string, employeeId?: string): Promise<void> => {
-      await AttendanceService.deleteAttendance(id, employeeId);
+      if (!user) throw new Error('User not authenticated');
+      await AttendanceService.deleteAttendance(user.id, id, employeeId);
       await loadAttendance(true); // Force refresh after mutation
     },
-    [loadAttendance]
+    [user, loadAttendance]
   );
 
   const refresh = useCallback(() => {
@@ -72,12 +82,13 @@ export function useEmployeeAttendance(
   startDate?: string,
   endDate?: string
 ) {
+  const { user } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadAttendance = useCallback(async (forceRefresh = false) => {
-    if (!employeeId) {
+    if (!employeeId || !user) {
       setAttendance([]);
       setLoading(false);
       return;
@@ -87,6 +98,7 @@ export function useEmployeeAttendance(
       setLoading(true);
       setError(null);
       const data = await AttendanceService.getAttendanceByEmployee(
+        user.id,
         employeeId,
         startDate,
         endDate,
@@ -98,7 +110,7 @@ export function useEmployeeAttendance(
     } finally {
       setLoading(false);
     }
-  }, [employeeId, startDate, endDate]);
+  }, [user, employeeId, startDate, endDate]);
 
   useEffect(() => {
     loadAttendance();

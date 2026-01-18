@@ -25,10 +25,11 @@ export class EmployeeService {
    * Uses cache with 5-minute TTL
    */
   static async getAllEmployees(
+    userId: number,
     statusFilter?: EmployeeStatus,
     forceRefresh = false
   ): Promise<Employee[]> {
-    const cacheKey = statusFilter || 'all';
+    const cacheKey = `${userId}-${statusFilter || 'all'}`;
     const now = Date.now();
     const cached = employeeCache.get(cacheKey);
 
@@ -36,7 +37,7 @@ export class EmployeeService {
       return cached.data;
     }
 
-    const data = await dbGetAllEmployees(statusFilter);
+    const data = await dbGetAllEmployees(userId, statusFilter);
     employeeCache.set(cacheKey, { data, timestamp: now });
     return data;
   }
@@ -45,17 +46,18 @@ export class EmployeeService {
    * Get employee by ID
    * Uses separate cache for individual employees
    */
-  static async getEmployeeById(id: string, forceRefresh = false): Promise<Employee | null> {
+  static async getEmployeeById(userId: number, id: string, forceRefresh = false): Promise<Employee | null> {
+    const cacheKey = `${userId}-${id}`;
     const now = Date.now();
-    const cached = singleEmployeeCache.get(id);
+    const cached = singleEmployeeCache.get(cacheKey);
 
     if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL) {
       return cached.data;
     }
 
-    const data = await dbGetEmployeeById(id);
+    const data = await dbGetEmployeeById(userId, id);
     if (data) {
-      singleEmployeeCache.set(id, { data, timestamp: now });
+      singleEmployeeCache.set(cacheKey, { data, timestamp: now });
     }
     return data;
   }
@@ -64,7 +66,7 @@ export class EmployeeService {
    * Create a new employee
    * Clears cache after creation
    */
-  static async createEmployee(input: CreateEmployeeInput): Promise<Employee> {
+  static async createEmployee(userId: number, input: CreateEmployeeInput): Promise<Employee> {
     // Validation
     if (!input.name?.trim()) {
       throw new Error('Employee name is required');
@@ -79,10 +81,10 @@ export class EmployeeService {
       throw new Error('Wage rate must be greater than 0');
     }
 
-    const employee = await dbCreateEmployee(input);
+    const employee = await dbCreateEmployee(userId, input);
 
     // Clear all caches after mutation
-    this.clearCache();
+    this.clearCache(userId);
 
     return employee;
   }
@@ -91,7 +93,7 @@ export class EmployeeService {
    * Update an existing employee
    * Clears cache after update
    */
-  static async updateEmployee(id: string, input: UpdateEmployeeInput): Promise<void> {
+  static async updateEmployee(userId: number, id: string, input: UpdateEmployeeInput): Promise<void> {
     // Validation
     if (input.name !== undefined && !input.name.trim()) {
       throw new Error('Employee name cannot be empty');
@@ -106,41 +108,46 @@ export class EmployeeService {
       throw new Error('Wage rate must be greater than 0');
     }
 
-    await dbUpdateEmployee(id, input);
+    await dbUpdateEmployee(userId, id, input);
 
     // Clear caches after mutation
-    this.clearCache(id);
+    this.clearCache(userId, id);
   }
 
   /**
    * Delete an employee
    * Clears cache after deletion
    */
-  static async deleteEmployee(id: string): Promise<void> {
-    await dbDeleteEmployee(id);
+  static async deleteEmployee(userId: number, id: string): Promise<void> {
+    await dbDeleteEmployee(userId, id);
 
     // Clear caches after mutation
-    this.clearCache(id);
+    this.clearCache(userId, id);
   }
 
   /**
    * Search employees by name, phone, or role
    */
-  static async searchEmployees(query: string): Promise<Employee[]> {
+  static async searchEmployees(userId: number, query: string): Promise<Employee[]> {
     if (!query.trim()) {
-      return this.getAllEmployees();
+      return this.getAllEmployees(userId);
     }
-    return dbSearchEmployees(query);
+    return dbSearchEmployees(userId, query);
   }
 
   /**
    * Clear cache for specific employee or all employees
    */
-  static clearCache(employeeId?: string): void {
+  static clearCache(userId: number, employeeId?: string): void {
     if (employeeId) {
-      singleEmployeeCache.delete(employeeId);
+      // Clear cache for this specific user-employee combination
+      singleEmployeeCache.delete(`${userId}-${employeeId}`);
     }
-    // Always clear list cache on any mutation
-    employeeCache.clear();
+    // Clear list caches for this user
+    for (const key of employeeCache.keys()) {
+      if (key.startsWith(`${userId}-`)) {
+        employeeCache.delete(key);
+      }
+    }
   }
 }
