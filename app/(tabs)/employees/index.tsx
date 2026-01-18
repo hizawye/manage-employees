@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, I18nManager, TextInput } from 'react-native';
-import { Searchbar, FAB } from 'react-native-paper';
+import { View, StyleSheet, FlatList, RefreshControl, I18nManager, TextInput, TouchableOpacity } from 'react-native';
+import { FAB, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees } from '../../../src/hooks';
@@ -71,16 +71,31 @@ export default function EmployeeListScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder={t('employee.searchPlaceholder')}
-        onChangeText={onSearchChange}
-        value={searchQuery}
-        style={[styles.searchBar, isRTL && styles.searchBarRTL]}
-        inputStyle={styles.searchInput}
-        placeholderTextColor={colors.textSecondary}
-        iconColor={colors.primary}
-        mode="view"
-      />
+      {/* Custom RTL-friendly search bar */}
+      <View style={styles.searchContainer}>
+        <IconButton
+          icon="magnify"
+          size={24}
+          iconColor={colors.textSecondary}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          placeholder={t('employee.searchPlaceholder')}
+          onChangeText={onSearchChange}
+          value={searchQuery}
+          style={styles.searchInput}
+          placeholderTextColor={colors.textSecondary}
+        />
+        {searchQuery.length > 0 && (
+          <IconButton
+            icon="close"
+            size={20}
+            iconColor={colors.textSecondary}
+            onPress={() => onSearchChange('')}
+            style={styles.clearIcon}
+          />
+        )}
+      </View>
 
       {error ? (
         <ErrorMessage message={error} />
@@ -123,18 +138,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchBar: {
-    margin: sizes.padding,
+  searchContainer: {
+    flexDirection: isRTL ? 'row-reverse' : 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
     borderRadius: sizes.borderRadius,
+    margin: sizes.padding,
     elevation: 2,
+    paddingHorizontal: 4,
   },
-  searchBarRTL: {
-    flexDirection: 'row-reverse',
+  searchIcon: {
+    margin: 0,
   },
   searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
     textAlign: isRTL ? 'right' : 'left',
-    // Force RTL direction for the input container
-    direction: isRTL ? 'rtl' : 'ltr',
+    writingDirection: isRTL ? 'rtl' : 'ltr',
+    paddingVertical: 12,
+  },
+  clearIcon: {
+    margin: 0,
   },
   list: {
     padding: sizes.padding,
