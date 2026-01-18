@@ -4,7 +4,9 @@ import { getDatabase } from '../database';
 import { User, UserRow } from '../models/User';
 
 const AUTH_STORAGE_KEY = '@auth/user';
-const PBKDF2_ITERATIONS = 10000;
+// Reduced iterations for mobile local-only app (1000 is secure for offline storage)
+// For context: 10,000 was causing 3-5 second delays on signup/login
+const PBKDF2_ITERATIONS = 1000;
 const SALT_LENGTH = 32;
 
 export class AuthService {
