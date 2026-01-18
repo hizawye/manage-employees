@@ -62,20 +62,30 @@ export function useEmployees(statusFilter?: EmployeeStatus) {
       return;
     }
 
+    // If empty query, reload all employees
     if (!query.trim()) {
       await loadEmployees();
       return;
     }
+
     try {
-      setLoading(true);
-      const results = await EmployeeService.searchEmployees(user.id, query);
+      // Client-side filtering: faster than database query
+      // Get all employees (from cache if available)
+      const allEmployees = await EmployeeService.getAllEmployees(user.id, statusFilter);
+
+      // Filter in-memory (case-insensitive search on name, role, phone)
+      const lowerQuery = query.toLowerCase();
+      const results = allEmployees.filter(emp =>
+        emp.name.toLowerCase().includes(lowerQuery) ||
+        emp.role.toLowerCase().includes(lowerQuery) ||
+        (emp.phone && emp.phone.toLowerCase().includes(lowerQuery))
+      );
+
       setEmployees(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
-    } finally {
-      setLoading(false);
     }
-  }, [user, loadEmployees]);
+  }, [user, loadEmployees, statusFilter]);
 
   const refresh = useCallback(() => {
     return loadEmployees(true); // Force refresh on manual pull-to-refresh

@@ -41,10 +41,10 @@ export default function EmployeeListScreen() {
         clearTimeout(searchTimeoutRef.current);
       }
 
-      // Search after 500ms of no typing
+      // Search after 300ms of no typing (faster now with client-side filtering)
       searchTimeoutRef.current = setTimeout(() => {
         search(query);
-      }, 500);
+      }, 300);
     },
     [search]
   );
