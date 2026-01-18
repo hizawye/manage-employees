@@ -9,15 +9,31 @@ export const addUserIsolationMigration: Migration = {
     await db.execAsync('DELETE FROM attendance;');
     await db.execAsync('DELETE FROM employees;');
 
-    // Add user_id column to employees table
-    await db.execAsync(`
-      ALTER TABLE employees ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
-    `);
+    // Check if user_id column exists in employees table
+    const employeesColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(employees);'
+    );
+    const employeesHasUserId = employeesColumns.some(col => col.name === 'user_id');
 
-    // Add user_id column to attendance table
-    await db.execAsync(`
-      ALTER TABLE attendance ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
-    `);
+    // Add user_id column to employees table if it doesn't exist
+    if (!employeesHasUserId) {
+      await db.execAsync(`
+        ALTER TABLE employees ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+      `);
+    }
+
+    // Check if user_id column exists in attendance table
+    const attendanceColumns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(attendance);'
+    );
+    const attendanceHasUserId = attendanceColumns.some(col => col.name === 'user_id');
+
+    // Add user_id column to attendance table if it doesn't exist
+    if (!attendanceHasUserId) {
+      await db.execAsync(`
+        ALTER TABLE attendance ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+      `);
+    }
 
     // Create indices for better query performance with user_id
     await db.execAsync(`

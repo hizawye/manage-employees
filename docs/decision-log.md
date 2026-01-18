@@ -387,6 +387,58 @@ CREATE INDEX IF NOT EXISTS idx_attendance_user_employee ON attendance(user_id, e
 
 ---
 
+## 2026-01-18: Migration 003 Idempotency Fix
+
+### Issue: "duplicate column name: user_id"
+**Problem:** Migration 003 failing with duplicate column error after previous failed migration attempt.
+
+**Root Cause Analysis:**
+1. Previous migration 003 ran with the `employeeId` bug
+2. `ALTER TABLE` commands succeeded (lines 13-20) - added `user_id` columns
+3. Index creation failed on line 37 due to `employeeId` typo
+4. **SQLite limitation:** `ALTER TABLE` is NOT transactional - commits immediately even inside transaction
+5. Migration transaction rolled back, but column additions couldn't be rolled back
+6. Database left in inconsistent state:
+   - `user_id` columns exist in tables
+   - Migration version still = 2 (rollback prevented version update)
+7. On retry, migration 003 attempts to add `user_id` again → "duplicate column" error
+
+**Solution: Make Migration Idempotent**
+Added column existence checks before ALTER TABLE:
+```typescript
+// Check if user_id column exists before adding
+const columns = await db.getAllAsync<{ name: string }>(
+  'PRAGMA table_info(employees);'
+);
+const hasUserId = columns.some(col => col.name === 'user_id');
+
+if (!hasUserId) {
+  await db.execAsync(`
+    ALTER TABLE employees ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+  `);
+}
+```
+
+**Why This Pattern:**
+- `PRAGMA table_info(table_name)` returns all columns in table
+- Check if `user_id` exists before attempting ALTER TABLE
+- Safe to re-run migration multiple times
+- Handles partial migration failures gracefully
+
+**Impact:**
+- Migration 003 can now complete even if columns already exist
+- Handles SQLite's non-transactional ALTER TABLE limitation
+- Future-proof against similar partial migration failures
+- No data loss (migration clears data anyway)
+
+**Key Lesson:**
+- SQLite `ALTER TABLE` is NOT transactional (DDL auto-commits)
+- Migrations should be idempotent when using ALTER TABLE
+- Use `PRAGMA table_info()` to check column existence
+- `CREATE INDEX IF NOT EXISTS` already idempotent (good pattern)
+
+---
+
 ## Summary of v1.2 Changes
 
 **Authentication System:**

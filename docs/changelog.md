@@ -8,6 +8,19 @@
   - All tables use snake_case convention from migration 001
   - One-line fix in `src/database/migrations/003_add_user_isolation.ts:37`
   - No data loss (migration already clears data on startup)
+- **Critical:** Migration 003 idempotency issue - "duplicate column name: user_id"
+  - Added column existence checks before ALTER TABLE commands
+  - Handles SQLite's non-transactional ALTER TABLE limitation
+  - Migration now safe to re-run after partial failures
+  - Uses `PRAGMA table_info()` to check column existence before adding
+
+### Changed
+- Migration 003 now idempotent (can be safely re-run without errors)
+
+### Technical Notes
+- SQLite `ALTER TABLE` is NOT transactional (auto-commits even in transaction)
+- Migrations using ALTER TABLE should check column existence first
+- Pattern: Use `PRAGMA table_info(table_name)` before ALTER TABLE ADD COLUMN
 
 ## [1.2.0] - 2026-01-18
 
