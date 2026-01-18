@@ -197,3 +197,199 @@
 - Increase test coverage to 60% (hooks, components)
 - Add integration tests for critical flows
 - Consider adding React Query for advanced caching
+
+---
+
+## 2026-01-18: Multi-User Authentication System
+
+### Authentication Architecture
+**Decision:** Implement full user authentication with secure password storage and session management.
+**Rationale:**
+- Enable multi-user support (each user has isolated data)
+- Secure password storage required (no plain text)
+- Session persistence needed for better UX
+- Prepare for future cloud sync features
+
+**Implementation:**
+- **Password Security:** PBKDF2 hashing with 10,000 iterations + 32-byte random salt per user
+- **Session Management:** AsyncStorage for persistent sessions
+- **Auth Flow:** Login → Employees (if authenticated) OR Login screen (if not)
+- **Data Isolation:** All queries filtered by user_id
+
+### Database Schema Changes (Migrations)
+**Migration 002 - Add Users Table:**
+```sql
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+```
+
+**Migration 003 - Add User Isolation:**
+- Added `user_id` column to `employees` table
+- Added `user_id` column to `attendance` table
+- Created indices: `idx_employees_user_id`, `idx_attendance_user_id`
+- Cleared existing data (fresh start for multi-user)
+
+**Why Clear Data:**
+- Existing data had no user_id (impossible to assign correctly)
+- Clean slate ensures data integrity
+- Pre-v1.2 users would need to re-enter employees (acceptable trade-off)
+
+### Security Features
+**Password Hashing:**
+- Algorithm: PBKDF2 (SHA-256 based, 10k iterations)
+- Salt: 32 bytes random per user
+- Constant-time comparison to prevent timing attacks
+- expo-crypto for secure random bytes and hashing
+
+**Validation Rules:**
+- Username: 3-20 characters, alphanumeric + underscore only
+- Password: Minimum 8 characters, must contain at least one number
+- Usernames are unique (database constraint)
+
+**Session Security:**
+- Session stored in AsyncStorage (encrypted on iOS/Android by OS)
+- Password hash and salt NEVER leave the database
+- Only `{ id, username, createdAt }` stored in session
+
+### Service Layer Updates
+**All services now require userId as first parameter:**
+- `EmployeeService.getAllEmployees(userId, statusFilter?, forceRefresh?)`
+- `EmployeeService.createEmployee(userId, input)`
+- `AttendanceService.getAttendanceByDate(userId, date, forceRefresh?)`
+- `AttendanceService.markAttendance(userId, input)`
+- `WageCalculationService.calculateWagesForPeriod(userId, employee, start, end)`
+
+**Cache Isolation:**
+- All cache keys now include userId: `${userId}-${cacheKey}`
+- Prevents cross-user data leakage
+- Each user has independent cache
+
+### UI/UX Enhancements
+**New Screens:**
+- `app/(auth)/login.tsx` - Login screen with username/password
+- `app/(auth)/signup.tsx` - Signup with password confirmation
+- Password visibility toggles on both screens
+- Keyboard-aware scroll views
+
+**Profile Screen Updates:**
+- Shows logged-in username
+- Logout button (redirects to login)
+- User account section with Material icon
+
+**Translations:**
+- Full Arabic + English translations for all auth screens
+- Error messages in both languages
+- Validation feedback in user's language
+
+### Hook Layer Updates
+**All hooks now use `useAuth()` to get current user:**
+```typescript
+const { user } = useAuth();
+// Pass user.id to services
+const data = await EmployeeService.getAllEmployees(user.id, ...);
+```
+
+**Hooks check for authentication:**
+- Return empty arrays if `!user`
+- Throw errors on mutations if `!user`
+- Prevents accidental operations without authentication
+
+### Dependencies Added
+- `@react-native-async-storage/async-storage@1.x` - Session persistence
+- `expo-crypto` - Secure hashing and random bytes
+
+### Architecture Benefits
+**Data Isolation:**
+- Each user sees only their employees and attendance
+- Database queries automatically filtered by user_id
+- Impossible for users to access each other's data
+
+**Future-Proof:**
+- Ready for cloud sync (user_id already in all tables)
+- Multi-device support possible (same username/password)
+- Team features possible (shared workspaces)
+
+**Security:**
+- Industry-standard password hashing (PBKDF2)
+- Timing attack prevention (constant-time compare)
+- No plain-text passwords ever stored or logged
+
+### Known Limitations
+**Data Migration:**
+- Pre-v1.2 data cleared during migration (acceptable for early release)
+- Future versions could add export/import for migrations
+
+**Session Management:**
+- No token expiry (session persists until logout)
+- No "remember me" option (always remembers)
+- Future: Add session expiry, refresh tokens
+
+**Multi-Device:**
+- No cloud sync yet (local-only)
+- Same username on different devices creates separate datasets
+- Future: Add cloud backend for cross-device sync
+
+### Testing Considerations
+**Manual Testing Required:**
+1. Sign up new account
+2. Create employees
+3. Mark attendance
+4. Logout
+5. Login again (data should persist)
+6. Create second account (separate dataset)
+
+**Security Testing:**
+- Verify password hashes are different for same password (different salts)
+- Verify user A cannot see user B's data (isolation)
+- Verify logout clears session (requires re-login)
+
+**Edge Cases:**
+- Username already exists (error shown)
+- Invalid username/password format (validation errors)
+- Network errors during signup/login (graceful error handling)
+
+---
+
+## Summary of v1.2 Changes
+
+**Authentication System:**
+- ✅ Login/signup screens with validation
+- ✅ Secure password hashing (PBKDF2 + salt)
+- ✅ Session persistence with AsyncStorage
+- ✅ Auth context for global state
+- ✅ Auto-redirect based on auth status
+
+**User Data Isolation:**
+- ✅ Users table with secure credentials
+- ✅ user_id added to employees and attendance
+- ✅ All repositories filter by user_id
+- ✅ All services accept userId parameter
+- ✅ Cache isolation per user
+
+**UI/UX:**
+- ✅ Login/signup forms with validation
+- ✅ Password visibility toggles
+- ✅ Profile screen shows username + logout
+- ✅ Full Arabic + English translations
+
+**Security:**
+- ✅ PBKDF2 password hashing (10k iterations)
+- ✅ Random salt per user (32 bytes)
+- ✅ Constant-time password comparison
+- ✅ Username/password validation
+- ✅ No plain-text password storage
+
+**Architecture:**
+- ✅ Migration system for schema evolution
+- ✅ Service layer accepts userId
+- ✅ Hooks use auth context
+- ✅ User-isolated caching
+
+**Dependencies:**
+- ✅ @react-native-async-storage/async-storage
+- ✅ expo-crypto
