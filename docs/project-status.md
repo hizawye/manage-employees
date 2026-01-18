@@ -182,6 +182,9 @@ manage-employees/
 - Jest test execution blocked by babel config (infrastructure ready, needs babel fix)
 - Minor TypeScript errors in test files (missing createdAt/updatedAt in mocks)
 
+## Recent Fixes
+- ✅ **Migration 003 column name bug** - Fixed `employeeId` → `employee_id` in composite index (2026-01-18)
+
 ## Next Session Start Point
 App has multi-user authentication and production-ready architecture. Priority tasks:
 

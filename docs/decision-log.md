@@ -355,6 +355,38 @@ const data = await EmployeeService.getAllEmployees(user.id, ...);
 
 ---
 
+## 2026-01-18: Migration 003 Column Name Fix
+
+### Issue: Migration 003 Failed with "no such column: employeeId"
+**Problem:** Migration 003 line 37 referenced camelCase `employeeId` instead of snake_case `employee_id`.
+
+**Root Cause:**
+- Migration 001 created all tables with snake_case columns (`employee_id`, `created_at`, etc.)
+- Migration 003 line 37 incorrectly used camelCase in composite index creation
+- SQL error: "no such column: employeeId"
+
+**Fix Applied:**
+```sql
+-- BEFORE (line 37):
+CREATE INDEX IF NOT EXISTS idx_attendance_user_employee ON attendance(user_id, employeeId);
+
+-- AFTER:
+CREATE INDEX IF NOT EXISTS idx_attendance_user_employee ON attendance(user_id, employee_id);
+```
+
+**Impact:**
+- Migration 003 now completes successfully
+- All indices created properly
+- User signup/login flow works as expected
+- No data loss (migration already clears data on lines 9-10)
+
+**Rationale:**
+- Simple typo fix to match established snake_case naming convention
+- All other columns in migration 003 correctly use snake_case
+- This was the only camelCase reference in the migration
+
+---
+
 ## Summary of v1.2 Changes
 
 **Authentication System:**

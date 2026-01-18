@@ -34,7 +34,7 @@ export const addUserIsolationMigration: Migration = {
     `);
 
     await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_attendance_user_employee ON attendance(user_id, employeeId);
+      CREATE INDEX IF NOT EXISTS idx_attendance_user_employee ON attendance(user_id, employee_id);
     `);
   },
 };

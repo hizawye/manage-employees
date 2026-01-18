@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.2.1] - 2026-01-18
+
+### Fixed
+- **Critical:** Migration 003 column name inconsistency - fixed `employeeId` → `employee_id` in composite index
+  - Migration was failing with "no such column: employeeId" error
+  - All tables use snake_case convention from migration 001
+  - One-line fix in `src/database/migrations/003_add_user_isolation.ts:37`
+  - No data loss (migration already clears data on startup)
+
+## [1.2.0] - 2026-01-18
+
+### Added
+- **Multi-User Authentication System**
+  - Login/signup screens with form validation
+  - Secure password hashing (PBKDF2 with 10,000 iterations + random salt)
+  - Session persistence with AsyncStorage
+  - Auth context provider for global state management
+  - Auto-redirect based on authentication status
+  - Logout functionality in profile screen
+- **Database Migrations**
+  - Migration 002: Users table with password_hash and salt
+  - Migration 003: User data isolation (user_id columns on all tables)
+  - Automatic migration execution on app start
+- **Security Features**
+  - PBKDF2 password hashing (SHA-256, 10k iterations)
+  - Random 32-byte salt per user
+  - Constant-time password comparison (timing attack prevention)
+  - Username validation (3-20 chars, alphanumeric + underscore)
+  - Password validation (8+ chars, must contain number)
+  - No plain-text password storage
+- **User Data Isolation**
+  - All repositories filter by user_id
+  - User-isolated caching (cache keys include userId)
+  - Each user has completely separate dataset
+- **UI/UX**
+  - Login/signup forms with validation feedback
+  - Password visibility toggles
+  - Profile screen shows username
+  - Full Arabic + English translations for auth
+
+### Changed
+- **Service Layer** - All services now accept userId as first parameter
+  - `EmployeeService.getAllEmployees(userId, ...)`
+  - `AttendanceService.markAttendance(userId, ...)`
+  - `WageCalculationService.calculateWagesForPeriod(userId, ...)`
+- **Hooks** - All hooks use `useAuth()` to get current user and pass userId to services
+- **Cache Strategy** - Cache keys now include userId for complete isolation
+
+### Dependencies
+- Added `@react-native-async-storage/async-storage@1.x`
+- Added `expo-crypto` for secure hashing
+
 ## [1.1.0] - 2026-01-18
 
 ### Added
