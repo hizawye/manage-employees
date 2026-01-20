@@ -9,3 +9,4 @@ export { EmployeeCard } from './cards/EmployeeCard';
 
 // Form components
 export { FormInput } from './forms/FormInput';
+export { SearchInput } from './forms/SearchInput';

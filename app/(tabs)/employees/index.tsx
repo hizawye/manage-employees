@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
-import { FAB, Searchbar } from 'react-native-paper';
+import { FAB } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { t } from '../../../src/i18n';
-import { LoadingSpinner, EmptyState, ErrorMessage, EmployeeCard } from '../../../src/components';
+import { LoadingSpinner, EmptyState, ErrorMessage, EmployeeCard, SearchInput } from '../../../src/components';
 
 const isRTL = I18nManager.isRTL;
 
@@ -71,15 +71,11 @@ export default function EmployeeListScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar
+      <SearchInput
         placeholder={t('employee.searchPlaceholder')}
         onChangeText={onSearchChange}
         value={searchQuery}
         style={styles.searchBar}
-        inputStyle={styles.searchInput}
-        placeholderTextColor={colors.textSecondary}
-        iconColor={colors.primary}
-        mode="view"
       />
 
       {error ? (
@@ -125,11 +121,6 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     margin: sizes.padding,
-    borderRadius: sizes.borderRadius,
-    elevation: 2,
-  },
-  searchInput: {
-    textAlign: isRTL ? 'right' : 'left',
   },
   list: {
     padding: sizes.padding,

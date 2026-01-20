@@ -650,3 +650,132 @@ import '../src/i18n';
 3. **Import at Entry Point:** App-level configuration (RTL, localization) should import in root layout
 4. **I18nManager is Initialization-Time:** RTL must be set before first component mounts, not runtime
 
+---
+
+## 2026-01-20: Custom RTL SearchInput Component - Full Manual Control
+
+### Problem: Previous Fixes Didn't Work
+**Issue:** Even with `I18nManager` initialization timing fix, search bar placeholder still on LEFT instead of RIGHT.
+
+**Previous Attempts:**
+1. ❌ Removed invalid `direction` CSS property - Didn't fix placeholder position
+2. ❌ I18nManager initialization timing - Placeholder still on left
+
+**Root Cause Analysis:**
+- react-native-paper's Searchbar has **internal RTL detection** that's not working correctly
+- Even with `I18nManager.forceRTL(true)` before component mount, Searchbar's placeholder stays on left
+- `textAlign: 'right'` only affects typed text, NOT placeholder or cursor position
+- Paper's Searchbar has complex internal layout logic that doesn't fully respect I18nManager
+
+### Solution: Custom SearchInput Component with Manual RTL Control
+**Decision:** Build custom search component from scratch with explicit RTL styling, abandoning react-native-paper's Searchbar.
+
+**Rationale:**
+- Need **full control** over RTL behavior without relying on library internals
+- react-native-paper's Searchbar RTL detection unreliable
+- Custom component allows explicit `writingDirection`, `textAlign`, and icon positioning
+- More maintainable (we control the behavior, not hoping library works)
+
+### Implementation Details
+
+**New Component: `src/components/forms/SearchInput.tsx`**
+```typescript
+interface SearchInputProps {
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  style?: ViewStyle;
+}
+```
+
+**Key Features:**
+1. **Manual RTL Text Direction:**
+   - `textAlign: 'right'` - Text aligned to right
+   - `writingDirection: 'rtl'` - Text flows right-to-left
+   - Placeholder appears on RIGHT side
+
+2. **Icon Positioning with flexDirection:**
+   - Container: `flexDirection: 'row-reverse'` - Icons in RTL positions
+   - Search icon (magnify) naturally on RIGHT
+   - Clear button on LEFT (when typing)
+   - Uses `gap: 12` for spacing
+
+3. **Layout Control:**
+   - Simple flex layout (no complex positioning)
+   - Icons flow naturally with `row-reverse`
+   - Proper padding for touch targets
+
+4. **Styling:**
+   - Material Design 3 theme (surface color, elevation, shadows)
+   - Matches existing app styling
+   - Consistent with FormInput component
+
+**Files Created/Modified:**
+1. **CREATE** `src/components/forms/SearchInput.tsx` - Custom search component (~75 lines)
+2. **MODIFY** `src/components/index.ts` - Export SearchInput
+3. **MODIFY** `app/(tabs)/employees/index.tsx`:
+   - Removed Searchbar import from react-native-paper
+   - Added SearchInput import
+   - Replaced Searchbar component
+   - Simplified styles (removed searchInput style)
+
+### Why This Approach Works
+
+**Direct Control:**
+- ✅ No reliance on I18nManager (explicit RTL styles)
+- ✅ No dependency on react-native-paper's RTL detection
+- ✅ `writingDirection: 'rtl'` directly forces RTL text flow
+- ✅ `flexDirection: 'row-reverse'` positions icons correctly
+
+**Layout Strategy:**
+```tsx
+<View style={{ flexDirection: 'row-reverse' }}>  {/* RTL layout */}
+  <Icon source="magnify" />        {/* Appears on RIGHT */}
+  <TextInput
+    style={{
+      textAlign: 'right',          {/* Text on right */}
+      writingDirection: 'rtl'       {/* RTL flow */}
+    }}
+  />
+  {showClear && <Icon source="close-circle" />}  {/* Appears on LEFT */}
+</View>
+```
+
+**Benefits:**
+- ✅ Placeholder on RIGHT (correct for RTL)
+- ✅ Cursor starts from RIGHT
+- ✅ Typed text flows RIGHT to LEFT
+- ✅ Search icon on RIGHT
+- ✅ Clear button on LEFT
+- ✅ Reusable for other screens
+- ✅ Simple implementation (~75 lines)
+
+### Key Lessons
+
+1. **Don't Over-Rely on Library RTL Support:** react-native-paper's RTL is inconsistent across components
+2. **Custom Components Give Control:** When library behavior unreliable, build custom
+3. **flexDirection: 'row-reverse' for RTL Layouts:** Natural way to position icons in RTL
+4. **writingDirection + textAlign:** Both needed for proper RTL text
+5. **Simple > Complex:** Direct TextInput with flex layout > complex library component
+
+### Comparison to Previous Attempts
+
+**Attempt 1: Invalid CSS Property**
+- Removed `direction: 'rtl'` (invalid in React Native)
+- ❌ Didn't fix placeholder position
+
+**Attempt 2: I18nManager Initialization**
+- Imported i18n first in app/_layout.tsx
+- ❌ Searchbar still didn't respect I18nManager fully
+
+**Attempt 3: Custom Component (FINAL)**
+- Built SearchInput from scratch
+- ✅ **WORKS** - Full manual RTL control
+- ✅ Placeholder on right, cursor on right, icons positioned correctly
+
+### Future Use Cases
+Custom SearchInput can be reused in:
+- Attendance screen (search employees)
+- Wages screen (filter by employee)
+- Any future search functionality
+
