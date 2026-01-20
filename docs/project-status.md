@@ -187,6 +187,7 @@ manage-employees/
 - ✅ **Migration 003 idempotency** - Added column existence checks to handle SQLite's non-transactional ALTER TABLE (2026-01-18)
 - ✅ **Auth flow verified** - Signup and login working correctly (2026-01-18)
 - ✅ **RTL search bar - Invalid CSS property** - Removed invalid `direction` CSS property that was being silently ignored by React Native (2026-01-20)
+- ✅ **RTL search bar - I18nManager initialization timing** - Fixed module import order in app/_layout.tsx to initialize RTL before components mount (2026-01-20)
 
 ## Next Session Start Point
 App has multi-user authentication and production-ready architecture. Auth flow verified working.

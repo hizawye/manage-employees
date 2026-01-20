@@ -1,3 +1,6 @@
+// CRITICAL: Import i18n FIRST to initialize RTL before any components mount
+import '../src/i18n';
+
 import { Stack } from 'expo-router';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

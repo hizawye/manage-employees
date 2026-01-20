@@ -591,3 +591,62 @@ searchInput: {
 3. **I18nManager is Global:** No need for component-level RTL props when I18nManager is configured
 4. **Version Matters:** `writingDirection` prop doesn't exist in all React Native versions
 
+---
+
+## 2026-01-20: RTL Search Bar - I18nManager Initialization Timing Fix
+
+### Problem: Placeholder Still on Left After Removing Invalid CSS
+**Issue:** Even after removing invalid `direction` property, search bar placeholder "البحث عن موظف..." still appeared on LEFT instead of RIGHT.
+
+**Investigation:**
+- ✅ `I18nManager.forceRTL(true)` exists in `src/i18n/index.ts` lines 20-22
+- ❌ i18n module **NEVER imported** in app entry point
+- ❌ i18n only imported **lazily** when child components need translations
+- ❌ First import happens in `app/(tabs)/employees/index.tsx` line 9
+- ❌ By that time, React Native layout engine **already initialized WITHOUT RTL**
+
+### Root Cause: Module Import Order
+**Critical Timing Issue:**
+1. `I18nManager.forceRTL(true)` called at module level in `src/i18n/index.ts`
+2. BUT module never imported in `app/_layout.tsx` (root layout)
+3. i18n lazily loaded when first component imports it
+4. Searchbar already mounted and configured with LTR by that time
+5. `I18nManager.forceRTL()` **MUST run BEFORE any React components mount**
+
+**Why Searchbar Broke:**
+- react-native-paper Searchbar reads `I18nManager.isRTL` during component initialization
+- When Searchbar first mounts, `I18nManager.isRTL` still `false` (default)
+- Paper's internal layout (placeholder, icons) bakes in LTR at mount time
+- `textAlign: 'right'` only affects typed text, NOT placeholder position
+
+### Solution: Import i18n Module First
+**Implementation:**
+```typescript
+// app/_layout.tsx - Line 1-2 (FIRST import)
+// CRITICAL: Import i18n FIRST to initialize RTL before any components mount
+import '../src/i18n';
+```
+
+**Why This Works:**
+1. JavaScript modules execute in import order
+2. `import '../src/i18n'` executes module's top-level code immediately
+3. Runs `I18nManager.forceRTL(true)` BEFORE React Native initializes
+4. All subsequent components see `I18nManager.isRTL === true`
+5. Searchbar's internal RTL detection works correctly
+
+**Files Modified:**
+- `app/_layout.tsx` - Added side-effect import as first line
+
+**Benefits:**
+- ✅ One-line fix instead of custom TextInput workarounds
+- ✅ Uses native RTL support (I18nManager)
+- ✅ Works with ALL react-native-paper components
+- ✅ Future-proof for other RTL-aware libraries
+- ✅ Proper React Native best practice
+
+### Key Lessons
+1. **Module Execution Order Matters:** Side-effects (like `I18nManager.forceRTL()`) must run before component initialization
+2. **Lazy Imports Break Initialization:** Don't rely on lazy imports for global configuration
+3. **Import at Entry Point:** App-level configuration (RTL, localization) should import in root layout
+4. **I18nManager is Initialization-Time:** RTL must be set before first component mounts, not runtime
+
