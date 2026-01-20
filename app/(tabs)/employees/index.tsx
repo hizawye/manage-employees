@@ -75,7 +75,7 @@ export default function EmployeeListScreen() {
         placeholder={t('employee.searchPlaceholder')}
         onChangeText={onSearchChange}
         value={searchQuery}
-        style={[styles.searchBar, isRTL && styles.searchBarRTL]}
+        style={styles.searchBar}
         inputStyle={styles.searchInput}
         placeholderTextColor={colors.textSecondary}
         iconColor={colors.primary}
@@ -128,12 +128,8 @@ const styles = StyleSheet.create({
     borderRadius: sizes.borderRadius,
     elevation: 2,
   },
-  searchBarRTL: {
-    flexDirection: 'row-reverse',
-  },
   searchInput: {
     textAlign: isRTL ? 'right' : 'left',
-    direction: isRTL ? 'rtl' : 'ltr',
   },
   list: {
     padding: sizes.padding,

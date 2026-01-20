@@ -529,39 +529,65 @@ if (!hasUserId) {
 
 ---
 
-## 2026-01-18: RTL Search Bar Fix
+## 2026-01-20: RTL Search Bar - Invalid CSS Property Fix
 
 ### Problem
-Custom TextInput search bar showed placeholder and typed text on LEFT instead of RIGHT for Arabic.
+Search bar placeholder "البحث عن موظف..." and typed text appearing on LEFT instead of RIGHT for Arabic, even after full app restart.
 
-**Root Cause:**
-- Commit 2e93547 replaced `react-native-paper` Searchbar with custom TextInput
-- TextInput needs explicit `writingDirection` prop (not CSS) for RTL cursor/placeholder
-- Previous Searchbar had built-in RTL support via `inputStyle` with `direction: 'rtl'`
+**Investigation Results:**
+- ✅ Global RTL working (FAB on left, layouts correct)
+- ✅ `I18nManager.forceRTL(true)` being called in `src/i18n/index.ts`
+- ❌ Search placeholder still on left
 
-### Decision: Revert to react-native-paper Searchbar
+### Root Cause: Invalid CSS Property in React Native
+**Critical Issue Found:**
+```tsx
+// BEFORE (app/(tabs)/employees/index.tsx:134-137)
+searchInput: {
+  textAlign: isRTL ? 'right' : 'left',
+  direction: isRTL ? 'rtl' : 'ltr',  // ❌ INVALID
+},
+```
+
+**Why This Failed:**
+- `direction` is a **CSS property** (web only), NOT valid in React Native StyleSheet
+- React Native **silently ignores** invalid style properties
+- This property had **no effect** on text direction
+- Only `textAlign` was working (visual alignment, but not cursor/placeholder behavior)
+
+### Solution: Remove Invalid Property
 **Rationale:**
-- Searchbar proven to work in commit 6366c3a
-- Built-in RTL support without additional props
-- No need to reinvent the wheel with custom TextInput
-- Production-ready component vs custom debugging
+- Remove invalid `direction` CSS property from styles
+- Keep only valid React Native style property: `textAlign`
+- Rely on `I18nManager.forceRTL(true)` for proper RTL behavior
+- Searchbar from react-native-paper respects I18nManager globally
 
 **Implementation:**
 ```tsx
-<Searchbar
-  style={[styles.searchBar, isRTL && styles.searchBarRTL]}
-  inputStyle={styles.searchInput}
-  // inputStyle uses: textAlign + direction for RTL
-/>
+// AFTER (app/(tabs)/employees/index.tsx:131-133)
+searchInput: {
+  textAlign: isRTL ? 'right' : 'left',
+  // Removed invalid 'direction' property
+},
 ```
 
-**Why Not Fix TextInput:**
-- Would need `writingDirection` prop (non-standard)
-- Might have other RTL edge cases
-- Working solution already exists
+**Files Modified:**
+- `app/(tabs)/employees/index.tsx` - Removed invalid `direction` style property
 
-**Key Lesson:**
-- Use proven library components for RTL support
-- TextInput RTL requires `writingDirection` prop, not just CSS
-- `direction` CSS property works in Searchbar's inputStyle
+### Why writingDirection Approach Failed
+**Initial Plan:** Use native TextInput with `writingDirection` prop
+- ❌ `writingDirection` prop doesn't exist in React Native 0.81.5
+- ❌ TypeScript error: "Property 'writingDirection' does not exist on type 'TextInputProps'"
+- ❌ Not available in Expo SDK 54
+
+**Correct Approach:**
+- ✅ Use `I18nManager.forceRTL(true)` for global RTL (already configured)
+- ✅ Remove invalid CSS properties from styles
+- ✅ Trust react-native-paper Searchbar to respect I18nManager
+
+### Key Lessons
+1. **CSS vs React Native Styles:** CSS properties like `direction` don't work in React Native StyleSheet
+2. **Silent Failures:** Invalid style properties are ignored without warnings
+3. **I18nManager is Global:** No need for component-level RTL props when I18nManager is configured
+4. **Version Matters:** `writingDirection` prop doesn't exist in all React Native versions
 
