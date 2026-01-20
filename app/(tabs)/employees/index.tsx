@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-n
 import { FAB } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useEmployees } from '../../../src/hooks';
+import { useEmployees, useRefresh, useDebounce } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { t } from '../../../src/i18n';
@@ -15,8 +15,8 @@ export default function EmployeeListScreen() {
   const router = useRouter();
   const { employees, loading, error, refresh, search } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -25,45 +25,19 @@ export default function EmployeeListScreen() {
     }, [refresh])
   );
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
-  }, [refresh]);
+  const { refreshing, onRefresh } = useRefresh(refresh);
 
-  // Debounced search - only search after user stops typing
-  const onSearchChange = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-
-      // Clear previous timeout
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-
-      // Search after 300ms of no typing (faster now with client-side filtering)
-      searchTimeoutRef.current = setTimeout(() => {
-        search(query);
-      }, 300);
-    },
-    [search]
-  );
-
-  // Cleanup timeout on unmount
+  // Execute search when debounced value changes
   useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
+    search(debouncedSearch);
+  }, [debouncedSearch, search]);
 
-  const renderEmployee = ({ item }: { item: Employee }) => (
+  const renderEmployee = useCallback(({ item }: { item: Employee }) => (
     <EmployeeCard
       employee={item}
       onPress={() => router.push(`/employees/${item.id}`)}
     />
-  );
+  ), [router]);
 
   if (loading && !refreshing) {
     return <LoadingSpinner />;
@@ -73,7 +47,7 @@ export default function EmployeeListScreen() {
     <View style={styles.container}>
       <SearchInput
         placeholder={t('employee.searchPlaceholder')}
-        onChangeText={onSearchChange}
+        onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchBar}
       />

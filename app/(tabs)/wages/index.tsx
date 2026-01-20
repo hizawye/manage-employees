@@ -8,7 +8,8 @@ import {
   Surface,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { useEmployees } from '../../../src/hooks';
+import { useEmployees, useRefresh } from '../../../src/hooks';
+import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import {
@@ -30,7 +31,6 @@ export default function WageSummaryScreen() {
   const [period, setPeriod] = useState<PeriodType>('week');
   const [calculations, setCalculations] = useState<WageCalculation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const dateRange = useMemo(() => {
     return period === 'week' ? getWeekRange() : getMonthRange();
@@ -63,11 +63,7 @@ export default function WageSummaryScreen() {
     loadWages();
   }, [loadWages]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadWages();
-    setRefreshing(false);
-  }, [loadWages]);
+  const { refreshing, onRefresh } = useRefresh(loadWages);
 
   const totalWages = useMemo(() => getTotalWages(calculations), [calculations]);
   const totalDaysWorked = useMemo(
@@ -79,7 +75,7 @@ export default function WageSummaryScreen() {
     [calculations]
   );
 
-  const renderWageCard = ({ item }: { item: WageCalculation }) => (
+  const renderWageCard = useCallback(({ item }: { item: WageCalculation }) => (
     <Card
       style={styles.card}
       onPress={() => router.push(`/wages/${item.employeeId}`)}
@@ -100,7 +96,7 @@ export default function WageSummaryScreen() {
         </View>
       </Card.Content>
     </Card>
-  );
+  ), [router]);
 
   if ((loadingEmployees || loading) && !refreshing) {
     return (
@@ -127,31 +123,24 @@ export default function WageSummaryScreen() {
       </View>
 
       <Surface style={styles.summaryCard} elevation={2}>
-        <View style={styles.summaryItem}>
-          <Text variant="bodySmall" style={styles.summaryLabel}>
-            {t('wages.totalWages')}
-          </Text>
-          <Text variant="headlineSmall" style={styles.summaryValue}>
-            {formatCurrency(totalWages)}
-          </Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text variant="bodySmall" style={styles.summaryLabel}>
-            {t('wages.daysWorked')}
-          </Text>
-          <Text variant="headlineSmall" style={styles.summaryValue}>
-            {totalDaysWorked.toFixed(1)}
-          </Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text variant="bodySmall" style={styles.summaryLabel}>
-            {t('wages.employees')}
-          </Text>
-          <Text variant="headlineSmall" style={styles.summaryValue}>
-            {calculations.length}
-          </Text>
+        <View style={styles.statsGrid}>
+          <StatCard
+            value={formatCurrency(totalWages)}
+            label={t('wages.totalWages')}
+            color={colors.success}
+            icon="cash-multiple"
+          />
+          <StatCard
+            value={totalDaysWorked.toFixed(1)}
+            label={t('wages.daysWorked')}
+            color={colors.primary}
+            icon="calendar-check"
+          />
+          <StatCard
+            value={calculations.length}
+            label={t('wages.employees')}
+            icon="account-group"
+          />
         </View>
       </Surface>
 
@@ -204,28 +193,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   summaryCard: {
-    flexDirection: 'row',
     margin: sizes.padding,
     padding: sizes.padding,
     borderRadius: sizes.borderRadius,
     backgroundColor: colors.surface,
   },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: sizes.paddingSmall,
-  },
-  summaryLabel: {
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontWeight: 'bold',
-    color: colors.primary,
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: sizes.paddingSmall,
   },
   list: {
     padding: sizes.padding,

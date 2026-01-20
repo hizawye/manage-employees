@@ -17,6 +17,7 @@ import { WageType, EmployeeStatus } from '../../../../src/models';
 import { colors, sizes } from '../../../../src/constants/theme';
 import { t } from '../../../../src/i18n';
 
+// Zod schema moved outside component for performance
 const employeeSchema = z.object({
   name: z.string().min(1, 'validation.nameRequired'),
   phone: z.string().min(1, 'validation.phoneRequired'),

@@ -1,7 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, ActivityIndicator, Chip, IconButton } from 'react-native-paper';
-import { useEmployees } from '../../../src/hooks';
+import { Text, Card, ActivityIndicator, IconButton } from 'react-native-paper';
+import { useEmployees, useRefresh } from '../../../src/hooks';
+import { useAuth } from '../../../src/auth/useAuth';
+import { StatusChip } from '../../../src/components';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { Attendance, AttendanceStatus, Employee, EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
@@ -15,11 +17,11 @@ interface AttendanceWithEmployee extends Attendance {
 }
 
 export default function AttendanceHistoryScreen() {
+  const { user } = useAuth();
   const { employees } = useEmployees(EmployeeStatus.ACTIVE);
   const [weekOffset, setWeekOffset] = useState(0);
   const [attendance, setAttendance] = useState<AttendanceWithEmployee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const dateRange = useMemo(() => {
     const baseDate = addWeeks(new Date(), weekOffset);
@@ -35,9 +37,11 @@ export default function AttendanceHistoryScreen() {
   }, [employees]);
 
   const loadAttendance = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      const records = await getAttendanceInRange(dateRange.start, dateRange.end);
+      const records = await getAttendanceInRange(user.id, dateRange.start, dateRange.end);
       const withNames = records.map((record) => ({
         ...record,
         employeeName: employeeMap.get(record.employeeId)?.name || 'Unknown',
@@ -48,7 +52,7 @@ export default function AttendanceHistoryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, employeeMap]);
+  }, [user, dateRange, employeeMap]);
 
   useEffect(() => {
     if (employees.length > 0) {
@@ -56,39 +60,9 @@ export default function AttendanceHistoryScreen() {
     }
   }, [loadAttendance, employees.length]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadAttendance();
-    setRefreshing(false);
-  }, [loadAttendance]);
+  const { refreshing, onRefresh } = useRefresh(loadAttendance);
 
-  const getStatusColor = (status: AttendanceStatus) => {
-    switch (status) {
-      case AttendanceStatus.PRESENT:
-        return colors.present;
-      case AttendanceStatus.HALF_DAY:
-        return colors.halfDay;
-      case AttendanceStatus.ABSENT:
-        return colors.absent;
-      default:
-        return colors.textLight;
-    }
-  };
-
-  const getStatusLabel = (status: AttendanceStatus) => {
-    switch (status) {
-      case AttendanceStatus.PRESENT:
-        return t('attendance.present');
-      case AttendanceStatus.HALF_DAY:
-        return t('attendance.halfDay');
-      case AttendanceStatus.ABSENT:
-        return t('attendance.absent');
-      default:
-        return status;
-    }
-  };
-
-  const renderAttendance = ({ item }: { item: AttendanceWithEmployee }) => (
+  const renderAttendance = useCallback(({ item }: { item: AttendanceWithEmployee }) => (
     <Card style={styles.card}>
       <Card.Content style={styles.cardContent}>
         <View style={styles.info}>
@@ -99,16 +73,10 @@ export default function AttendanceHistoryScreen() {
             {formatDate(item.date)}
           </Text>
         </View>
-        <Chip
-          compact
-          style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
-          textStyle={styles.statusText}
-        >
-          {getStatusLabel(item.status)}
-        </Chip>
+        <StatusChip type="attendance" status={item.status} />
       </Card.Content>
     </Card>
-  );
+  ), []);
 
   if (loading && !refreshing) {
     return (

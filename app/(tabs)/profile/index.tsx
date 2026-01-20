@@ -4,6 +4,7 @@ import { Text, Surface, ActivityIndicator, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEmployees } from '../../../src/hooks';
+import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
@@ -111,13 +112,17 @@ export default function ProfileScreen() {
     setRefreshing(false);
   }, [loadStats]);
 
-  const weeklyAttendanceRate = attendanceStats.weeklyTotal > 0
-    ? Math.round((attendanceStats.weeklyPresent / attendanceStats.weeklyTotal) * 100)
-    : 0;
+  const weeklyAttendanceRate = useMemo(() => {
+    return attendanceStats.weeklyTotal > 0
+      ? Math.round((attendanceStats.weeklyPresent / attendanceStats.weeklyTotal) * 100)
+      : 0;
+  }, [attendanceStats.weeklyPresent, attendanceStats.weeklyTotal]);
 
-  const monthlyAttendanceRate = attendanceStats.monthlyTotal > 0
-    ? Math.round((attendanceStats.monthlyPresent / attendanceStats.monthlyTotal) * 100)
-    : 0;
+  const monthlyAttendanceRate = useMemo(() => {
+    return attendanceStats.monthlyTotal > 0
+      ? Math.round((attendanceStats.monthlyPresent / attendanceStats.monthlyTotal) * 100)
+      : 0;
+  }, [attendanceStats.monthlyPresent, attendanceStats.monthlyTotal]);
 
   if ((loadingAll || loadingActive || loadingStats) && !refreshing) {
     return (
@@ -148,30 +153,23 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text variant="headlineMedium" style={styles.statNumber}>
-              {allEmployees.length}
-            </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>
-              {t('profile.totalEmployees')}
-            </Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text variant="headlineMedium" style={[styles.statNumber, { color: colors.success }]}>
-              {activeEmployees.length}
-            </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>
-              {t('profile.activeEmployees')}
-            </Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text variant="headlineMedium" style={[styles.statNumber, { color: colors.error }]}>
-              {inactiveCount}
-            </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>
-              {t('profile.inactiveEmployees')}
-            </Text>
-          </View>
+          <StatCard
+            value={allEmployees.length}
+            label={t('profile.totalEmployees')}
+            icon="account-group"
+          />
+          <StatCard
+            value={activeEmployees.length}
+            label={t('profile.activeEmployees')}
+            color={colors.success}
+            icon="account-check"
+          />
+          <StatCard
+            value={inactiveCount}
+            label={t('profile.inactiveEmployees')}
+            color={colors.error}
+            icon="account-off"
+          />
         </View>
       </Surface>
 

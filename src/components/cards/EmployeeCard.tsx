@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Chip } from 'react-native-paper';
-import { Employee, EmployeeStatus, WageType } from '../../models';
+import { Card, Text } from 'react-native-paper';
+import { Employee, WageType } from '../../models';
+import { StatusChip } from '../common/StatusChip';
 import { colors, sizes } from '../../constants/theme';
 import { formatCurrency } from '../../utils/dateUtils';
 import { t } from '../../i18n';
@@ -24,20 +25,7 @@ function EmployeeCardComponent({ employee, onPress }: EmployeeCardProps) {
               {employee.role}
             </Text>
           </View>
-          <Chip
-            compact
-            style={[
-              styles.statusChip,
-              employee.status === EmployeeStatus.ACTIVE
-                ? styles.activeChip
-                : styles.inactiveChip,
-            ]}
-            textStyle={styles.statusText}
-          >
-            {employee.status === EmployeeStatus.ACTIVE
-              ? t('employee.active')
-              : t('employee.inactive')}
-          </Chip>
+          <StatusChip type="employee" status={employee.status} compact={false} />
         </View>
         <View style={styles.wageInfo}>
           <Text variant="bodySmall" style={styles.wageLabel}>
@@ -86,21 +74,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     lineHeight: 20,
-  },
-  statusChip: {
-    height: 28,
-    borderRadius: sizes.borderRadius,
-  },
-  statusText: {
-    fontSize: 11,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  activeChip: {
-    backgroundColor: colors.success,
-  },
-  inactiveChip: {
-    backgroundColor: colors.textLight,
   },
   wageInfo: {
     flexDirection: 'row',

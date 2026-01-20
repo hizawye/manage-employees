@@ -18,6 +18,7 @@ import { FormInput } from '../../../src/components';
 
 const isRTL = I18nManager.isRTL;
 
+// Zod schema moved outside component for performance
 const employeeSchema = z.object({
   name: z.string().min(1, 'validation.nameRequired'),
   phone: z.string().min(1, 'validation.phoneRequired'),

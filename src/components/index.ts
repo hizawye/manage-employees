@@ -3,9 +3,13 @@ export { LoadingSpinner } from './common/LoadingSpinner';
 export { EmptyState } from './common/EmptyState';
 export { ErrorMessage } from './common/ErrorMessage';
 export { ErrorBoundary } from './common/ErrorBoundary';
+export { StatusChip } from './common/StatusChip';
+export { DateSelector } from './common/DateSelector';
+export { InfoRow } from './common/InfoRow';
 
 // Card components
 export { EmployeeCard } from './cards/EmployeeCard';
+export { StatCard } from './cards/StatCard';
 
 // Form components
 export { FormInput } from './forms/FormInput';

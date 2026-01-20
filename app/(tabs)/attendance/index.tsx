@@ -11,7 +11,7 @@ import {
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useEmployees, useAttendanceByDate } from '../../../src/hooks';
+import { useEmployees, useAttendanceByDate, useRefresh } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
@@ -23,7 +23,6 @@ export default function AttendanceScreen() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
-  const [refreshing, setRefreshing] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   // Refresh employees when screen comes into focus
@@ -44,11 +43,7 @@ export default function AttendanceScreen() {
     return map;
   }, [attendance]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
-  }, [refresh]);
+  const { refreshing, onRefresh } = useRefresh(refresh);
 
   const changeDate = (days: number) => {
     const current = parseISO(selectedDate);
@@ -69,7 +64,7 @@ export default function AttendanceScreen() {
     }
   };
 
-  const renderEmployee = ({ item }: { item: Employee }) => {
+  const renderEmployee = useCallback(({ item }: { item: Employee }) => {
     const currentAttendance = attendanceMap.get(item.id);
     const isSaving = savingId === item.id;
 
@@ -145,7 +140,7 @@ export default function AttendanceScreen() {
         </Card.Content>
       </Card>
     );
-  };
+  }, [attendanceMap, savingId, handleMarkAttendance]);
 
   const loading = loadingEmployees || loadingAttendance;
 

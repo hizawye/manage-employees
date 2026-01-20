@@ -6,11 +6,12 @@ import {
   SegmentedButtons,
   ActivityIndicator,
   Surface,
-  Chip,
 } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
-import { useEmployee } from '../../../src/hooks';
-import { WageCalculation, WageDetail, AttendanceStatus, WageType } from '../../../src/models';
+import { useEmployee, useRefresh } from '../../../src/hooks';
+import { useAuth } from '../../../src/auth/useAuth';
+import { StatusChip } from '../../../src/components';
+import { WageCalculation, WageDetail, WageType } from '../../../src/models';
 import { colors, sizes } from '../../../src/constants/theme';
 import {
   formatCurrency,
@@ -25,18 +26,18 @@ type PeriodType = 'week' | 'month';
 
 export default function EmployeeWageDetailScreen() {
   const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
+  const { user } = useAuth();
   const { employee, loading: loadingEmployee } = useEmployee(employeeId);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const dateRange = useMemo(() => {
     return period === 'week' ? getWeekRange() : getMonthRange();
   }, [period]);
 
   const loadWages = useCallback(async () => {
-    if (!employee) {
+    if (!employee || !user) {
       setWageData(null);
       setLoading(false);
       return;
@@ -45,6 +46,7 @@ export default function EmployeeWageDetailScreen() {
     try {
       setLoading(true);
       const result = await calculateWagesForPeriod(
+        user.id,
         employee,
         dateRange.start,
         dateRange.end
@@ -55,65 +57,29 @@ export default function EmployeeWageDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [employee, dateRange]);
+  }, [employee, user, dateRange]);
 
   useEffect(() => {
     loadWages();
   }, [loadWages]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadWages();
-    setRefreshing(false);
-  }, [loadWages]);
+  const { refreshing, onRefresh } = useRefresh(loadWages);
 
-  const getStatusColor = (status: AttendanceStatus) => {
-    switch (status) {
-      case AttendanceStatus.PRESENT:
-        return colors.present;
-      case AttendanceStatus.HALF_DAY:
-        return colors.halfDay;
-      case AttendanceStatus.ABSENT:
-        return colors.absent;
-      default:
-        return colors.textLight;
-    }
-  };
-
-  const getStatusLabel = (status: AttendanceStatus) => {
-    switch (status) {
-      case AttendanceStatus.PRESENT:
-        return t('attendance.present');
-      case AttendanceStatus.HALF_DAY:
-        return t('attendance.halfDay');
-      case AttendanceStatus.ABSENT:
-        return t('attendance.absent');
-      default:
-        return status;
-    }
-  };
-
-  const renderWageDetail = ({ item }: { item: WageDetail }) => (
+  const renderWageDetail = useCallback(({ item }: { item: WageDetail }) => (
     <Card style={styles.detailCard}>
       <Card.Content style={styles.detailContent}>
         <View style={styles.detailInfo}>
           <Text variant="bodyMedium" style={styles.detailDate}>
             {formatDateShort(item.date)}
           </Text>
-          <Chip
-            compact
-            style={[styles.statusChip, { backgroundColor: getStatusColor(item.status) }]}
-            textStyle={styles.statusText}
-          >
-            {getStatusLabel(item.status)}
-          </Chip>
+          <StatusChip type="attendance" status={item.status} />
         </View>
         <Text variant="bodyMedium" style={styles.detailWage}>
           {formatCurrency(item.wageEarned)}
         </Text>
       </Card.Content>
     </Card>
-  );
+  ), []);
 
   if ((loadingEmployee || loading) && !refreshing) {
     return (
@@ -320,13 +286,6 @@ const styles = StyleSheet.create({
   },
   detailDate: {
     fontWeight: '500',
-  },
-  statusChip: {
-    height: 24,
-  },
-  statusText: {
-    fontSize: 10,
-    color: '#fff',
   },
   detailWage: {
     fontWeight: '600',
