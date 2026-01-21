@@ -112,7 +112,7 @@ export default function HistoryScreen() {
 
             <View style={[styles.header, { backgroundColor: colors.surface }]}>
                 <IconButton
-                    icon={I18nManager.isRTL ? "arrow-right" : "arrow-left"}
+                    icon="arrow-left"
                     onPress={() => router.back()}
                 />
                 <Text variant="titleLarge" style={styles.headerTitle}>
