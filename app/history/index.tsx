@@ -2,11 +2,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Surface, ActivityIndicator, Chip, useTheme, IconButton } from 'react-native-paper';
 import { Stack, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useAuth } from '../../src/auth/useAuth';
 import { getLogs } from '../../src/database/repositories';
-import { Log, LogActionType } from '../../src/models';
+import { Log } from '../../src/models';
 import { t } from '../../src/i18n';
 import { sizes } from '../../src/constants/theme';
 
@@ -31,25 +32,7 @@ export default function HistoryScreen() {
             const pageSize = 50;
             const offset = refresh ? 0 : page * pageSize;
 
-            let actionFilter: string | undefined;
-            if (filter === 'employee') {
-                // We can't easily filter strictly by ALL employee actions in one SQL query with single value
-                // So for now we might fetch all and filter client side OR improve repo to support IN clause
-                // For MVP, let's fetch more and filter client side if repo doesn't support complex filters yet
-                // OR better: we passed `entityType` to logs! let's use that if we updated the repo logic.
-                // Wait, repo uses `action` column filter. Let's keep it simple for now.
-                // We will just fetch all and filter in memory for this simple implementation, 
-                // or update repo to filter by entity_type.
-            }
-
-            // Let's improve Repo to accept partial match or just fetch all for now
-            // Re-reading repo: it does exact match on `action`. 
-            // Let's update Repo to filter by `entity_type` actually? 
-            // Actually the plan said "filters". 
-            // Let's stick to client side filtering for simplicity of initial implementation if dataset is small,
-            // but proper way is repo update. 
-            // Wait, I can just not pass filter to repo and filter locally for this iteration.
-
+            // Note: Filtering is currently done client-side for simplicity
             const newLogs = await getLogs(user.id, pageSize, offset);
 
             let filteredLogs = newLogs;
@@ -79,7 +62,7 @@ export default function HistoryScreen() {
 
     useEffect(() => {
         loadLogs(true);
-    }, [filter]); // Reload when filter changes
+    }, [filter]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -92,7 +75,7 @@ export default function HistoryScreen() {
 
         if (item.action.includes('create') || item.action.includes('mark')) {
             icon = 'plus-circle-outline';
-            iconColor = colors.tertiary; // Use success-like color if available or safe default
+            iconColor = colors.tertiary;
         } else if (item.action.includes('update')) {
             icon = 'pencil-circle-outline';
             iconColor = colors.secondary;
@@ -124,18 +107,15 @@ export default function HistoryScreen() {
     }, [colors]);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <Stack.Screen
-                options={{
-                    headerShown: true,
-                    title: t('history.title'),
-                    headerStyle: { backgroundColor: colors.surface },
-                    headerTintColor: colors.onSurface,
-                    headerLeft: () => (
-                        <IconButton icon="arrow-left" onPress={() => router.back()} />
-                    ),
-                }}
-            />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+            <Stack.Screen options={{ headerShown: false }} />
+
+            <View style={[styles.header, { backgroundColor: colors.surface }]}>
+                <IconButton icon="arrow-left" onPress={() => router.back()} />
+                <Text variant="titleLarge" style={styles.headerTitle}>
+                    {t('history.title')}
+                </Text>
+            </View>
 
             <View style={styles.filterRow}>
                 <Chip
@@ -184,7 +164,7 @@ export default function HistoryScreen() {
                     }
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -192,11 +172,25 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        paddingVertical: 8,
+        elevation: 2,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(0,0,0,0.1)',
+    },
+    headerTitle: {
+        fontWeight: '600',
+        marginLeft: 8,
+    },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        minHeight: 200,
     },
     filterRow: {
         flexDirection: 'row',
