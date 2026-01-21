@@ -28,6 +28,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
   console.log('Opening database...');
+
   const db = await SQLite.openDatabaseAsync('employees.db');
 
   console.log('Setting PRAGMA foreign_keys...');

@@ -17,7 +17,7 @@ const isRTL = I18nManager.isRTL;
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isGuest } = useAuth();
   const { employees: allEmployees, loading: loadingAll } = useEmployees();
   const { employees: activeEmployees, loading: loadingActive } = useEmployees(EmployeeStatus.ACTIVE);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,6 +144,29 @@ export default function ProfileScreen() {
         />
       }
     >
+      {/* Guest Account Conversion Card */}
+      {isGuest && (
+        <Surface style={[styles.section, styles.guestCard]} elevation={3}>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons name="account-convert" size={26} color={colors.primary} />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              {t('profile.createAccountToSave')}
+            </Text>
+          </View>
+          <Text variant="bodyMedium" style={styles.guestInfo}>
+            {t('profile.guestAccountInfo')}
+          </Text>
+          <Button
+            mode="contained"
+            icon="account-plus"
+            onPress={() => router.push('/(auth)/convert-guest')}
+            style={styles.createAccountButton}
+          >
+            {t('auth.createAccount')}
+          </Button>
+        </Surface>
+      )}
+
       {/* Employee Stats */}
       <Surface style={styles.section} elevation={2}>
         <View style={styles.sectionHeader}>
@@ -410,6 +433,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   logoutButton: {
+    marginTop: sizes.paddingSmall,
+  },
+  guestCard: {
+    backgroundColor: colors.surface,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  guestInfo: {
+    color: colors.textSecondary,
+    marginBottom: sizes.padding,
+    lineHeight: 22,
+  },
+  createAccountButton: {
     marginTop: sizes.paddingSmall,
   },
 });

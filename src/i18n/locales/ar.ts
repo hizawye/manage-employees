@@ -131,6 +131,8 @@ export default {
     arabic: 'العربية',
     logout: 'تسجيل الخروج',
     loggedInAs: 'مسجل الدخول كـ',
+    createAccountToSave: 'إنشاء حساب لحفظ البيانات',
+    guestAccountInfo: 'أنت تستخدم حساب ضيف. قم بإنشاء حساب دائم لحفظ بياناتك.',
   },
 
   // Authentication - المصادقة
@@ -156,5 +158,13 @@ export default {
     passwordsDontMatch: 'كلمات المرور غير متطابقة',
     accountCreated: 'تم إنشاء الحساب بنجاح',
     loginSuccess: 'تم تسجيل الدخول بنجاح',
+    continueAsGuest: 'متابعة كضيف',
+    guestMode: 'وضع الضيف',
+    createAccount: 'إنشاء حساب',
+    saveDataPermanently: 'احفظ بياناتك بشكل دائم',
+    convertGuest: 'تحويل إلى حساب',
+    convertingGuest: 'جاري التحويل...',
+    guestConverted: 'تم تحويل حسابك بنجاح',
+    notGuest: 'أنت لست مسجلاً كضيف',
   },
 };

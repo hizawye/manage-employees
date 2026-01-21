@@ -131,6 +131,8 @@ export default {
     arabic: 'Arabic',
     logout: 'Logout',
     loggedInAs: 'Logged in as',
+    createAccountToSave: 'Create Account to Save Data',
+    guestAccountInfo: 'You are using a guest account. Create a permanent account to save your data.',
   },
 
   // Authentication
@@ -156,5 +158,13 @@ export default {
     passwordsDontMatch: 'Passwords do not match',
     accountCreated: 'Account created successfully',
     loginSuccess: 'Logged in successfully',
+    continueAsGuest: 'Continue as Guest',
+    guestMode: 'Guest Mode',
+    createAccount: 'Create Account',
+    saveDataPermanently: 'Save Your Data Permanently',
+    convertGuest: 'Convert to Account',
+    convertingGuest: 'Converting...',
+    guestConverted: 'Account converted successfully',
+    notGuest: 'You are not logged in as guest',
   },
 };

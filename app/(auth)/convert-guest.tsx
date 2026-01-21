@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
-import { useRouter, Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,52 +9,56 @@ import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
 import { colors, sizes } from '../../src/constants/theme';
 
-const loginSchema = z.object({
-  username: z.string().min(1, 'validation.required'),
-  password: z.string().min(1, 'validation.required'),
+const convertGuestSchema = z.object({
+  username: z.string().min(3, 'auth.usernameTooShort').max(20, 'auth.usernameTooLong'),
+  password: z.string().min(8, 'auth.passwordTooShort'),
+  confirmPassword: z.string().min(8, 'auth.passwordTooShort'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'auth.passwordsDontMatch',
+  path: ['confirmPassword'],
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type ConvertGuestFormData = z.infer<typeof convertGuestSchema>;
 
-export default function LoginScreen() {
+export default function ConvertGuestScreen() {
   const router = useRouter();
-  const { login, continueAsGuest } = useAuth();
+  const { convertGuestToUser, isGuest } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const { control, handleSubmit, formState: { errors } } = useForm<ConvertGuestFormData>({
+    resolver: zodResolver(convertGuestSchema),
     defaultValues: {
       username: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  // Redirect if not guest (use useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!isGuest) {
+      router.replace('/(tabs)/profile');
+    }
+  }, [isGuest, router]);
+
+  // Show nothing while redirecting
+  if (!isGuest) {
+    return null;
+  }
+
+  const onSubmit = async (data: ConvertGuestFormData) => {
     try {
       setLoading(true);
       setError('');
-      await login(data.username, data.password);
-      router.replace('/(tabs)/employees');
-    } catch (err: any) {
-      setError(err.message || t('auth.invalidCredentials'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGuestLogin = async () => {
-    try {
-      setGuestLoading(true);
-      setError('');
-      await continueAsGuest();
-      router.replace('/(tabs)/employees');
+      await convertGuestToUser(data.username, data.password);
+      router.replace('/(tabs)/profile');
     } catch (err: any) {
       setError(err.message || t('common.error'));
     } finally {
-      setGuestLoading(false);
+      setLoading(false);
     }
   };
 
@@ -66,7 +70,10 @@ export default function LoginScreen() {
       <View style={styles.content}>
         <Surface style={styles.formSurface} elevation={2}>
           <Text variant="headlineMedium" style={styles.title}>
-            {t('auth.login')}
+            {t('auth.createAccount')}
+          </Text>
+          <Text variant="bodyMedium" style={styles.subtitle}>
+            {t('auth.saveDataPermanently')}
           </Text>
 
           <Controller
@@ -118,31 +125,50 @@ export default function LoginScreen() {
             <Text style={styles.errorText}>{t(errors.password.message || '')}</Text>
           )}
 
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                mode="outlined"
+                label={t('auth.confirmPassword')}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={!!errors.confirmPassword}
+                style={styles.input}
+                secureTextEntry={!showConfirmPassword}
+                right={
+                  <TextInput.Icon
+                    icon={showConfirmPassword ? 'eye-off' : 'eye'}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  />
+                }
+                disabled={loading}
+              />
+            )}
+          />
+          {errors.confirmPassword && (
+            <Text style={styles.errorText}>{t(errors.confirmPassword.message || '')}</Text>
+          )}
+
           <Button
             mode="contained"
             onPress={handleSubmit(onSubmit)}
             loading={loading}
             disabled={loading}
-            style={styles.loginButton}
+            style={styles.convertButton}
           >
-            {loading ? t('auth.loggingIn') : t('auth.login')}
+            {loading ? t('auth.convertingGuest') : t('auth.convertGuest')}
           </Button>
-
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>{t('auth.dontHaveAccount')} </Text>
-            <Link href="/(auth)/signup" asChild>
-              <Text style={styles.signupLink}>{t('auth.signupLink')}</Text>
-            </Link>
-          </View>
 
           <Button
             mode="text"
-            onPress={handleGuestLogin}
-            loading={guestLoading}
-            disabled={loading || guestLoading}
-            style={styles.guestButton}
+            onPress={() => router.back()}
+            disabled={loading}
+            style={styles.cancelButton}
           >
-            {t('auth.continueAsGuest')}
+            {t('common.cancel')}
           </Button>
         </Surface>
       </View>
@@ -178,9 +204,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   title: {
-    marginBottom: sizes.paddingLarge,
+    marginBottom: sizes.paddingSmall,
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  subtitle: {
+    marginBottom: sizes.paddingLarge,
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
   input: {
     marginBottom: sizes.paddingSmall,
@@ -191,24 +222,11 @@ const styles = StyleSheet.create({
     marginBottom: sizes.padding,
     marginTop: -4,
   },
-  loginButton: {
+  convertButton: {
     marginTop: sizes.padding,
-    marginBottom: sizes.paddingLarge,
+    marginBottom: sizes.paddingSmall,
   },
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signupText: {
-    fontSize: 14,
-  },
-  signupLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  guestButton: {
-    marginTop: sizes.padding,
+  cancelButton: {
+    marginTop: sizes.paddingSmall,
   },
 });
