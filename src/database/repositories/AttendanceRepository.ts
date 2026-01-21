@@ -63,8 +63,7 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
     action: LogActionType.MARK_ATTENDANCE,
     description: `Marked attendance for ${employee?.name || input.employeeId}: ${input.status}`,
     entityType: 'attendance',
-    entityId: id,
-    details: JSON.stringify(input),
+    details: JSON.stringify({ ...input, employeeName: employee?.name }),
   });
 
   return {
@@ -158,12 +157,26 @@ export async function updateAttendance(userId: number, id: string, input: Update
     values
   );
 
+  // Get attendance to find employeeId, then get Employee Name
+  // Note: 'id' here is attendance id. We need to fetch attendance first if we want employeeId, 
+  // but we might not want to do extra DB calls if performance is concern. 
+  // Use a targeted query just for user/log if needed.
+  // Actually, let's fetch the attendance record first to get employee_id
+  const attendance = await db.getFirstAsync<{ employee_id: string }>(
+    'SELECT employee_id FROM attendance WHERE id = ?', [id]
+  );
+  let employeeName = 'Unknown';
+  if (attendance) {
+    const employee = await getEmployeeById(userId, attendance.employee_id);
+    employeeName = employee?.name || 'Unknown';
+  }
+
   await createLog(userId, {
     action: LogActionType.UPDATE_ATTENDANCE,
     description: `Updated attendance ${id}`,
     entityType: 'attendance',
     entityId: id,
-    details: JSON.stringify(input),
+    details: JSON.stringify({ ...input, employeeName }),
   });
 }
 

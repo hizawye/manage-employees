@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useAuth } from '../../src/auth/useAuth';
 import { getLogs } from '../../src/database/repositories';
-import { Log } from '../../src/models';
+import { Log, LogActionType } from '../../src/models';
 import { t } from '../../src/i18n';
 import { sizes } from '../../src/constants/theme';
 
@@ -69,6 +69,35 @@ export default function HistoryScreen() {
         loadLogs(true);
     }, [loadLogs]);
 
+    const getLogMessage = useCallback((item: Log) => {
+        try {
+            const details = item.details ? JSON.parse(item.details) : {};
+            const name = details.employeeName || details.name || item.entityId?.substring(0, 8);
+
+            let status = details.status;
+            if (status === 'present') status = t('attendance.present');
+            else if (status === 'absent') status = t('attendance.absent');
+            else if (status === 'half_day') status = t('attendance.halfDay');
+
+            switch (item.action) {
+                case LogActionType.CREATE_EMPLOYEE:
+                    return t('history.logTemplates.create_employee', { name });
+                case LogActionType.UPDATE_EMPLOYEE:
+                    return t('history.logTemplates.update_employee', { name });
+                case LogActionType.DELETE_EMPLOYEE:
+                    return t('history.logTemplates.delete_employee', { name });
+                case LogActionType.MARK_ATTENDANCE:
+                    return t('history.logTemplates.mark_attendance', { name, status });
+                case LogActionType.UPDATE_ATTENDANCE:
+                    return t('history.logTemplates.update_attendance', { name, status });
+                default:
+                    return item.description;
+            }
+        } catch (e) {
+            return item.description;
+        }
+    }, []);
+
     const renderLogItem = useCallback(({ item }: { item: Log }) => {
         let icon = 'circle-small';
         let iconColor = colors.primary;
@@ -95,16 +124,16 @@ export default function HistoryScreen() {
                     </View>
                     {item.entityType && (
                         <Chip style={{ height: 24 }} textStyle={{ fontSize: 10, lineHeight: 10, marginVertical: 0, marginHorizontal: 8 }}>
-                            {item.entityType}
+                            {item.entityType === 'employee' ? t('history.filterEmployee') : item.entityType === 'attendance' ? t('history.filterAttendance') : item.entityType}
                         </Chip>
                     )}
                 </View>
                 <Text variant="bodyMedium" style={styles.logDescription}>
-                    {item.description}
+                    {getLogMessage(item)}
                 </Text>
             </Surface>
         );
-    }, [colors]);
+    }, [colors, getLogMessage]);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>

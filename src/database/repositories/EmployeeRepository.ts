@@ -71,7 +71,7 @@ export async function createEmployee(userId: number, input: CreateEmployeeInput)
     description: `Added employee ${input.name}`,
     entityType: 'employee',
     entityId: id,
-    details: JSON.stringify(input),
+    details: JSON.stringify({ ...input, employeeName: input.name }),
   });
 
   return {
@@ -159,12 +159,16 @@ export async function updateEmployee(userId: number, id: string, input: UpdateEm
     values
   );
 
+  // Fetch employee to get name for log
+  const employee = await getEmployeeById(userId, id);
+  const employeeName = employee?.name || 'Unknown';
+
   await createLog(userId, {
     action: LogActionType.UPDATE_EMPLOYEE,
     description: `Updated employee ${id}`,
     entityType: 'employee',
     entityId: id,
-    details: JSON.stringify(input),
+    details: JSON.stringify({ ...input, employeeName }),
   });
 }
 
