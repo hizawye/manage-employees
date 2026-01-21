@@ -127,6 +127,7 @@ export default function HistoryScreen() {
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Stack.Screen
                 options={{
+                    headerShown: true,
                     title: t('history.title'),
                     headerStyle: { backgroundColor: colors.surface },
                     headerTintColor: colors.onSurface,
