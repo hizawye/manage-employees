@@ -262,6 +262,25 @@ export default function ProfileScreen() {
         </View>
       </Surface>
 
+
+      {/* History Link */}
+      <Surface style={styles.section} elevation={2}>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons name="history" size={26} color={colors.primary} />
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            {t('history.title')}
+          </Text>
+        </View>
+        <Button
+          mode="outlined"
+          onPress={() => router.push('/history')}
+          icon="arrow-right"
+          contentStyle={{ flexDirection: 'row-reverse' }}
+        >
+          {t('attendance.viewHistory')}
+        </Button>
+      </Surface>
+
       {/* Theme Preference */}
       <Surface style={styles.section} elevation={2}>
         <View style={styles.sectionHeader}>
@@ -330,7 +349,7 @@ export default function ProfileScreen() {
           {t('profile.logout')}
         </Button>
       </Surface>
-    </ScrollView>
+    </ScrollView >
   );
 }
 

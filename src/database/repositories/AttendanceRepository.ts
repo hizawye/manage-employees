@@ -5,7 +5,10 @@ import {
   AttendanceStatus,
   CreateAttendanceInput,
   UpdateAttendanceInput,
+  LogActionType,
 } from '../../models';
+import { createLog } from './LogRepository';
+import { getEmployeeById } from './EmployeeRepository';
 
 interface AttendanceRow {
   id: string;
@@ -50,8 +53,19 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
       input.notes || null,
       now,
       now,
+      now,
     ]
   );
+
+  // Get employee name for better log description
+  const employee = await getEmployeeById(userId, input.employeeId);
+  await createLog(userId, {
+    action: LogActionType.MARK_ATTENDANCE,
+    description: `Marked attendance for ${employee?.name || input.employeeId}: ${input.status}`,
+    entityType: 'attendance',
+    entityId: id,
+    details: JSON.stringify(input),
+  });
 
   return {
     ...input,
@@ -143,6 +157,14 @@ export async function updateAttendance(userId: number, id: string, input: Update
     `UPDATE attendance SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
+
+  await createLog(userId, {
+    action: LogActionType.UPDATE_ATTENDANCE,
+    description: `Updated attendance ${id}`,
+    entityType: 'attendance',
+    entityId: id,
+    details: JSON.stringify(input),
+  });
 }
 
 export async function deleteAttendance(userId: number, id: string): Promise<void> {

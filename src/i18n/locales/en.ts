@@ -175,4 +175,12 @@ export default {
     guestConverted: 'Account converted successfully',
     notGuest: 'You are not logged in as guest',
   },
+  history: {
+    title: 'Audit Log',
+    empty: 'No activity logs found',
+    filterAll: 'All Actions',
+    filterEmployee: 'Employees',
+    filterAttendance: 'Attendance',
+    details: 'Details',
+  },
 };
