@@ -175,4 +175,12 @@ export default {
     guestConverted: 'تم تحويل حسابك بنجاح',
     notGuest: 'أنت لست مسجلاً كضيف',
   },
+  history: {
+    title: 'سجل النشاط',
+    empty: 'لا توجد سجلات نشاط',
+    filterAll: 'كل الأنشطة',
+    filterEmployee: 'الموظفين',
+    filterAttendance: 'الحضور',
+    details: 'التفاصيل',
+  },
 };
