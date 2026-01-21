@@ -6,7 +6,9 @@ import {
   WageType,
   CreateEmployeeInput,
   UpdateEmployeeInput,
+  LogActionType,
 } from '../../models';
+import { createLog } from './LogRepository';
 
 interface EmployeeRow {
   id: string;
@@ -60,8 +62,17 @@ export async function createEmployee(userId: number, input: CreateEmployeeInput)
       input.notes || null,
       now,
       now,
+      now,
     ]
   );
+
+  await createLog(userId, {
+    action: LogActionType.CREATE_EMPLOYEE,
+    description: `Added employee ${input.name}`,
+    entityType: 'employee',
+    entityId: id,
+    details: JSON.stringify({ ...input, employeeName: input.name }),
+  });
 
   return {
     ...input,
@@ -147,11 +158,34 @@ export async function updateEmployee(userId: number, id: string, input: UpdateEm
     `UPDATE employees SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
+
+  // Fetch employee to get name for log
+  const employee = await getEmployeeById(userId, id);
+  const employeeName = employee?.name || 'Unknown';
+
+  await createLog(userId, {
+    action: LogActionType.UPDATE_EMPLOYEE,
+    description: `Updated employee ${id}`,
+    entityType: 'employee',
+    entityId: id,
+    details: JSON.stringify({ ...input, employeeName }),
+  });
 }
 
 export async function deleteEmployee(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
+  const employee = await getEmployeeById(userId, id);
   await db.runAsync('DELETE FROM employees WHERE id = ? AND user_id = ?', [id, userId]);
+
+  if (employee) {
+    await createLog(userId, {
+      action: LogActionType.DELETE_EMPLOYEE,
+      description: `Deleted employee ${employee.name}`,
+      entityType: 'employee',
+      entityId: id,
+      details: JSON.stringify(employee),
+    });
+  }
 }
 
 export async function searchEmployees(userId: number, query: string): Promise<Employee[]> {

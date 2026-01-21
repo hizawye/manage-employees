@@ -175,4 +175,21 @@ export default {
     guestConverted: 'تم تحويل حسابك بنجاح',
     notGuest: 'أنت لست مسجلاً كضيف',
   },
+  history: {
+    title: 'سجل النشاط',
+    empty: 'لا توجد سجلات نشاط',
+    filterAll: 'كل الأنشطة',
+    filterEmployee: 'الموظفين',
+    filterAttendance: 'الحضور',
+    details: 'التفاصيل',
+    logTemplates: {
+      create_employee: 'تم إضافة الموظف: {{name}}',
+      update_employee: 'تم تحديث بيانات الموظف: {{name}}',
+      delete_employee: 'تم حذف الموظف: {{name}}',
+      mark_attendance: 'تسجيل حضور لـ {{name}}: {{status}}',
+      update_attendance: 'تحديث حضور لـ {{name}}: {{status}}',
+      delete_attendance: 'حذف سجل حضور',
+      unknown: 'إجراء غير معروف',
+    },
+  },
 };
