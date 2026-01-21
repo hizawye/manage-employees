@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
 import { Text, Surface, ActivityIndicator, Chip, useTheme, IconButton } from 'react-native-paper';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -89,7 +89,7 @@ export default function HistoryScreen() {
                 <View style={styles.logHeader}>
                     <View style={styles.logIconRow}>
                         <MaterialCommunityIcons name={icon as any} size={24} color={iconColor} />
-                        <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginLeft: 8 }}>
+                        <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginStart: 8 }}>
                             {format(new Date(item.createdAt), 'MMM dd, HH:mm')}
                         </Text>
                     </View>
@@ -111,7 +111,10 @@ export default function HistoryScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <View style={[styles.header, { backgroundColor: colors.surface }]}>
-                <IconButton icon="arrow-left" onPress={() => router.back()} />
+                <IconButton
+                    icon={I18nManager.isRTL ? "arrow-right" : "arrow-left"}
+                    onPress={() => router.back()}
+                />
                 <Text variant="titleLarge" style={styles.headerTitle}>
                     {t('history.title')}
                 </Text>
@@ -220,6 +223,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logDescription: {
-        marginLeft: 32, // Indent to align with text start of header
+        marginStart: 32, // Indent to align with text start of header (RTL aware)
     },
 });
