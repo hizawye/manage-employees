@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTheme } from 'react-native-paper';
 import { useAuth } from '../src/auth/useAuth';
-import { colors } from '../src/constants/theme';
 
 export default function Index() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function Index() {
   }, [user, isLoading]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );
@@ -30,6 +31,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
   },
 });

@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Text, Surface } from 'react-native-paper';
+import { StyleSheet, ViewStyle } from 'react-native';
+import { Text, Surface, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, sizes } from '../../constants/theme';
+import { sizes } from '../../constants/theme';
 
 interface StatCardProps {
   value: string | number;
@@ -17,15 +17,19 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   label,
   variant = 'default',
-  color = colors.primary,
+  color,
   icon,
   style,
 }) => {
+  const theme = useTheme();
+  const cardColor = color || theme.colors.primary;
+
   return (
     <Surface
       style={[
         styles.container,
-        variant === 'colored' && { backgroundColor: color },
+        { backgroundColor: theme.colors.surface },
+        variant === 'colored' && { backgroundColor: cardColor },
         style,
       ]}
       elevation={2}
@@ -34,7 +38,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         <MaterialCommunityIcons
           name={icon as any}
           size={24}
-          color={variant === 'colored' ? '#fff' : color}
+          color={variant === 'colored' ? '#fff' : cardColor}
           style={styles.icon}
         />
       )}
@@ -43,7 +47,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         style={[
           styles.value,
           variant === 'colored' && styles.coloredValue,
-          !variant && { color },
+          variant !== 'colored' && { color: cardColor },
         ]}
       >
         {value}
@@ -52,6 +56,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         variant="bodySmall"
         style={[
           styles.label,
+          { color: theme.colors.onSurfaceVariant },
           variant === 'colored' && styles.coloredLabel,
         ]}
       >
@@ -68,7 +73,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: sizes.padding,
     borderRadius: sizes.borderRadius,
-    backgroundColor: colors.surface,
     minHeight: 100,
   },
   icon: {
@@ -79,7 +83,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    color: colors.textSecondary,
     textAlign: 'center',
   },
   coloredValue: {

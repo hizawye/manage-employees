@@ -135,6 +135,14 @@ export default {
     guestAccountInfo: 'أنت تستخدم حساب ضيف. قم بإنشاء حساب دائم لحفظ بياناتك.',
   },
 
+  // Theme - المظهر
+  theme: {
+    preference: 'تفضيل المظهر',
+    light: 'فاتح',
+    dark: 'داكن',
+    auto: 'تلقائي (النظام)',
+  },
+
   // Authentication - المصادقة
   auth: {
     login: 'تسجيل الدخول',

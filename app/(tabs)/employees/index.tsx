@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
-import { FAB } from 'react-native-paper';
+import { FAB, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useRefresh, useDebounce } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import { t } from '../../../src/i18n';
 import { LoadingSpinner, EmptyState, ErrorMessage, EmployeeCard, SearchInput } from '../../../src/components';
 
@@ -13,6 +13,7 @@ const isRTL = I18nManager.isRTL;
 
 export default function EmployeeListScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { employees, loading, error, refresh, search } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -44,7 +45,7 @@ export default function EmployeeListScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SearchInput
         placeholder={t('employee.searchPlaceholder')}
         onChangeText={setSearchQuery}
@@ -81,7 +82,7 @@ export default function EmployeeListScreen() {
 
       <FAB
         icon="plus"
-        style={[styles.fab, isRTL && styles.fabRTL]}
+        style={[styles.fab, { backgroundColor: colors.primary }, isRTL && styles.fabRTL]}
         onPress={() => router.push('/employees/add')}
       />
     </View>
@@ -91,7 +92,6 @@ export default function EmployeeListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   searchBar: {
     margin: sizes.padding,
@@ -104,7 +104,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: sizes.padding,
     bottom: sizes.padding,
-    backgroundColor: colors.primary,
     borderRadius: sizes.borderRadiusLarge,
   },
   fabRTL: {

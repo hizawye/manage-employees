@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar, useTheme } from 'react-native-paper';
 import { useRouter, Link } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
-import { colors, sizes } from '../../src/constants/theme';
+import { sizes } from '../../src/constants/theme';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'validation.required'),
@@ -18,6 +18,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { login, continueAsGuest } = useAuth();
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
@@ -60,7 +61,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.content}>
@@ -88,7 +89,7 @@ export default function LoginScreen() {
             )}
           />
           {errors.username && (
-            <Text style={styles.errorText}>{t(errors.username.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.username.message || '')}</Text>
           )}
 
           <Controller
@@ -115,7 +116,7 @@ export default function LoginScreen() {
             )}
           />
           {errors.password && (
-            <Text style={styles.errorText}>{t(errors.password.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.password.message || '')}</Text>
           )}
 
           <Button
@@ -131,7 +132,7 @@ export default function LoginScreen() {
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>{t('auth.dontHaveAccount')} </Text>
             <Link href="/(auth)/signup" asChild>
-              <Text style={styles.signupLink}>{t('auth.signupLink')}</Text>
+              <Text style={[styles.signupLink, { color: colors.primary }]}>{t('auth.signupLink')}</Text>
             </Link>
           </View>
 
@@ -165,7 +166,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -175,7 +175,6 @@ const styles = StyleSheet.create({
   formSurface: {
     padding: sizes.paddingLarge,
     borderRadius: sizes.borderRadiusLarge,
-    backgroundColor: colors.surface,
   },
   title: {
     marginBottom: sizes.paddingLarge,
@@ -186,7 +185,6 @@ const styles = StyleSheet.create({
     marginBottom: sizes.paddingSmall,
   },
   errorText: {
-    color: colors.error,
     fontSize: 12,
     marginBottom: sizes.padding,
     marginTop: -4,
@@ -205,7 +203,6 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     fontSize: 14,
-    color: colors.primary,
     fontWeight: 'bold',
   },
   guestButton: {

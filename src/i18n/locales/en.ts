@@ -135,6 +135,14 @@ export default {
     guestAccountInfo: 'You are using a guest account. Create a permanent account to save your data.',
   },
 
+  // Theme
+  theme: {
+    preference: 'Theme Preference',
+    light: 'Light',
+    dark: 'Dark',
+    auto: 'Auto (System)',
+  },
+
   // Authentication
   auth: {
     login: 'Login',

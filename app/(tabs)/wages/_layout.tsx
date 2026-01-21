@@ -1,13 +1,15 @@
 import { Stack } from 'expo-router';
-import { colors } from '../../../src/constants/theme';
+import { useTheme } from 'react-native-paper';
 import { t } from '../../../src/i18n';
 
 export default function WagesLayout() {
+  const theme = useTheme();
+
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: theme.colors.primary },
+        headerTintColor: theme.colors.onPrimary,
         headerTitleStyle: { fontWeight: '600' },
         headerTitleAlign: 'center',
         headerBackTitleVisible: false,

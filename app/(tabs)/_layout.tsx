@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
 import { I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../src/constants/theme';
+import { useTheme } from 'react-native-paper';
 import { t } from '../../src/i18n';
 
 const isRTL = I18nManager.isRTL;
 
 export default function TabLayout() {
+  const theme = useTheme();
+
   // For RTL, we reverse the tab order so Profile appears on the right
   const tabs = [
     {
@@ -37,17 +39,17 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        headerStyle: { backgroundColor: colors.primary },
-        headerTintColor: '#fff',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        headerStyle: { backgroundColor: theme.colors.primary },
+        headerTintColor: theme.colors.onPrimary,
         headerTitleStyle: { fontWeight: '600' },
         tabBarStyle: {
           paddingBottom: 6,
           paddingTop: 6,
           height: 65,
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outlineVariant,
         },
         tabBarLabelStyle: {
           fontSize: 12,

@@ -1,16 +1,17 @@
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Divider, ActivityIndicator } from 'react-native-paper';
+import { Text, Card, Button, Divider, ActivityIndicator, useTheme } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEmployee, useEmployees } from '../../../src/hooks';
 import { StatusChip, InfoRow } from '../../../src/components';
 import { WageType, EmployeeStatus } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes, rtlStyles } from '../../../src/constants/theme';
 import { formatDate, formatCurrency } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
 
 export default function EmployeeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { colors } = useTheme();
   const { employee, loading, error } = useEmployee(id);
   const { removeEmployee } = useEmployees();
 
@@ -37,7 +38,7 @@ export default function EmployeeDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
@@ -45,7 +46,7 @@ export default function EmployeeDetailScreen() {
   if (error || !employee) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>{error || t('employee.employeeNotFound')}</Text>
+        <Text style={[styles.error, { color: colors.error }]}>{error || t('employee.employeeNotFound')}</Text>
         <Button mode="outlined" onPress={() => router.back()} style={styles.backButton}>
           {t('common.goBack')}
         </Button>
@@ -54,8 +55,8 @@ export default function EmployeeDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.card}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.header}>
             <Text variant="headlineMedium" style={styles.name}>
@@ -64,7 +65,7 @@ export default function EmployeeDetailScreen() {
             <StatusChip type="employee" status={employee.status} compact={false} />
           </View>
 
-          <Text variant="titleMedium" style={styles.role}>
+          <Text variant="titleMedium" style={[styles.role, { color: colors.onSurfaceVariant }]}>
             {employee.role}
           </Text>
 
@@ -87,7 +88,7 @@ export default function EmployeeDetailScreen() {
             <>
               <Divider style={styles.divider} />
               <Text style={styles.label}>{t('employee.notes')}:</Text>
-              <Text style={styles.notes}>{employee.notes}</Text>
+              <Text style={[styles.notes, { color: colors.onSurface }]}>{employee.notes}</Text>
             </>
           )}
         </Card.Content>
@@ -119,7 +120,6 @@ export default function EmployeeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -129,10 +129,9 @@ const styles = StyleSheet.create({
   },
   card: {
     margin: sizes.padding,
-    backgroundColor: colors.surface,
   },
   header: {
-    flexDirection: 'row',
+    ...rtlStyles.row,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
@@ -141,15 +140,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   role: {
-    color: colors.textSecondary,
     marginTop: 4,
   },
   divider: {
     marginVertical: sizes.padding,
   },
+  label: {
+    fontWeight: '600',
+    marginBottom: sizes.paddingSmall,
+  },
   notes: {
     marginTop: sizes.paddingSmall,
-    color: colors.text,
     lineHeight: 20,
   },
   buttonContainer: {
@@ -161,7 +162,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   error: {
-    color: colors.error,
     marginBottom: sizes.padding,
   },
   backButton: {

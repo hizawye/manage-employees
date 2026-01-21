@@ -1,9 +1,8 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { Chip, useTheme } from 'react-native-paper';
 import { EmployeeStatus, AttendanceStatus } from '../../models';
-import { getStatusColor, getStatusLabel } from '../../utils/attendanceUtils';
-import { colors } from '../../constants/theme';
+import { getStatusLabel } from '../../utils/attendanceUtils';
 import { t } from '../../i18n';
 
 interface StatusChipProps {
@@ -13,11 +12,26 @@ interface StatusChipProps {
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = true }) => {
+  const { colors } = useTheme();
+
   if (type === 'attendance') {
+    const getAttendanceStatusColor = (status: AttendanceStatus) => {
+      switch (status) {
+        case AttendanceStatus.PRESENT:
+          return colors.present;
+        case AttendanceStatus.HALF_DAY:
+          return colors.halfDay;
+        case AttendanceStatus.ABSENT:
+          return colors.absent;
+        default:
+          return colors.onSurfaceVariant;
+      }
+    };
+
     return (
       <Chip
         compact={compact}
-        style={[styles.chip, { backgroundColor: getStatusColor(status as AttendanceStatus) }]}
+        style={[styles.chip, { backgroundColor: getAttendanceStatusColor(status as AttendanceStatus) }]}
         textStyle={styles.chipText}
       >
         {getStatusLabel(status as AttendanceStatus)}
@@ -33,7 +47,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = 
       case EmployeeStatus.INACTIVE:
         return colors.error;
       default:
-        return colors.textLight;
+        return colors.onSurfaceVariant;
     }
   };
 

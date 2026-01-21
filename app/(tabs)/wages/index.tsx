@@ -6,12 +6,13 @@ import {
   SegmentedButtons,
   ActivityIndicator,
   Surface,
+  useTheme,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import {
   formatCurrency,
   formatDate,
@@ -26,6 +27,7 @@ type PeriodType = 'week' | 'month';
 
 export default function WageSummaryScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [period, setPeriod] = useState<PeriodType>('week');
@@ -77,7 +79,7 @@ export default function WageSummaryScreen() {
 
   const renderWageCard = useCallback(({ item }: { item: WageCalculation }) => (
     <Card
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={() => router.push(`/wages/${item.employeeId}`)}
     >
       <Card.Content>
@@ -86,29 +88,29 @@ export default function WageSummaryScreen() {
             <Text variant="titleMedium" style={styles.name}>
               {item.employeeName}
             </Text>
-            <Text variant="bodySmall" style={styles.details}>
+            <Text variant="bodySmall" style={[styles.details, { color: colors.onSurfaceVariant }]}>
               {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
             </Text>
           </View>
-          <Text variant="titleMedium" style={styles.wage}>
+          <Text variant="titleMedium" style={[styles.wage, { color: colors.success }]}>
             {formatCurrency(item.totalWage)}
           </Text>
         </View>
       </Card.Content>
     </Card>
-  ), [router]);
+  ), [router, colors]);
 
   if ((loadingEmployees || loading) && !refreshing) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.periodSelector}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.periodSelector, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
         <SegmentedButtons
           value={period}
           onValueChange={(value) => setPeriod(value as PeriodType)}
@@ -117,12 +119,12 @@ export default function WageSummaryScreen() {
             { value: 'month', label: t('wages.thisMonth') },
           ]}
         />
-        <Text variant="bodySmall" style={styles.dateRange}>
+        <Text variant="bodySmall" style={[styles.dateRange, { color: colors.onSurfaceVariant }]}>
           {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
         </Text>
       </View>
 
-      <Surface style={styles.summaryCard} elevation={2}>
+      <Surface style={[styles.summaryCard, { backgroundColor: colors.surface }]} elevation={2}>
         <View style={styles.statsGrid}>
           <StatCard
             value={formatCurrency(totalWages)}
@@ -146,8 +148,8 @@ export default function WageSummaryScreen() {
 
       {calculations.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>{t('wages.noWageData')}</Text>
-          <Text style={styles.emptySubtext}>
+          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('wages.noWageData')}</Text>
+          <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
             {t('wages.noWageDataHint')}
           </Text>
         </View>
@@ -173,7 +175,6 @@ export default function WageSummaryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -183,20 +184,16 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     padding: sizes.padding,
-    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   dateRange: {
     textAlign: 'center',
     marginTop: sizes.paddingSmall,
-    color: colors.textSecondary,
   },
   summaryCard: {
     margin: sizes.padding,
     padding: sizes.padding,
     borderRadius: sizes.borderRadius,
-    backgroundColor: colors.surface,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -209,7 +206,6 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: sizes.paddingSmall,
-    backgroundColor: colors.surface,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -223,21 +219,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   details: {
-    color: colors.textSecondary,
     marginTop: 2,
   },
   wage: {
     fontWeight: 'bold',
-    color: colors.success,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   emptySubtext: {
     marginTop: 8,
-    color: colors.textLight,
     textAlign: 'center',
   },
 });

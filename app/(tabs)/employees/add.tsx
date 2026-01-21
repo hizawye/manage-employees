@@ -4,6 +4,7 @@ import {
   Button,
   SegmentedButtons,
   Text,
+  useTheme,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -11,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEmployees } from '../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import { toISODateString } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
 import { FormInput } from '../../../src/components';
@@ -35,6 +36,7 @@ type FormData = z.infer<typeof employeeSchema>;
 
 export default function AddEmployeeScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { addEmployee } = useEmployees();
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +81,7 @@ export default function AddEmployeeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <Controller
         control={control}
         name="name"
@@ -131,7 +133,7 @@ export default function AddEmployeeScreen() {
         name="wageType"
         render={({ field: { onChange, value } }) => (
           <View style={{ marginBottom: sizes.padding }}>
-            <Text variant="titleSmall" style={styles.label}>
+            <Text variant="titleSmall" style={[styles.label, { color: colors.onSurfaceVariant }]}>
               {t('employee.wageType')}
             </Text>
             <SegmentedButtons
@@ -193,7 +195,7 @@ export default function AddEmployeeScreen() {
           onPress={handleSubmit(onSubmit)}
           loading={loading}
           disabled={loading}
-          style={[styles.button, styles.primaryButton]}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           contentStyle={styles.buttonContent}
           labelStyle={styles.buttonLabel}
         >
@@ -207,7 +209,6 @@ export default function AddEmployeeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     padding: sizes.padding,
@@ -215,7 +216,6 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: sizes.paddingSmall,
-    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -232,9 +232,6 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     borderRadius: sizes.borderRadius,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
   },
   buttonContent: {
     paddingVertical: 8,

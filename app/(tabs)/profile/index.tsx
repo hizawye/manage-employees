@@ -1,23 +1,26 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, I18nManager } from 'react-native';
-import { Text, Surface, ActivityIndicator, Button } from 'react-native-paper';
+import { Text, Surface, ActivityIndicator, Button, RadioButton, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEmployees } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
+import { useThemeContext } from '../../../src/theme';
 
 const isRTL = I18nManager.isRTL;
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { user, logout, isGuest } = useAuth();
+  const { themeMode, setThemeMode } = useThemeContext();
   const { employees: allEmployees, loading: loadingAll } = useEmployees();
   const { employees: activeEmployees, loading: loadingActive } = useEmployees(EmployeeStatus.ACTIVE);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,7 +137,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -146,14 +149,14 @@ export default function ProfileScreen() {
     >
       {/* Guest Account Conversion Card */}
       {isGuest && (
-        <Surface style={[styles.section, styles.guestCard]} elevation={3}>
+        <Surface style={[styles.section, styles.guestCard, { borderLeftColor: colors.primary }]} elevation={3}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="account-convert" size={26} color={colors.primary} />
             <Text variant="titleMedium" style={styles.sectionTitle}>
               {t('profile.createAccountToSave')}
             </Text>
           </View>
-          <Text variant="bodyMedium" style={styles.guestInfo}>
+          <Text variant="bodyMedium" style={[styles.guestInfo, { color: colors.onSurfaceVariant }]}>
             {t('profile.guestAccountInfo')}
           </Text>
           <Button
@@ -206,19 +209,19 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.wageRow}>
           <View style={styles.wageItem}>
-            <Text variant="bodyMedium" style={styles.wageLabel}>
+            <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisWeek')}
             </Text>
-            <Text variant="titleLarge" style={styles.wageValue}>
+            <Text variant="titleLarge" style={[styles.wageValue, { color: colors.success }]}>
               {formatCurrency(weeklyWages)}
             </Text>
           </View>
-          <View style={styles.wageDivider} />
+          <View style={[styles.wageDivider, { backgroundColor: colors.outline }]} />
           <View style={styles.wageItem}>
-            <Text variant="bodyMedium" style={styles.wageLabel}>
+            <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisMonth')}
             </Text>
-            <Text variant="titleLarge" style={styles.wageValue}>
+            <Text variant="titleLarge" style={[styles.wageValue, { color: colors.success }]}>
               {formatCurrency(monthlyWages)}
             </Text>
           </View>
@@ -235,28 +238,49 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.attendanceRow}>
           <View style={styles.attendanceItem}>
-            <Text variant="bodyMedium" style={styles.attendanceLabel}>
+            <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisWeek')}
             </Text>
             <Text variant="headlineMedium" style={[styles.attendanceRate, { color: colors.present }]}>
               {weeklyAttendanceRate}%
             </Text>
-            <Text variant="bodySmall" style={styles.attendanceDetail}>
+            <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>
               {attendanceStats.weeklyPresent} / {attendanceStats.weeklyTotal}
             </Text>
           </View>
           <View style={styles.attendanceItem}>
-            <Text variant="bodyMedium" style={styles.attendanceLabel}>
+            <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisMonth')}
             </Text>
             <Text variant="headlineMedium" style={[styles.attendanceRate, { color: colors.present }]}>
               {monthlyAttendanceRate}%
             </Text>
-            <Text variant="bodySmall" style={styles.attendanceDetail}>
+            <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>
               {attendanceStats.monthlyPresent} / {attendanceStats.monthlyTotal}
             </Text>
           </View>
         </View>
+      </Surface>
+
+      {/* Theme Preference */}
+      <Surface style={styles.section} elevation={2}>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons name="palette" size={26} color={colors.primary} />
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            {t('theme.preference')}
+          </Text>
+        </View>
+        <RadioButton.Group onValueChange={(value) => setThemeMode(value as 'light' | 'dark' | 'auto')} value={themeMode}>
+          <View style={styles.radioRow}>
+            <RadioButton.Item label={t('theme.light')} value="light" position="leading" />
+          </View>
+          <View style={styles.radioRow}>
+            <RadioButton.Item label={t('theme.dark')} value="dark" position="leading" />
+          </View>
+          <View style={styles.radioRow}>
+            <RadioButton.Item label={t('theme.auto')} value="auto" position="leading" />
+          </View>
+        </RadioButton.Group>
       </Surface>
 
       {/* App Info */}
@@ -267,19 +291,19 @@ export default function ProfileScreen() {
             {t('profile.appInfo')}
           </Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text variant="bodyLarge" style={styles.infoLabel}>
+        <View style={[styles.infoRow, { borderBottomColor: colors.outline }]}>
+          <Text variant="bodyLarge" style={[styles.infoLabel, { color: colors.onSurfaceVariant }]}>
             {t('profile.language')}
           </Text>
-          <Text variant="bodyLarge" style={styles.infoValue}>
+          <Text variant="bodyLarge" style={[styles.infoValue, { color: colors.onSurface }]}>
             {t('profile.arabic')}
           </Text>
         </View>
         <View style={[styles.infoRow, styles.infoRowLast]}>
-          <Text variant="bodyLarge" style={styles.infoLabel}>
+          <Text variant="bodyLarge" style={[styles.infoLabel, { color: colors.onSurfaceVariant }]}>
             {t('profile.version')}
           </Text>
-          <Text variant="bodyLarge" style={styles.infoValue}>
+          <Text variant="bodyLarge" style={[styles.infoValue, { color: colors.onSurface }]}>
             1.0.0
           </Text>
         </View>
@@ -293,7 +317,7 @@ export default function ProfileScreen() {
             {t('profile.loggedInAs')}
           </Text>
         </View>
-        <Text variant="bodyLarge" style={styles.username}>
+        <Text variant="bodyLarge" style={[styles.username, { color: colors.onSurface }]}>
           {user?.username}
         </Text>
         <Button
@@ -313,7 +337,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -327,7 +350,6 @@ const styles = StyleSheet.create({
   section: {
     padding: sizes.padding,
     borderRadius: sizes.borderRadius,
-    backgroundColor: colors.surface,
     marginBottom: sizes.padding,
   },
   sectionHeader: {
@@ -339,7 +361,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '700',
     fontSize: 18,
-    color: colors.text,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -352,10 +373,8 @@ const styles = StyleSheet.create({
   statNumber: {
     fontWeight: '700',
     fontSize: 32,
-    color: colors.text,
   },
   statLabel: {
-    color: colors.textSecondary,
     marginTop: 6,
     fontSize: 13,
     textAlign: 'center',
@@ -372,16 +391,13 @@ const styles = StyleSheet.create({
   wageDivider: {
     width: 1,
     height: 60,
-    backgroundColor: colors.border,
   },
   wageLabel: {
-    color: colors.textSecondary,
     marginBottom: 8,
     fontSize: 14,
   },
   wageValue: {
     fontWeight: '700',
-    color: colors.success,
     fontSize: 20,
   },
   attendanceRow: {
@@ -393,7 +409,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   attendanceLabel: {
-    color: colors.textSecondary,
     marginBottom: 8,
     fontSize: 14,
   },
@@ -402,7 +417,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   attendanceDetail: {
-    color: colors.textSecondary,
     marginTop: 6,
     fontSize: 13,
   },
@@ -411,24 +425,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: sizes.padding,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   infoRowLast: {
     borderBottomWidth: 0,
   },
   infoLabel: {
-    color: colors.textSecondary,
     fontSize: 15,
   },
   infoValue: {
     fontWeight: '600',
     fontSize: 15,
-    color: colors.text,
   },
   username: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: sizes.padding,
     textAlign: 'center',
   },
@@ -436,16 +446,16 @@ const styles = StyleSheet.create({
     marginTop: sizes.paddingSmall,
   },
   guestCard: {
-    backgroundColor: colors.surface,
     borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
   },
   guestInfo: {
-    color: colors.textSecondary,
     marginBottom: sizes.padding,
     lineHeight: 22,
   },
   createAccountButton: {
     marginTop: sizes.paddingSmall,
+  },
+  radioRow: {
+    marginVertical: 0,
   },
 });

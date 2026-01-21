@@ -7,6 +7,7 @@ import {
   Text,
   HelperText,
   ActivityIndicator,
+  useTheme,
 } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -14,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEmployee, useEmployees } from '../../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../../src/models';
-import { colors, sizes } from '../../../../src/constants/theme';
+import { sizes } from '../../../../src/constants/theme';
 import { t } from '../../../../src/i18n';
 
 // Zod schema moved outside component for performance
@@ -36,6 +37,7 @@ type FormData = z.infer<typeof employeeSchema>;
 export default function EditEmployeeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { colors } = useTheme();
   const { employee, loading: loadingEmployee } = useEmployee(id);
   const { editEmployee } = useEmployees();
   const [saving, setSaving] = useState(false);
@@ -100,13 +102,13 @@ export default function EditEmployeeScreen() {
   if (loadingEmployee) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <Controller
         control={control}
         name="name"
@@ -173,7 +175,7 @@ export default function EditEmployeeScreen() {
         name="status"
         render={({ field: { onChange, value } }) => (
           <View style={styles.inputContainer}>
-            <Text variant="labelLarge" style={styles.label}>
+            <Text variant="labelLarge" style={[styles.label, { color: colors.onSurfaceVariant }]}>
               {t('employee.status')}
             </Text>
             <SegmentedButtons
@@ -193,7 +195,7 @@ export default function EditEmployeeScreen() {
         name="wageType"
         render={({ field: { onChange, value } }) => (
           <View style={styles.inputContainer}>
-            <Text variant="labelLarge" style={styles.label}>
+            <Text variant="labelLarge" style={[styles.label, { color: colors.onSurfaceVariant }]}>
               {t('employee.wageType')}
             </Text>
             <SegmentedButtons
@@ -272,7 +274,6 @@ export default function EditEmployeeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -287,7 +288,6 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: sizes.paddingSmall,
-    color: colors.textSecondary,
   },
   buttonContainer: {
     flexDirection: 'row',

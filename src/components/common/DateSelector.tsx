@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
-import { colors, sizes } from '../../constants/theme';
+import { Text, IconButton, useTheme } from 'react-native-paper';
+import { sizes } from '../../constants/theme';
 
 interface DateSelectorProps {
   mode: 'day' | 'week' | 'month';
@@ -16,6 +16,8 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   onChange,
   formatDisplay,
 }) => {
+  const { colors } = useTheme();
+
   const handlePrevious = () => {
     const newDate = new Date(value);
     switch (mode) {
@@ -66,7 +68,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   const displayText = formatDisplay ? formatDisplay(value) : defaultFormatDisplay(value);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <IconButton
         icon="chevron-right"
         size={24}
@@ -74,7 +76,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         iconColor={colors.primary}
       />
       <View style={styles.dateDisplay}>
-        <Text variant="titleMedium" style={styles.dateText} onPress={handleToday}>
+        <Text variant="titleMedium" style={[styles.dateText, { color: colors.onSurface }]} onPress={handleToday}>
           {displayText}
         </Text>
       </View>
@@ -94,7 +96,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: sizes.paddingSmall,
-    backgroundColor: colors.surface,
     borderRadius: sizes.borderRadius,
     marginBottom: sizes.padding,
   },
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontWeight: '600',
-    color: colors.text,
     textAlign: 'center',
   },
 });

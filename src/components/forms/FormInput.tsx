@@ -1,6 +1,6 @@
 import { View, StyleSheet, I18nManager } from 'react-native';
-import { TextInput, HelperText, TextInputProps } from 'react-native-paper';
-import { colors, sizes } from '../../constants/theme';
+import { TextInput, HelperText, TextInputProps, useTheme } from 'react-native-paper';
+import { sizes } from '../../constants/theme';
 import { t } from '../../i18n';
 
 const isRTL = I18nManager.isRTL;
@@ -27,6 +27,8 @@ export function FormInput({
   numberOfLines,
   ...rest
 }: FormInputProps) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.inputContainer}>
       <TextInput
@@ -38,7 +40,7 @@ export function FormInput({
         error={error}
         multiline={multiline}
         numberOfLines={numberOfLines}
-        style={[styles.input, multiline && styles.textArea]}
+        style={[styles.input, { backgroundColor: colors.surface }, multiline && styles.textArea]}
         contentStyle={styles.inputContent}
         outlineStyle={styles.inputOutline}
         {...rest}
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
     marginBottom: sizes.padding,
   },
   input: {
-    backgroundColor: colors.surface,
   },
   inputContent: {
     textAlign: isRTL ? 'right' : 'left',

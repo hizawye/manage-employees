@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, sizes } from '../../constants/theme';
+import { sizes } from '../../constants/theme';
 
 interface InfoRowProps {
   label: string;
@@ -11,22 +11,24 @@ interface InfoRowProps {
 }
 
 export const InfoRow: React.FC<InfoRowProps> = ({ label, value, icon }) => {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderBottomColor: colors.outlineVariant }]}>
       <View style={styles.labelContainer}>
         {icon && (
           <MaterialCommunityIcons
             name={icon as any}
             size={20}
-            color={colors.textSecondary}
+            color={colors.onSurfaceVariant}
             style={styles.icon}
           />
         )}
-        <Text variant="bodyMedium" style={styles.label}>
+        <Text variant="bodyMedium" style={[styles.label, { color: colors.onSurfaceVariant }]}>
           {label}
         </Text>
       </View>
-      <Text variant="bodyMedium" style={styles.value}>
+      <Text variant="bodyMedium" style={[styles.value, { color: colors.onSurface }]}>
         {value}
       </Text>
     </View>
@@ -40,7 +42,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: sizes.paddingSmall,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   labelContainer: {
     flexDirection: 'row',
@@ -51,10 +52,8 @@ const styles = StyleSheet.create({
     marginRight: sizes.paddingSmall,
   },
   label: {
-    color: colors.textSecondary,
   },
   value: {
     fontWeight: '600',
-    color: colors.text,
   },
 });

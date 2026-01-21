@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
-import { colors, sizes } from '../../constants/theme';
+import { Text, Button, useTheme } from 'react-native-paper';
+import { sizes } from '../../constants/theme';
 
 interface Props {
   children: ReactNode;
@@ -10,6 +10,26 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.error }]}>Something went wrong</Text>
+      <Text style={[styles.message, { color: colors.onSurfaceVariant }]}>
+        {error?.message || 'An unexpected error occurred'}
+      </Text>
+      <Button
+        mode="contained"
+        onPress={onReset}
+        style={[styles.button, { backgroundColor: colors.primary }]}
+      >
+        Try Again
+      </Button>
+    </View>
+  );
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -39,19 +59,10 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </Text>
-          <Button
-            mode="contained"
-            onPress={this.handleReset}
-            style={styles.button}
-          >
-            Try Again
-          </Button>
-        </View>
+        <ErrorFallback
+          error={this.state.error}
+          onReset={this.handleReset}
+        />
       );
     }
 
@@ -65,23 +76,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: sizes.paddingLarge,
-    backgroundColor: colors.background,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.error,
     marginBottom: sizes.padding,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: sizes.paddingLarge,
   },
   button: {
     marginTop: sizes.padding,
-    backgroundColor: colors.primary,
   },
 });

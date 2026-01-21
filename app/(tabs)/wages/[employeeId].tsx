@@ -6,13 +6,14 @@ import {
   SegmentedButtons,
   ActivityIndicator,
   Surface,
+  useTheme,
 } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import { useEmployee, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
 import { StatusChip } from '../../../src/components';
 import { WageCalculation, WageDetail, WageType } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import {
   formatCurrency,
   formatDateShort,
@@ -27,6 +28,7 @@ type PeriodType = 'week' | 'month';
 export default function EmployeeWageDetailScreen() {
   const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
   const { user } = useAuth();
+  const { colors } = useTheme();
   const { employee, loading: loadingEmployee } = useEmployee(employeeId);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
@@ -66,7 +68,7 @@ export default function EmployeeWageDetailScreen() {
   const { refreshing, onRefresh } = useRefresh(loadWages);
 
   const renderWageDetail = useCallback(({ item }: { item: WageDetail }) => (
-    <Card style={styles.detailCard}>
+    <Card style={[styles.detailCard, { backgroundColor: colors.surface }]}>
       <Card.Content style={styles.detailContent}>
         <View style={styles.detailInfo}>
           <Text variant="bodyMedium" style={styles.detailDate}>
@@ -79,12 +81,12 @@ export default function EmployeeWageDetailScreen() {
         </Text>
       </Card.Content>
     </Card>
-  ), []);
+  ), [colors]);
 
   if ((loadingEmployee || loading) && !refreshing) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
@@ -92,18 +94,18 @@ export default function EmployeeWageDetailScreen() {
   if (!employee || !wageData) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>{t('employee.employeeNotFound')}</Text>
+        <Text style={[styles.error, { color: colors.error }]}>{t('employee.employeeNotFound')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
         <Text variant="titleLarge" style={styles.employeeName}>
           {employee.name}
         </Text>
-        <Text variant="bodyMedium" style={styles.employeeInfo}>
+        <Text variant="bodyMedium" style={[styles.employeeInfo, { color: colors.onSurfaceVariant }]}>
           {employee.role} • {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
         </Text>
       </View>
@@ -119,23 +121,23 @@ export default function EmployeeWageDetailScreen() {
         />
       </View>
 
-      <Surface style={styles.summaryCard} elevation={2}>
+      <Surface style={[styles.summaryCard, { backgroundColor: colors.surface }]} elevation={2}>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <Text variant="bodySmall" style={styles.summaryLabel}>
+            <Text variant="bodySmall" style={[styles.summaryLabel, { color: colors.onSurfaceVariant }]}>
               {t('wages.totalWage')}
             </Text>
-            <Text variant="headlineSmall" style={styles.totalWage}>
+            <Text variant="headlineSmall" style={[styles.totalWage, { color: colors.success }]}>
               {formatCurrency(wageData.totalWage)}
             </Text>
           </View>
         </View>
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, { borderTopColor: colors.outline }]}>
           <View style={styles.statItem}>
             <Text variant="titleMedium" style={[styles.statValue, { color: colors.present }]}>
               {wageData.totalDaysPresent}
             </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
+            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
               {t('wages.daysPresent')}
             </Text>
           </View>
@@ -143,7 +145,7 @@ export default function EmployeeWageDetailScreen() {
             <Text variant="titleMedium" style={[styles.statValue, { color: colors.halfDay }]}>
               {wageData.totalHalfDays}
             </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
+            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
               {t('wages.halfDays')}
             </Text>
           </View>
@@ -151,7 +153,7 @@ export default function EmployeeWageDetailScreen() {
             <Text variant="titleMedium" style={[styles.statValue, { color: colors.absent }]}>
               {wageData.totalDaysAbsent}
             </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
+            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
               {t('wages.daysAbsent')}
             </Text>
           </View>
@@ -160,7 +162,7 @@ export default function EmployeeWageDetailScreen() {
               <Text variant="titleMedium" style={styles.statValue}>
                 {wageData.totalHoursWorked?.toFixed(1) || 0}
               </Text>
-              <Text variant="bodySmall" style={styles.statLabel}>
+              <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
                 {t('wages.hours')}
               </Text>
             </View>
@@ -168,13 +170,13 @@ export default function EmployeeWageDetailScreen() {
         </View>
       </Surface>
 
-      <Text variant="titleSmall" style={styles.breakdownTitle}>
+      <Text variant="titleSmall" style={[styles.breakdownTitle, { color: colors.onSurfaceVariant }]}>
         {t('wages.dailyBreakdown')}
       </Text>
 
       {wageData.details.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('wages.noAttendanceRecords')}</Text>
+          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('wages.noAttendanceRecords')}</Text>
         </View>
       ) : (
         <FlatList
@@ -198,7 +200,6 @@ export default function EmployeeWageDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -208,15 +209,12 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: sizes.padding,
-    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   employeeName: {
     fontWeight: 'bold',
   },
   employeeInfo: {
-    color: colors.textSecondary,
     marginTop: 4,
   },
   periodSelector: {
@@ -227,7 +225,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     padding: sizes.padding,
     borderRadius: sizes.borderRadius,
-    backgroundColor: colors.surface,
   },
   summaryRow: {
     alignItems: 'center',
@@ -237,18 +234,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    color: colors.textSecondary,
     marginBottom: 4,
   },
   totalWage: {
     fontWeight: 'bold',
-    color: colors.success,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
     paddingTop: sizes.padding,
   },
   statItem: {
@@ -258,13 +252,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statLabel: {
-    color: colors.textSecondary,
     marginTop: 2,
   },
   breakdownTitle: {
     paddingHorizontal: sizes.padding,
     marginBottom: sizes.paddingSmall,
-    color: colors.textSecondary,
   },
   list: {
     padding: sizes.padding,
@@ -272,7 +264,6 @@ const styles = StyleSheet.create({
   },
   detailCard: {
     marginBottom: sizes.paddingSmall,
-    backgroundColor: colors.surface,
   },
   detailContent: {
     flexDirection: 'row',
@@ -297,9 +288,7 @@ const styles = StyleSheet.create({
     padding: sizes.padding,
   },
   emptyText: {
-    color: colors.textSecondary,
   },
   error: {
-    color: colors.error,
   },
 });

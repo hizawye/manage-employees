@@ -8,18 +8,20 @@ import {
   ActivityIndicator,
   SegmentedButtons,
   TextInput,
+  useTheme,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useAttendanceByDate, useRefresh } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
 import { addDays, parseISO } from 'date-fns';
 import { t } from '../../../src/i18n';
 
 export default function AttendanceScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
@@ -69,14 +71,14 @@ export default function AttendanceScreen() {
     const isSaving = savingId === item.id;
 
     return (
-      <Card style={styles.card}>
+      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.employeeHeader}>
             <View style={styles.employeeInfo}>
               <Text variant="titleMedium" style={styles.name}>
                 {item.name}
               </Text>
-              <Text variant="bodySmall" style={styles.role}>
+              <Text variant="bodySmall" style={[styles.role, { color: colors.onSurfaceVariant }]}>
                 {item.role} • {item.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}
               </Text>
             </View>
@@ -121,7 +123,7 @@ export default function AttendanceScreen() {
 
           {item.wageType === WageType.HOURLY && currentAttendance?.status === AttendanceStatus.PRESENT && (
             <View style={styles.hoursContainer}>
-              <Text variant="bodySmall" style={styles.hoursLabel}>
+              <Text variant="bodySmall" style={[styles.hoursLabel, { color: colors.onSurfaceVariant }]}>
                 {t('attendance.hoursWorked')}:
               </Text>
               <TextInput
@@ -147,14 +149,14 @@ export default function AttendanceScreen() {
   if (loading && !refreshing) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.dateSelector}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.dateSelector, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
         <IconButton
           icon="chevron-left"
           size={28}
@@ -190,8 +192,8 @@ export default function AttendanceScreen() {
 
       {employees.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>{t('attendance.noActiveEmployees')}</Text>
-          <Text style={styles.emptySubtext}>
+          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('attendance.noActiveEmployees')}</Text>
+          <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
             {t('attendance.noActiveEmployeesHint')}
           </Text>
         </View>
@@ -217,7 +219,6 @@ export default function AttendanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -230,9 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: sizes.paddingSmall,
-    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   dateText: {
     minWidth: 140,
@@ -254,7 +253,6 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: sizes.paddingSmall,
-    backgroundColor: colors.surface,
   },
   employeeHeader: {
     flexDirection: 'row',
@@ -269,7 +267,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   role: {
-    color: colors.textSecondary,
     marginTop: 2,
   },
   statusButtons: {
@@ -282,7 +279,6 @@ const styles = StyleSheet.create({
   },
   hoursLabel: {
     marginRight: sizes.paddingSmall,
-    color: colors.textSecondary,
   },
   hoursInput: {
     width: 80,
@@ -291,11 +287,9 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   emptySubtext: {
     marginTop: 8,
-    color: colors.textLight,
     textAlign: 'center',
   },
 });

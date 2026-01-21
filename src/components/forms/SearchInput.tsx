@@ -1,6 +1,6 @@
 import { View, TextInput, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { Icon } from 'react-native-paper';
-import { colors, sizes } from '../../constants/theme';
+import { Icon, useTheme } from 'react-native-paper';
+import { sizes } from '../../constants/theme';
 
 interface SearchInputProps {
   placeholder: string;
@@ -10,11 +10,12 @@ interface SearchInputProps {
 }
 
 export function SearchInput({ placeholder, value, onChangeText, style }: SearchInputProps) {
+  const { colors } = useTheme();
   const handleClear = () => onChangeText('');
   const showClearButton = value.length > 0;
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }, style]}>
       {/* Search Icon (RIGHT for RTL) */}
       <Icon
         source="magnify"
@@ -27,8 +28,8 @@ export function SearchInput({ placeholder, value, onChangeText, style }: SearchI
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textSecondary}
-        style={styles.input}
+        placeholderTextColor={colors.onSurfaceVariant}
+        style={[styles.input, { color: colors.onSurface }]}
       />
 
       {/* Clear Button (LEFT for RTL, only when text exists) */}
@@ -37,7 +38,7 @@ export function SearchInput({ placeholder, value, onChangeText, style }: SearchI
           <Icon
             source="close-circle"
             size={20}
-            color={colors.textSecondary}
+            color={colors.onSurfaceVariant}
           />
         </TouchableOpacity>
       )}
@@ -49,7 +50,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row-reverse',  // Icons in RTL positions
     alignItems: 'center',
-    backgroundColor: colors.surface,
     borderRadius: sizes.borderRadius,
     elevation: 2,
     shadowColor: '#000',
@@ -63,7 +63,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
     textAlign: 'right',      // RTL alignment
     writingDirection: 'rtl',  // Force RTL text flow
     paddingVertical: 4,

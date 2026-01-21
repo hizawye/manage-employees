@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
-import { colors, sizes } from '../../src/constants/theme';
+import { sizes } from '../../src/constants/theme';
 
 const convertGuestSchema = z.object({
   username: z.string().min(3, 'auth.usernameTooShort').max(20, 'auth.usernameTooLong'),
@@ -23,6 +23,7 @@ type ConvertGuestFormData = z.infer<typeof convertGuestSchema>;
 export default function ConvertGuestScreen() {
   const router = useRouter();
   const { convertGuestToUser, isGuest } = useAuth();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -64,15 +65,15 @@ export default function ConvertGuestScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.content}>
-        <Surface style={styles.formSurface} elevation={2}>
+        <Surface style={[styles.formSurface, { backgroundColor: colors.surface }]} elevation={2}>
           <Text variant="headlineMedium" style={styles.title}>
             {t('auth.createAccount')}
           </Text>
-          <Text variant="bodyMedium" style={styles.subtitle}>
+          <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
             {t('auth.saveDataPermanently')}
           </Text>
 
@@ -95,7 +96,7 @@ export default function ConvertGuestScreen() {
             )}
           />
           {errors.username && (
-            <Text style={styles.errorText}>{t(errors.username.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.username.message || '')}</Text>
           )}
 
           <Controller
@@ -122,7 +123,7 @@ export default function ConvertGuestScreen() {
             )}
           />
           {errors.password && (
-            <Text style={styles.errorText}>{t(errors.password.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.password.message || '')}</Text>
           )}
 
           <Controller
@@ -149,7 +150,7 @@ export default function ConvertGuestScreen() {
             )}
           />
           {errors.confirmPassword && (
-            <Text style={styles.errorText}>{t(errors.confirmPassword.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.confirmPassword.message || '')}</Text>
           )}
 
           <Button
@@ -191,7 +192,6 @@ export default function ConvertGuestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
   formSurface: {
     padding: sizes.paddingLarge,
     borderRadius: sizes.borderRadiusLarge,
-    backgroundColor: colors.surface,
   },
   title: {
     marginBottom: sizes.paddingSmall,
@@ -211,13 +210,11 @@ const styles = StyleSheet.create({
   subtitle: {
     marginBottom: sizes.paddingLarge,
     textAlign: 'center',
-    color: colors.textSecondary,
   },
   input: {
     marginBottom: sizes.paddingSmall,
   },
   errorText: {
-    color: colors.error,
     fontSize: 12,
     marginBottom: sizes.padding,
     marginTop: -4,

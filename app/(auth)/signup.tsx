@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar, useTheme } from 'react-native-paper';
 import { useRouter, Link } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
-import { colors, sizes } from '../../src/constants/theme';
+import { sizes } from '../../src/constants/theme';
 
 const signupSchema = z.object({
   username: z
@@ -30,6 +30,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function SignupScreen() {
   const router = useRouter();
   const { signup } = useAuth();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,14 +64,14 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={styles.formSurface} elevation={2}>
+        <Surface style={[styles.formSurface, { backgroundColor: colors.surface }]} elevation={2}>
           <Text variant="headlineMedium" style={styles.title}>
             {t('auth.signup')}
           </Text>
@@ -94,7 +95,7 @@ export default function SignupScreen() {
             )}
           />
           {errors.username && (
-            <Text style={styles.errorText}>{t(errors.username.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.username.message || '')}</Text>
           )}
 
           <Controller
@@ -121,7 +122,7 @@ export default function SignupScreen() {
             )}
           />
           {errors.password && (
-            <Text style={styles.errorText}>{t(errors.password.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.password.message || '')}</Text>
           )}
 
           <Controller
@@ -148,7 +149,7 @@ export default function SignupScreen() {
             )}
           />
           {errors.confirmPassword && (
-            <Text style={styles.errorText}>{t(errors.confirmPassword.message || '')}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.confirmPassword.message || '')}</Text>
           )}
 
           <Button
@@ -164,7 +165,7 @@ export default function SignupScreen() {
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>{t('auth.alreadyHaveAccount')} </Text>
             <Link href="/(auth)/login" asChild>
-              <Text style={styles.loginLink}>{t('auth.loginLink')}</Text>
+              <Text style={[styles.loginLink, { color: colors.primary }]}>{t('auth.loginLink')}</Text>
             </Link>
           </View>
         </Surface>
@@ -188,7 +189,6 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -199,7 +199,6 @@ const styles = StyleSheet.create({
   formSurface: {
     padding: sizes.paddingLarge,
     borderRadius: sizes.borderRadiusLarge,
-    backgroundColor: colors.surface,
   },
   title: {
     marginBottom: sizes.paddingLarge,
@@ -210,7 +209,6 @@ const styles = StyleSheet.create({
     marginBottom: sizes.paddingSmall,
   },
   errorText: {
-    color: colors.error,
     fontSize: 12,
     marginBottom: sizes.padding,
     marginTop: -4,
@@ -229,7 +227,6 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 14,
-    color: colors.primary,
     fontWeight: 'bold',
   },
 });

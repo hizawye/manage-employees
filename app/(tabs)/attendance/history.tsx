@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, ActivityIndicator, IconButton } from 'react-native-paper';
+import { Text, Card, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
 import { StatusChip } from '../../../src/components';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { Attendance, AttendanceStatus, Employee, EmployeeStatus } from '../../../src/models';
-import { colors, sizes } from '../../../src/constants/theme';
+import { sizes } from '../../../src/constants/theme';
 import { formatDate, getWeekRange } from '../../../src/utils/dateUtils';
 import { addWeeks } from 'date-fns';
 import { useEffect } from 'react';
@@ -18,6 +18,7 @@ interface AttendanceWithEmployee extends Attendance {
 
 export default function AttendanceHistoryScreen() {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const { employees } = useEmployees(EmployeeStatus.ACTIVE);
   const [weekOffset, setWeekOffset] = useState(0);
   const [attendance, setAttendance] = useState<AttendanceWithEmployee[]>([]);
@@ -63,32 +64,32 @@ export default function AttendanceHistoryScreen() {
   const { refreshing, onRefresh } = useRefresh(loadAttendance);
 
   const renderAttendance = useCallback(({ item }: { item: AttendanceWithEmployee }) => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: colors.surface }]}>
       <Card.Content style={styles.cardContent}>
         <View style={styles.info}>
           <Text variant="titleSmall" style={styles.name}>
             {item.employeeName}
           </Text>
-          <Text variant="bodySmall" style={styles.date}>
+          <Text variant="bodySmall" style={[styles.date, { color: colors.onSurfaceVariant }]}>
             {formatDate(item.date)}
           </Text>
         </View>
         <StatusChip type="attendance" status={item.status} />
       </Card.Content>
     </Card>
-  ), []);
+  ), [colors]);
 
   if (loading && !refreshing) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.weekSelector}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.weekSelector, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
         <IconButton
           icon="chevron-left"
           size={28}
@@ -98,7 +99,7 @@ export default function AttendanceHistoryScreen() {
           <Text variant="titleSmall" style={styles.weekLabel}>
             {t('attendance.week')}
           </Text>
-          <Text variant="bodySmall" style={styles.weekRange}>
+          <Text variant="bodySmall" style={[styles.weekRange, { color: colors.onSurfaceVariant }]}>
             {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
           </Text>
         </View>
@@ -112,8 +113,8 @@ export default function AttendanceHistoryScreen() {
 
       {attendance.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>{t('attendance.noRecords')}</Text>
-          <Text style={styles.emptySubtext}>
+          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('attendance.noRecords')}</Text>
+          <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
             {t('attendance.noRecordsHint')}
           </Text>
         </View>
@@ -139,7 +140,6 @@ export default function AttendanceHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
@@ -152,9 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: sizes.paddingSmall,
-    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   weekInfo: {
     alignItems: 'center',
@@ -164,14 +162,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   weekRange: {
-    color: colors.textSecondary,
   },
   list: {
     padding: sizes.padding,
   },
   card: {
     marginBottom: sizes.paddingSmall,
-    backgroundColor: colors.surface,
   },
   cardContent: {
     flexDirection: 'row',
@@ -185,7 +181,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   date: {
-    color: colors.textSecondary,
     marginTop: 2,
   },
   statusChip: {
@@ -199,10 +194,8 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   emptySubtext: {
     marginTop: 8,
-    color: colors.textLight,
   },
 });
