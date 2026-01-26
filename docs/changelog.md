@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.1] - 2026-01-26
+
+### Added
+- **GitHub Actions CI/CD** - Android build workflow
+  - Automated APK builds on push to main
+  - Gradle caching for faster builds
+  - Java 17 + Node 20 setup
+  - TypeScript type checking before build
+  - Expo prebuild for Android
+  - Artifact upload (1-day retention)
+
 ## [1.2.1] - 2026-01-18
 
 ### Fixed
