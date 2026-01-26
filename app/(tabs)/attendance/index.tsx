@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useAttendanceByDate, useRefresh } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
+import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
 import { addDays, parseISO } from 'date-fns';
 import { t } from '../../../src/i18n';
@@ -100,21 +100,21 @@ export default function AttendanceScreen() {
                   value: AttendanceStatus.PRESENT,
                   label: t('attendance.present'),
                   style: currentAttendance?.status === AttendanceStatus.PRESENT
-                    ? { backgroundColor: colors.present + '20' }
+                    ? { backgroundColor: staticColors.present + '20' }
                     : undefined,
                 },
                 {
                   value: AttendanceStatus.HALF_DAY,
                   label: t('attendance.halfDay'),
                   style: currentAttendance?.status === AttendanceStatus.HALF_DAY
-                    ? { backgroundColor: colors.halfDay + '20' }
+                    ? { backgroundColor: staticColors.halfDay + '20' }
                     : undefined,
                 },
                 {
                   value: AttendanceStatus.ABSENT,
                   label: t('attendance.absent'),
                   style: currentAttendance?.status === AttendanceStatus.ABSENT
-                    ? { backgroundColor: colors.absent + '20' }
+                    ? { backgroundColor: staticColors.absent + '20' }
                     : undefined,
                 },
               ]}

@@ -13,7 +13,7 @@ import { useEmployee, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
 import { StatusChip } from '../../../src/components';
 import { WageCalculation, WageDetail, WageType } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
+import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import {
   formatCurrency,
   formatDateShort,
@@ -127,14 +127,14 @@ export default function EmployeeWageDetailScreen() {
             <Text variant="bodySmall" style={[styles.summaryLabel, { color: colors.onSurfaceVariant }]}>
               {t('wages.totalWage')}
             </Text>
-            <Text variant="headlineSmall" style={[styles.totalWage, { color: colors.success }]}>
+            <Text variant="headlineSmall" style={[styles.totalWage, { color: staticColors.success }]}>
               {formatCurrency(wageData.totalWage)}
             </Text>
           </View>
         </View>
         <View style={[styles.statsRow, { borderTopColor: colors.outline }]}>
           <View style={styles.statItem}>
-            <Text variant="titleMedium" style={[styles.statValue, { color: colors.present }]}>
+            <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.present }]}>
               {wageData.totalDaysPresent}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
@@ -142,7 +142,7 @@ export default function EmployeeWageDetailScreen() {
             </Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium" style={[styles.statValue, { color: colors.halfDay }]}>
+            <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.halfDay }]}>
               {wageData.totalHalfDays}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
@@ -150,7 +150,7 @@ export default function EmployeeWageDetailScreen() {
             </Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium" style={[styles.statValue, { color: colors.absent }]}>
+            <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.absent }]}>
               {wageData.totalDaysAbsent}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>

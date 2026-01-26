@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.2] - 2026-01-26
+
+### Fixed
+- **TypeScript strict type errors** - All 27 TypeScript errors resolved
+  - Added missing `createdAt`/`updatedAt` fields to test mocks
+  - Removed invalid `headerBackTitleVisible` from Stack navigation options (4 layout files)
+  - Fixed custom color type issues - use static colors for `present`, `halfDay`, `absent`, `success`
+  - Fixed optional `notes` field type in employee add form
+  - Removed unused imports and variables
+
 ## [1.3.1] - 2026-01-26
 
 ### Added

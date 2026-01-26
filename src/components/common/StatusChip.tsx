@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Chip, useTheme } from 'react-native-paper';
+import { Chip } from 'react-native-paper';
 import { EmployeeStatus, AttendanceStatus } from '../../models';
 import { getStatusLabel } from '../../utils/attendanceUtils';
 import { t } from '../../i18n';
+import { colors } from '../../constants/theme';
 
 interface StatusChipProps {
   type: 'employee' | 'attendance';
@@ -12,8 +13,6 @@ interface StatusChipProps {
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = true }) => {
-  const { colors } = useTheme();
-
   if (type === 'attendance') {
     const getAttendanceStatusColor = (status: AttendanceStatus) => {
       switch (status) {
@@ -24,7 +23,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = 
         case AttendanceStatus.ABSENT:
           return colors.absent;
         default:
-          return colors.onSurfaceVariant;
+          return colors.textSecondary;
       }
     };
 
@@ -47,7 +46,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = 
       case EmployeeStatus.INACTIVE:
         return colors.error;
       default:
-        return colors.onSurfaceVariant;
+        return colors.textSecondary;
     }
   };
 

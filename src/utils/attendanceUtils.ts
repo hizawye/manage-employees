@@ -1,26 +1,24 @@
 import { AttendanceStatus } from '../models';
 import { colors as staticColors } from '../constants/theme';
 import { t } from '../i18n';
-import { MD3Colors } from 'react-native-paper';
 
 /**
  * Get color for attendance status
  * Accepts an optional theme colors object to support dynamic theming
  */
-export function getStatusColor(status: AttendanceStatus, themeColors?: MD3Colors): string {
+export function getStatusColor(status: AttendanceStatus, themeColors?: Record<string, string>): string {
   // Use provided theme colors or fallback to static colors
-  // We cast staticColors to any because it matches the shape but isn't typed as MD3Colors
-  const colors = themeColors || (staticColors as any);
+  const colors = themeColors || staticColors;
 
   switch (status) {
     case AttendanceStatus.PRESENT:
-      return colors.present;
+      return colors.present || staticColors.present;
     case AttendanceStatus.HALF_DAY:
-      return colors.halfDay;
+      return colors.halfDay || staticColors.halfDay;
     case AttendanceStatus.ABSENT:
-      return colors.absent;
+      return colors.absent || staticColors.absent;
     default:
-      return colors.textLight || colors.onSurfaceVariant;
+      return colors.textLight || staticColors.textLight;
   }
 }
 

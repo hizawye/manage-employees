@@ -1,20 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, I18nManager } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, Surface, ActivityIndicator, Button, RadioButton, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEmployees } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
+import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 import { useThemeContext } from '../../../src/theme';
-
-const isRTL = I18nManager.isRTL;
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -187,7 +185,7 @@ export default function ProfileScreen() {
           <StatCard
             value={activeEmployees.length}
             label={t('profile.activeEmployees')}
-            color={colors.success}
+            color={staticColors.success}
             icon="account-check"
           />
           <StatCard
@@ -212,7 +210,7 @@ export default function ProfileScreen() {
             <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisWeek')}
             </Text>
-            <Text variant="titleLarge" style={[styles.wageValue, { color: colors.success }]}>
+            <Text variant="titleLarge" style={[styles.wageValue, { color: staticColors.success }]}>
               {formatCurrency(weeklyWages)}
             </Text>
           </View>
@@ -221,7 +219,7 @@ export default function ProfileScreen() {
             <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisMonth')}
             </Text>
-            <Text variant="titleLarge" style={[styles.wageValue, { color: colors.success }]}>
+            <Text variant="titleLarge" style={[styles.wageValue, { color: staticColors.success }]}>
               {formatCurrency(monthlyWages)}
             </Text>
           </View>
@@ -241,7 +239,7 @@ export default function ProfileScreen() {
             <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisWeek')}
             </Text>
-            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: colors.present }]}>
+            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: staticColors.present }]}>
               {weeklyAttendanceRate}%
             </Text>
             <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>
@@ -252,7 +250,7 @@ export default function ProfileScreen() {
             <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
               {t('profile.thisMonth')}
             </Text>
-            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: colors.present }]}>
+            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: staticColors.present }]}>
               {monthlyAttendanceRate}%
             </Text>
             <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>

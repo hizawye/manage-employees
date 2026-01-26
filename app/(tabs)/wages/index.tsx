@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
+import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import {
   formatCurrency,
   formatDate,
@@ -92,7 +92,7 @@ export default function WageSummaryScreen() {
               {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
             </Text>
           </View>
-          <Text variant="titleMedium" style={[styles.wage, { color: colors.success }]}>
+          <Text variant="titleMedium" style={[styles.wage, { color: staticColors.success }]}>
             {formatCurrency(item.totalWage)}
           </Text>
         </View>
@@ -129,7 +129,7 @@ export default function WageSummaryScreen() {
           <StatCard
             value={formatCurrency(totalWages)}
             label={t('wages.totalWages')}
-            color={colors.success}
+            color={staticColors.success}
             icon="cash-multiple"
           />
           <StatCard

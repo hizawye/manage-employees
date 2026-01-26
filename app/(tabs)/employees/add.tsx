@@ -171,7 +171,7 @@ export default function AddEmployeeScreen() {
         render={({ field: { onChange, onBlur, value } }) => (
           <FormInput
             label={t('employee.notesOptional')}
-            value={value}
+            value={value ?? ''}
             onChangeText={onChange}
             onBlur={onBlur}
             multiline

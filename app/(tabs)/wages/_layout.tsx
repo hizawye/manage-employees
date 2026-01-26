@@ -12,7 +12,6 @@ export default function WagesLayout() {
         headerTintColor: theme.colors.onPrimary,
         headerTitleStyle: { fontWeight: '600' },
         headerTitleAlign: 'center',
-        headerBackTitleVisible: false,
       }}
     >
       <Stack.Screen

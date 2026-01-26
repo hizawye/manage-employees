@@ -42,6 +42,8 @@ describe('WageCalculationService', () => {
       wageRate: 1000,
       joinDate: '2024-01-01',
       status: 'ACTIVE' as any,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
     };
 
     const hourlyEmployee: Employee = {
@@ -56,6 +58,8 @@ describe('WageCalculationService', () => {
         employeeId: '1',
         date: '2024-01-01',
         status: AttendanceStatus.PRESENT,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       expect(calculateWageForDay(dailyEmployee, attendance)).toBe(1000);
@@ -68,6 +72,8 @@ describe('WageCalculationService', () => {
         date: '2024-01-01',
         status: AttendanceStatus.PRESENT,
         hoursWorked: 8,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       expect(calculateWageForDay(hourlyEmployee, attendance)).toBe(1200);
@@ -79,6 +85,8 @@ describe('WageCalculationService', () => {
         employeeId: '1',
         date: '2024-01-01',
         status: AttendanceStatus.PRESENT,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       expect(calculateWageForDay(hourlyEmployee, attendance)).toBe(0);
