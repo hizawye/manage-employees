@@ -19,6 +19,15 @@ interface CacheEntry<T> {
 const employeeCache = new Map<string, CacheEntry<Employee[]>>();
 const singleEmployeeCache = new Map<string, CacheEntry<Employee>>();
 
+function cleanExpiredCache<T>(cache: Map<string, CacheEntry<T>>): void {
+  const now = Date.now();
+  for (const [key, entry] of cache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      cache.delete(key);
+    }
+  }
+}
+
 export class EmployeeService {
   /**
    * Get all employees with optional status filter
@@ -29,6 +38,7 @@ export class EmployeeService {
     statusFilter?: EmployeeStatus,
     forceRefresh = false
   ): Promise<Employee[]> {
+    cleanExpiredCache(employeeCache);
     const cacheKey = `${userId}-${statusFilter || 'all'}`;
     const now = Date.now();
     const cached = employeeCache.get(cacheKey);
@@ -47,6 +57,7 @@ export class EmployeeService {
    * Uses separate cache for individual employees
    */
   static async getEmployeeById(userId: number, id: string, forceRefresh = false): Promise<Employee | null> {
+    cleanExpiredCache(singleEmployeeCache);
     const cacheKey = `${userId}-${id}`;
     const now = Date.now();
     const cached = singleEmployeeCache.get(cacheKey);

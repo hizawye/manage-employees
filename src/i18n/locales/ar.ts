@@ -67,9 +67,10 @@ export default {
     noActiveEmployeesHint: 'أضف موظفين من تبويب الموظفين أولاً',
     noRecords: 'لا توجد سجلات حضور',
     noRecordsHint: 'لم يتم تسجيل حضور لهذا الأسبوع',
-    week: 'الأسبوع',
+    week: 'أسبوع',
     daily: 'يومي',
     hourly: 'بالساعة',
+    markAllPresent: 'تسجيل الكل حاضر',
   },
 
   // Wages - الأجور

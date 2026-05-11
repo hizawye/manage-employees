@@ -74,7 +74,8 @@ export default function AddEmployeeScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert(t('common.error'), t('common.error'));
+      const message = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), message);
     } finally {
       setLoading(false);
     }

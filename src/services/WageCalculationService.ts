@@ -5,6 +5,15 @@ import { getAttendanceByEmployee } from '../database/repositories';
 const wageCalculationCache = new Map<string, { result: WageCalculation; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+function cleanExpiredWageCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of wageCalculationCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      wageCalculationCache.delete(key);
+    }
+  }
+}
+
 // Function to clear cache for specific employee (call when attendance changes)
 export function clearWageCache(employeeId?: string) {
   if (employeeId) {
@@ -54,6 +63,7 @@ export async function calculateWagesForPeriod(
   startDate: string,
   endDate: string
 ): Promise<WageCalculation> {
+  cleanExpiredWageCache();
   // Check cache first
   const cacheKey = `${employee.id}-${startDate}-${endDate}`;
   const cached = wageCalculationCache.get(cacheKey);

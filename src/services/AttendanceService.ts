@@ -17,12 +17,22 @@ interface CacheEntry<T> {
 
 const attendanceCache = new Map<string, CacheEntry<Attendance[]>>();
 
+function cleanExpiredCache<T>(cache: Map<string, CacheEntry<T>>): void {
+  const now = Date.now();
+  for (const [key, entry] of cache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      cache.delete(key);
+    }
+  }
+}
+
 export class AttendanceService {
   /**
    * Get attendance records for a specific date
    * Uses cache with 5-minute TTL
    */
   static async getAttendanceByDate(userId: number, date: string, forceRefresh = false): Promise<Attendance[]> {
+    cleanExpiredCache(attendanceCache);
     const cacheKey = `${userId}-date-${date}`;
     const now = Date.now();
     const cached = attendanceCache.get(cacheKey);
@@ -47,6 +57,7 @@ export class AttendanceService {
     endDate?: string,
     forceRefresh = false
   ): Promise<Attendance[]> {
+    cleanExpiredCache(attendanceCache);
     const cacheKey = `${userId}-employee-${employeeId}-${startDate || 'all'}-${endDate || 'all'}`;
     const now = Date.now();
     const cached = attendanceCache.get(cacheKey);

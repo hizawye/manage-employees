@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
-  TextInput,
   Button,
   SegmentedButtons,
   Text,
-  HelperText,
   ActivityIndicator,
   useTheme,
 } from 'react-native-paper';
@@ -17,6 +15,7 @@ import { useEmployee, useEmployees } from '../../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../../src/models';
 import { sizes } from '../../../../src/constants/theme';
 import { t } from '../../../../src/i18n';
+import { FormInput } from '../../../../src/components';
 
 // Zod schema moved outside component for performance
 const employeeSchema = z.object({
@@ -93,7 +92,8 @@ export default function EditEmployeeScreen() {
       });
       router.back();
     } catch (error) {
-      Alert.alert(t('common.error'), t('common.error'));
+      const message = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), message);
     } finally {
       setSaving(false);
     }
@@ -113,19 +113,14 @@ export default function EditEmployeeScreen() {
         control={control}
         name="name"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.name')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={!!errors.name}
-            />
-            {errors.name && (
-              <HelperText type="error">{t(errors.name.message || 'validation.required')}</HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.name')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={!!errors.name}
+            errorMessage={errors.name?.message}
+          />
         )}
       />
 
@@ -133,20 +128,15 @@ export default function EditEmployeeScreen() {
         control={control}
         name="phone"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.phone')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              keyboardType="phone-pad"
-              error={!!errors.phone}
-            />
-            {errors.phone && (
-              <HelperText type="error">{t(errors.phone.message || 'validation.required')}</HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.phone')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            keyboardType="phone-pad"
+            error={!!errors.phone}
+            errorMessage={errors.phone?.message}
+          />
         )}
       />
 
@@ -154,19 +144,14 @@ export default function EditEmployeeScreen() {
         control={control}
         name="role"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.role')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={!!errors.role}
-            />
-            {errors.role && (
-              <HelperText type="error">{t(errors.role.message || 'validation.required')}</HelperText>
-            )}
-          </View>
+          <FormInput
+            label={t('employee.role')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={!!errors.role}
+            errorMessage={errors.role?.message}
+          />
         )}
       />
 
@@ -214,20 +199,15 @@ export default function EditEmployeeScreen() {
         control={control}
         name="wageRate"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              keyboardType="decimal-pad"
-              error={!!errors.wageRate}
-            />
-            {errors.wageRate && (
-              <HelperText type="error">{t(errors.wageRate.message || 'validation.required')}</HelperText>
-            )}
-          </View>
+          <FormInput
+            label={wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            keyboardType="decimal-pad"
+            error={!!errors.wageRate}
+            errorMessage={errors.wageRate?.message}
+          />
         )}
       />
 
@@ -235,17 +215,14 @@ export default function EditEmployeeScreen() {
         control={control}
         name="notes"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.inputContainer}>
-            <TextInput
-              label={t('employee.notesOptional')}
-              mode="outlined"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
+          <FormInput
+            label={t('employee.notesOptional')}
+            value={value ?? ''}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            multiline
+            numberOfLines={3}
+          />
         )}
       />
 
@@ -254,6 +231,7 @@ export default function EditEmployeeScreen() {
           mode="outlined"
           onPress={() => router.back()}
           style={styles.button}
+          contentStyle={styles.buttonContent}
         >
           {t('common.cancel')}
         </Button>
@@ -262,7 +240,8 @@ export default function EditEmployeeScreen() {
           onPress={handleSubmit(onSubmit)}
           loading={saving}
           disabled={saving}
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          contentStyle={styles.buttonContent}
         >
           {t('employee.saveChanges')}
         </Button>
@@ -282,6 +261,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: sizes.padding,
+    paddingBottom: sizes.paddingLarge,
   },
   inputContainer: {
     marginBottom: sizes.padding,
@@ -292,10 +272,14 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: sizes.padding,
+    marginTop: sizes.paddingLarge,
+    gap: sizes.paddingSmall,
   },
   button: {
     flex: 1,
-    marginHorizontal: sizes.paddingSmall / 2,
+    borderRadius: sizes.borderRadius,
+  },
+  buttonContent: {
+    paddingVertical: 8,
   },
 });

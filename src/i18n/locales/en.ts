@@ -70,6 +70,7 @@ export default {
     week: 'Week',
     daily: 'Daily',
     hourly: 'Hourly',
+    markAllPresent: 'Mark All Present',
   },
 
   // Wages

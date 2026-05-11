@@ -66,6 +66,19 @@ export default function AttendanceScreen() {
     }
   }, [markAttendance]);
 
+  const handleMarkAllPresent = async () => {
+    for (const emp of employees) {
+      const current = attendanceMap.get(emp.id);
+      if (!current || current.status !== AttendanceStatus.PRESENT) {
+        await handleMarkAttendance(
+          emp.id,
+          AttendanceStatus.PRESENT,
+          emp.wageType === WageType.HOURLY ? 8 : undefined
+        );
+      }
+    }
+  };
+
   const renderEmployee = useCallback(({ item }: { item: Employee }) => {
     const currentAttendance = attendanceMap.get(item.id);
     const isSaving = savingId === item.id;
@@ -182,6 +195,14 @@ export default function AttendanceScreen() {
           {t('common.today')}
         </Button>
         <Button
+          mode="contained-tonal"
+          compact
+          onPress={handleMarkAllPresent}
+          icon="check-all"
+        >
+          {t('attendance.markAllPresent')}
+        </Button>
+        <Button
           mode="text"
           compact
           onPress={() => router.push('/attendance/history')}
@@ -241,8 +262,10 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: sizes.paddingSmall,
     paddingHorizontal: sizes.padding,
+    gap: 6,
   },
   todayButton: {
     borderRadius: sizes.borderRadius,
