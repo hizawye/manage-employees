@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { lightTheme, darkTheme } from './themes';
-import { MD3Theme } from 'react-native-paper';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 
@@ -11,7 +9,6 @@ interface ThemeContextType {
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   isDark: boolean;
   toggleTheme: () => Promise<void>;
-  theme: MD3Theme;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -23,7 +20,6 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load saved theme preference on mount
   useEffect(() => {
     loadThemePreference();
   }, []);
@@ -55,22 +51,17 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await setThemeMode(newMode);
   };
 
-  // Determine if dark mode should be active
   const isDark = themeMode === 'auto'
     ? systemColorScheme === 'dark'
     : themeMode === 'dark';
-
-  const theme = isDark ? darkTheme : lightTheme;
 
   const value: ThemeContextType = {
     themeMode,
     setThemeMode,
     isDark,
     toggleTheme,
-    theme,
   };
 
-  // Don't render children until theme is loaded
   if (isLoading) {
     return null;
   }

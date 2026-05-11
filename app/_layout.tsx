@@ -1,26 +1,26 @@
-// CRITICAL: Import i18n FIRST to initialize RTL before any components mount
+import '../global.css';
 import '../src/i18n';
 
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
-import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { ThemeProvider, useThemeContext } from '../src/theme';
 
 function AppContent() {
-  const { theme, isDark } = useThemeContext();
+  const { isDark } = useThemeContext();
 
   return (
-    <PaperProvider theme={theme}>
+    <View className={isDark ? "dark flex-1 bg-background" : "flex-1 bg-background"}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
-    </PaperProvider>
+    </View>
   );
 }
 
