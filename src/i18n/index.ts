@@ -1,5 +1,6 @@
 import { I18n } from 'i18n-js';
 import { I18nManager } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import en from './locales/en';
 import ar from './locales/ar';
 
@@ -8,10 +9,35 @@ const i18n = new I18n({
   ar,
 });
 
-// Force Arabic as default language regardless of device settings
-i18n.locale = 'ar';
 i18n.enableFallback = true;
 i18n.defaultLocale = 'en';
+
+// Load saved locale on init
+const LOCALE_KEY = '@app/locale';
+
+async function loadSavedLocale() {
+  try {
+    const saved = await AsyncStorage.getItem(LOCALE_KEY);
+    if (saved === 'en' || saved === 'ar') {
+      i18n.locale = saved;
+      if (saved === 'ar') {
+        I18nManager.forceRTL(true);
+      } else {
+        I18nManager.forceRTL(false);
+      }
+    } else {
+      // Default to Arabic
+      i18n.locale = 'ar';
+      I18nManager.forceRTL(true);
+    }
+  } catch {
+    i18n.locale = 'ar';
+    I18nManager.forceRTL(true);
+  }
+}
+
+// Run immediately
+loadSavedLocale();
 
 // Check if the current language is RTL
 export const isRTL = i18n.locale === 'ar';
@@ -33,8 +59,10 @@ export function getLocale(): string {
 }
 
 // Set locale manually
-export function setLocale(locale: 'en' | 'ar'): void {
+export async function setLocale(locale: 'en' | 'ar'): Promise<void> {
   i18n.locale = locale;
+  await AsyncStorage.setItem(LOCALE_KEY, locale);
+  // Note: RTL change requires app reload
 }
 
 // Check if current locale is Arabic

@@ -12,6 +12,7 @@ import {
   Dialog,
   Portal,
   TextInput,
+  IconButton,
 } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import { useEmployee, useRefresh } from '../../../src/hooks';
@@ -124,6 +125,16 @@ export default function EmployeeWageDetailScreen() {
     }
     return null;
   }, [payAmount, remainingAmount]);
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!user) return;
+    try {
+      await PaymentService.deletePayment(user.id, paymentId);
+      await loadWages();
+    } catch (error) {
+      console.error('Failed to delete payment:', error);
+    }
+  };
 
   const openPayDialog = () => {
     setPayAmount(remainingAmount.toFixed(2));
@@ -302,9 +313,18 @@ export default function EmployeeWageDetailScreen() {
                 <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                   {formatDate(p.paymentDate)}
                 </Text>
-                <Text variant="bodyMedium" style={{ fontWeight: '600', color: staticColors.success }}>
-                  {formatCurrency(p.amount)}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text variant="bodyMedium" style={{ fontWeight: '600', color: staticColors.success }}>
+                    {formatCurrency(p.amount)}
+                  </Text>
+                  <IconButton
+                    icon="delete-outline"
+                    size={16}
+                    iconColor={colors.error}
+                    onPress={() => handleDeletePayment(p.id)}
+                    style={{ margin: 0 }}
+                  />
+                </View>
               </View>
             ))}
           </Surface>

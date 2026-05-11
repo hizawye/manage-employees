@@ -9,7 +9,7 @@ import { EmployeeStatus } from '../../../src/models';
 import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
-import { t } from '../../../src/i18n';
+import { t, getLocale, setLocale, isArabic } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 import { useThemeContext } from '../../../src/theme';
 
@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [weeklyWages, setWeeklyWages] = useState(0);
   const [monthlyWages, setMonthlyWages] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [currentLocale, setCurrentLocale] = useState(getLocale());
 
   const weekRange = useMemo(() => getWeekRange(), []);
   const monthRange = useMemo(() => getMonthRange(), []);
@@ -33,6 +34,12 @@ export default function ProfileScreen() {
     monthRange.start,
     monthRange.end
   );
+
+  const handleLanguageChange = async (locale: 'en' | 'ar') => {
+    await setLocale(locale);
+    setCurrentLocale(locale);
+    // Note: App reload required for full RTL switch
+  };
 
   const handleLogout = async () => {
     try {
@@ -269,20 +276,30 @@ export default function ProfileScreen() {
         </RadioButton.Group>
       </Surface>
 
+      {/* Language */}
+      <Surface style={styles.section} elevation={2}>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons name="translate" size={26} color={colors.primary} />
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            {t('profile.language')}
+          </Text>
+        </View>
+        <RadioButton.Group onValueChange={(value) => handleLanguageChange(value as 'en' | 'ar')} value={currentLocale}>
+          <View style={styles.radioRow}>
+            <RadioButton.Item label="English" value="en" position="leading" />
+          </View>
+          <View style={styles.radioRow}>
+            <RadioButton.Item label="العربية" value="ar" position="leading" />
+          </View>
+        </RadioButton.Group>
+      </Surface>
+
       {/* App Info */}
       <Surface style={styles.section} elevation={2}>
         <View style={styles.sectionHeader}>
           <MaterialCommunityIcons name="information-outline" size={26} color={colors.primary} />
           <Text variant="titleMedium" style={styles.sectionTitle}>
             {t('profile.appInfo')}
-          </Text>
-        </View>
-        <View style={[styles.infoRow, { borderBottomColor: colors.outline }]}>
-          <Text variant="bodyLarge" style={[styles.infoLabel, { color: colors.onSurfaceVariant }]}>
-            {t('profile.language')}
-          </Text>
-          <Text variant="bodyLarge" style={[styles.infoValue, { color: colors.onSurface }]}>
-            {t('profile.arabic')}
           </Text>
         </View>
         <View style={[styles.infoRow, styles.infoRowLast]}>
