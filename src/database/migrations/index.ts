@@ -4,6 +4,7 @@ import { addUsersMigration } from './002_add_users';
 import { addUserIsolationMigration } from './003_add_user_isolation';
 import { addGuestFlagMigration } from './004_add_guest_flag';
 import { addLogsTableMigration } from './005_add_logs_table';
+import { addPaymentsTableMigration } from './006_add_payments_table';
 
 export interface Migration {
   version: number;
@@ -17,6 +18,7 @@ export const migrations: Migration[] = [
   addUserIsolationMigration,
   addGuestFlagMigration,
   addLogsTableMigration,
+  addPaymentsTableMigration,
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

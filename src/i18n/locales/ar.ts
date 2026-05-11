@@ -90,6 +90,15 @@ export default {
     noWageData: 'لا توجد بيانات أجور',
     noWageDataHint: 'سجل الحضور لرؤية حسابات الأجور',
     noAttendanceRecords: 'لا توجد سجلات حضور',
+    paid: 'مدفوع',
+    remaining: 'متبقي',
+    markAsPaid: 'تسجيل الدفع',
+    fullyPaid: 'مدفوع بالكامل',
+    paymentHistory: 'سجل المدفوعات',
+    recordPayment: 'تسجيل دفعة',
+    paymentAmount: 'مبلغ الدفع',
+    notesOptional: 'ملاحظات (اختياري)',
+    confirmPayment: 'تأكيد الدفع',
   },
 
   // Validation - التحقق

@@ -7,8 +7,10 @@ import {
   ActivityIndicator,
   Surface,
   useTheme,
+  Chip,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
@@ -20,18 +22,25 @@ import {
   getMonthRange,
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
+import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 
 type PeriodType = 'week' | 'month';
 
+interface WageWithPayment extends WageCalculation {
+  paidAmount: number;
+  remaining: number;
+  isFullyPaid: boolean;
+}
+
 export default function WageSummaryScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [period, setPeriod] = useState<PeriodType>('week');
-  const [calculations, setCalculations] = useState<WageCalculation[]>([]);
+  const [calculations, setCalculations] = useState<WageWithPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const dateRange = useMemo(() => {
@@ -53,7 +62,27 @@ export default function WageSummaryScreen() {
         dateRange.start,
         dateRange.end
       );
-      setCalculations(results);
+
+      // Fetch payment status for each employee
+      const withPayments = await Promise.all(
+        results.map(async (calc) => {
+          const paid = await PaymentService.getPaidAmount(
+            user.id,
+            calc.employeeId,
+            dateRange.start,
+            dateRange.end
+          );
+          const remaining = Math.max(0, calc.totalWage - paid);
+          return {
+            ...calc,
+            paidAmount: paid,
+            remaining,
+            isFullyPaid: remaining <= 0 && calc.totalWage > 0,
+          };
+        })
+      );
+
+      setCalculations(withPayments);
     } catch (error) {
       console.error('Failed to calculate wages:', error);
     } finally {
@@ -64,6 +93,13 @@ export default function WageSummaryScreen() {
   useEffect(() => {
     loadWages();
   }, [loadWages]);
+
+  // Refresh employees when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshEmployees();
+    }, [refreshEmployees])
+  );
 
   const { refreshing, onRefresh } = useRefresh(loadWages);
 
@@ -77,7 +113,7 @@ export default function WageSummaryScreen() {
     [calculations]
   );
 
-  const renderWageCard = useCallback(({ item }: { item: WageCalculation }) => (
+  const renderWageCard = useCallback(({ item }: { item: WageWithPayment }) => (
     <Card
       style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={() => router.push(`/wages/${item.employeeId}`)}
@@ -91,10 +127,28 @@ export default function WageSummaryScreen() {
             <Text variant="bodySmall" style={[styles.details, { color: colors.onSurfaceVariant }]}>
               {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
             </Text>
+            {item.paidAmount > 0 && (
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                {t('wages.paid')}: {formatCurrency(item.paidAmount)} • {t('wages.remaining')}: {formatCurrency(item.remaining)}
+              </Text>
+            )}
           </View>
-          <Text variant="titleMedium" style={[styles.wage, { color: staticColors.success }]}>
-            {formatCurrency(item.totalWage)}
-          </Text>
+          <View style={styles.wageColumn}>
+            <Text variant="titleMedium" style={[styles.wage, { color: staticColors.success }]}>
+              {formatCurrency(item.totalWage)}
+            </Text>
+            {item.totalWage > 0 && (
+              <Chip
+                style={[
+                  styles.statusChip,
+                  { backgroundColor: item.isFullyPaid ? staticColors.success + '20' : colors.error + '20' }
+                ]}
+                textStyle={{ color: item.isFullyPaid ? staticColors.success : colors.error, fontSize: 10 }}
+              >
+                {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
+              </Chip>
+            )}
+          </View>
         </View>
       </Card.Content>
     </Card>
@@ -221,8 +275,15 @@ const styles = StyleSheet.create({
   details: {
     marginTop: 2,
   },
+  wageColumn: {
+    alignItems: 'flex-end',
+  },
   wage: {
     fontWeight: 'bold',
+  },
+  statusChip: {
+    marginTop: 4,
+    height: 24,
   },
   emptyText: {
     fontSize: 18,

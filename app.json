@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "manage-employees",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -31,6 +31,9 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+    "updates": {
+      "checkAutomatically": "ON_ERROR_RECOVERY"
+    },
     "plugins": [
       "expo-router",
       "expo-sqlite",
@@ -38,10 +41,7 @@
     ],
     "extra": {
       "supportsRTL": true,
-      "router": {},
-      "eas": {
-        "projectId": "2d639fab-e399-48ab-94b5-26744343ec55"
-      }
+      "router": {}
     }
   }
 }

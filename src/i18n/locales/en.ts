@@ -90,6 +90,15 @@ export default {
     noWageData: 'No wage data',
     noWageDataHint: 'Mark attendance to see wage calculations',
     noAttendanceRecords: 'No attendance records',
+    paid: 'Paid',
+    remaining: 'Remaining',
+    markAsPaid: 'Mark as Paid',
+    fullyPaid: 'Fully Paid',
+    paymentHistory: 'Payment History',
+    recordPayment: 'Record Payment',
+    paymentAmount: 'Payment Amount',
+    notesOptional: 'Notes (optional)',
+    confirmPayment: 'Confirm Payment',
   },
 
   // Validation

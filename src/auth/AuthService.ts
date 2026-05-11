@@ -111,11 +111,17 @@ export class AuthService {
    * Get current logged-in user
    */
   static async getCurrentUser(): Promise<User | null> {
-    const userJson = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
-    if (!userJson) {
+    try {
+      const userJson = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+      if (!userJson) {
+        return null;
+      }
+      return JSON.parse(userJson);
+    } catch {
+      // Corrupted storage — clear it and force re-login
+      await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
       return null;
     }
-    return JSON.parse(userJson);
   }
 
   /**

@@ -21,6 +21,14 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
       <Text style={[styles.message, { color: colors.onSurfaceVariant }]}>
         {error?.message || 'An unexpected error occurred'}
       </Text>
+      {__DEV__ && error?.stack && (
+        <Text
+          style={[styles.stack, { color: colors.onSurfaceVariant }]}
+          numberOfLines={8}
+        >
+          {error.stack}
+        </Text>
+      )}
       <Button
         mode="contained"
         onPress={onReset}
@@ -90,5 +98,11 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: sizes.padding,
+  },
+  stack: {
+    fontSize: 11,
+    marginVertical: sizes.padding,
+    textAlign: 'left',
+    width: '100%',
   },
 });
