@@ -17,6 +17,7 @@ export default {
     goBack: 'رجوع',
     today: 'اليوم',
     noData: 'لا توجد بيانات',
+    loadMore: 'تحميل المزيد',
   },
 
   // Tabs - التبويبات

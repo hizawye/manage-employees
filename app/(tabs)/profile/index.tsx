@@ -3,13 +3,12 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, Surface, ActivityIndicator, Button, RadioButton, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEmployees } from '../../../src/hooks';
+import { useEmployees, useAttendanceStats } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
 import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
-import { getAttendanceInRange } from '../../../src/database/repositories';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 import { useThemeContext } from '../../../src/theme';
@@ -24,13 +23,16 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [weeklyWages, setWeeklyWages] = useState(0);
   const [monthlyWages, setMonthlyWages] = useState(0);
-  const [attendanceStats, setAttendanceStats] = useState({
-    weeklyPresent: 0,
-    weeklyTotal: 0,
-    monthlyPresent: 0,
-    monthlyTotal: 0,
-  });
   const [loadingStats, setLoadingStats] = useState(true);
+
+  const weekRange = useMemo(() => getWeekRange(), []);
+  const monthRange = useMemo(() => getMonthRange(), []);
+  const { stats: attendanceStats, loading: loadingAttendanceStats, refresh: refreshAttendanceStats } = useAttendanceStats(
+    weekRange.start,
+    weekRange.end,
+    monthRange.start,
+    monthRange.end
+  );
 
   const handleLogout = async () => {
     try {
@@ -45,73 +47,40 @@ export default function ProfileScreen() {
     return allEmployees.filter(e => e.status === EmployeeStatus.INACTIVE).length;
   }, [allEmployees]);
 
-  const loadStats = useCallback(async () => {
+  const loadWageStats = useCallback(async () => {
     if (!user || activeEmployees.length === 0) {
       setWeeklyWages(0);
       setMonthlyWages(0);
-      setAttendanceStats({
-        weeklyPresent: 0,
-        weeklyTotal: 0,
-        monthlyPresent: 0,
-        monthlyTotal: 0,
-      });
       setLoadingStats(false);
       return;
     }
 
     try {
       setLoadingStats(true);
-      const weekRange = getWeekRange();
-      const monthRange = getMonthRange();
 
-      // Calculate wages
-      const weeklyCalcs = await calculateWagesForAllEmployees(
-        user.id,
-        activeEmployees,
-        weekRange.start,
-        weekRange.end
-      );
-      const monthlyCalcs = await calculateWagesForAllEmployees(
-        user.id,
-        activeEmployees,
-        monthRange.start,
-        monthRange.end
-      );
+      const [weeklyCalcs, monthlyCalcs] = await Promise.all([
+        calculateWagesForAllEmployees(user.id, activeEmployees, weekRange.start, weekRange.end),
+        calculateWagesForAllEmployees(user.id, activeEmployees, monthRange.start, monthRange.end),
+      ]);
 
       setWeeklyWages(getTotalWages(weeklyCalcs));
       setMonthlyWages(getTotalWages(monthlyCalcs));
-
-      // Calculate attendance
-      const weeklyAttendance = await getAttendanceInRange(user.id, weekRange.start, weekRange.end);
-      const monthlyAttendance = await getAttendanceInRange(user.id, monthRange.start, monthRange.end);
-
-      const weeklyPresent = weeklyAttendance.filter(a => a.status === 'present').length;
-      const weeklyHalf = weeklyAttendance.filter(a => a.status === 'half_day').length;
-      const monthlyPresent = monthlyAttendance.filter(a => a.status === 'present').length;
-      const monthlyHalf = monthlyAttendance.filter(a => a.status === 'half_day').length;
-
-      setAttendanceStats({
-        weeklyPresent: weeklyPresent + weeklyHalf * 0.5,
-        weeklyTotal: weeklyAttendance.length,
-        monthlyPresent: monthlyPresent + monthlyHalf * 0.5,
-        monthlyTotal: monthlyAttendance.length,
-      });
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error('Failed to load wage stats:', error);
     } finally {
       setLoadingStats(false);
     }
-  }, [user, activeEmployees]);
+  }, [user, activeEmployees, weekRange, monthRange]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    loadWageStats();
+  }, [loadWageStats]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadStats();
+    await Promise.all([loadWageStats(), refreshAttendanceStats()]);
     setRefreshing(false);
-  }, [loadStats]);
+  }, [loadWageStats, refreshAttendanceStats]);
 
   const weeklyAttendanceRate = useMemo(() => {
     return attendanceStats.weeklyTotal > 0
@@ -125,7 +94,7 @@ export default function ProfileScreen() {
       : 0;
   }, [attendanceStats.monthlyPresent, attendanceStats.monthlyTotal]);
 
-  if ((loadingAll || loadingActive || loadingStats) && !refreshing) {
+  if ((loadingAll || loadingActive || loadingStats || loadingAttendanceStats) && !refreshing) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />

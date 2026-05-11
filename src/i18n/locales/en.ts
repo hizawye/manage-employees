@@ -17,6 +17,7 @@ export default {
     goBack: 'Go Back',
     today: 'Today',
     noData: 'No data',
+    loadMore: 'Load More',
   },
 
   // Tabs

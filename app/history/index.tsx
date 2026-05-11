@@ -1,73 +1,24 @@
-import { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
-import { Text, Surface, ActivityIndicator, Chip, useTheme, IconButton } from 'react-native-paper';
+import { useState, useCallback } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { Text, Surface, ActivityIndicator, Chip, useTheme, IconButton, Button } from 'react-native-paper';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { useAuth } from '../../src/auth/useAuth';
-import { getLogs } from '../../src/database/repositories';
+import { useLogs } from '../../src/hooks';
 import { Log, LogActionType } from '../../src/models';
 import { t } from '../../src/i18n';
 import { sizes } from '../../src/constants/theme';
 
+type FilterType = 'all' | 'employee' | 'attendance';
+
 export default function HistoryScreen() {
     const router = useRouter();
     const { colors } = useTheme();
-    const { user } = useAuth();
+    const [filter, setFilter] = useState<FilterType>('all');
 
-    const [logs, setLogs] = useState<Log[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'employee' | 'attendance'>('all');
-    const [refreshing, setRefreshing] = useState(false);
-    const [page, setPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-
-    const loadLogs = useCallback(async (refresh = false) => {
-        if (!user) return;
-
-        try {
-            if (refresh) setLoading(true);
-
-            const pageSize = 50;
-            const offset = refresh ? 0 : page * pageSize;
-
-            // Note: Filtering is currently done client-side for simplicity
-            const newLogs = await getLogs(user.id, pageSize, offset);
-
-            let filteredLogs = newLogs;
-            if (filter === 'employee') {
-                filteredLogs = newLogs.filter(l => l.entityType === 'employee');
-            } else if (filter === 'attendance') {
-                filteredLogs = newLogs.filter(l => l.entityType === 'attendance');
-            }
-
-            if (refresh) {
-                setLogs(filteredLogs);
-                setPage(1);
-            } else {
-                setLogs(prev => [...prev, ...filteredLogs]);
-                setPage(prev => prev + 1);
-            }
-
-            setHasMore(newLogs.length === pageSize);
-
-        } catch (error) {
-            console.error('Failed to load logs', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [user, filter, page]);
-
-    useEffect(() => {
-        loadLogs(true);
-    }, [filter]);
-
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        loadLogs(true);
-    }, [loadLogs]);
+    const entityType = filter === 'all' ? undefined : filter;
+    const { logs, loading, loadingMore, error, hasMore, refresh, loadMore } = useLogs(entityType);
 
     const getLogMessage = useCallback((item: Log) => {
         try {
@@ -135,6 +86,26 @@ export default function HistoryScreen() {
         );
     }, [colors, getLogMessage]);
 
+    const renderFooter = () => {
+        if (loadingMore) {
+            return (
+                <View style={styles.footer}>
+                    <ActivityIndicator size="small" />
+                </View>
+            );
+        }
+        if (hasMore && logs.length > 0) {
+            return (
+                <View style={styles.footer}>
+                    <Button mode="text" onPress={loadMore} loading={loadingMore}>
+                        {t('common.loadMore')}
+                    </Button>
+                </View>
+            );
+        }
+        return null;
+    };
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
             <Stack.Screen options={{ headerShown: false }} />
@@ -176,9 +147,13 @@ export default function HistoryScreen() {
                 </Chip>
             </View>
 
-            {loading && !refreshing && logs.length === 0 ? (
+            {loading && logs.length === 0 ? (
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" />
+                </View>
+            ) : error ? (
+                <View style={styles.centered}>
+                    <Text style={{ color: colors.error }}>{error}</Text>
                 </View>
             ) : (
                 <FlatList
@@ -187,13 +162,14 @@ export default function HistoryScreen() {
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.list}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+                        <RefreshControl refreshing={loading && logs.length > 0} onRefresh={refresh} colors={[colors.primary]} />
                     }
                     ListEmptyComponent={
                         <View style={styles.centered}>
                             <Text style={{ color: colors.onSurfaceVariant }}>{t('history.empty')}</Text>
                         </View>
                     }
+                    ListFooterComponent={renderFooter}
                 />
             )}
         </SafeAreaView>
@@ -252,6 +228,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logDescription: {
-        marginStart: 32, // Indent to align with text start of header (RTL aware)
+        marginStart: 32,
+    },
+    footer: {
+        paddingVertical: sizes.padding,
+        alignItems: 'center',
     },
 });
