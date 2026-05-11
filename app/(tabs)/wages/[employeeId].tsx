@@ -1,25 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, ScrollView } from 'react-native';
-import {
-  Text,
-  Card,
-  SegmentedButtons,
-  ActivityIndicator,
-  Surface,
-  Button,
-  useTheme,
-  Divider,
-  Dialog,
-  Portal,
-  TextInput,
-  IconButton,
-} from 'react-native-paper';
+import { View, ScrollView, RefreshControl, Pressable, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
 import { StatusChip } from '../../../src/components';
-import { WageCalculation, WageDetail, WageType, Payment } from '../../../src/models';
-import { sizes, colors as staticColors } from '../../../src/constants/theme';
+import { WageCalculation, WageType, Payment } from '../../../src/models';
 import {
   formatCurrency,
   formatDateShort,
@@ -31,13 +17,15 @@ import {
 import { calculateWagesForPeriod } from '../../../src/services/WageCalculationService';
 import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
+import { Card, CardContent } from '../../../src/components/ui/card';
+import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
 
 type PeriodType = 'week' | 'month';
 
 export default function EmployeeWageDetailScreen() {
   const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
   const { user } = useAuth();
-  const { colors } = useTheme();
   const { employee, loading: loadingEmployee } = useEmployee(employeeId);
   const [period, setPeriod] = useState<PeriodType>('week');
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
@@ -141,386 +129,255 @@ export default function EmployeeWageDetailScreen() {
     setPayDialogVisible(true);
   };
 
-  const renderPaymentItem = useCallback(({ item }: { item: Payment }) => (
-    <View style={styles.paymentRow}>
-      <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-        {formatDate(item.paymentDate)}
-      </Text>
-      <Text variant="bodyMedium" style={{ fontWeight: '600', color: staticColors.success }}>
-        {formatCurrency(item.amount)}
-      </Text>
-    </View>
-  ), [colors]);
-
-  const renderWageDetail = useCallback(({ item }: { item: WageDetail }) => (
-    <Card style={[styles.detailCard, { backgroundColor: colors.surface }]}>
-      <Card.Content style={styles.detailContent}>
-        <View style={styles.detailInfo}>
-          <Text variant="bodyMedium" style={styles.detailDate}>
-            {formatDateShort(item.date)}
-          </Text>
-          <StatusChip type="attendance" status={item.status} />
-        </View>
-        <Text variant="bodyMedium" style={styles.detailWage}>
-          {formatCurrency(item.wageEarned)}
-        </Text>
-      </Card.Content>
-    </Card>
-  ), [colors]);
-
   if ((loadingEmployee || loading) && !refreshing) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" className="text-primary" />
       </View>
     );
   }
 
   if (!employee || !wageData) {
     return (
-      <View style={styles.centered}>
-        <Text style={[styles.error, { color: colors.error }]}>{t('employee.employeeNotFound')}</Text>
+      <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-destructive text-center">{t('employee.employeeNotFound')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View className="flex-1 bg-background">
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="pb-8"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
-          <Text variant="titleLarge" style={styles.employeeName}>
+        <View className="px-4 py-4 bg-card border-b border-border">
+          <Text variant="h3" className="font-bold text-foreground">
             {employee.name}
           </Text>
-          <Text variant="bodyMedium" style={[styles.employeeInfo, { color: colors.onSurfaceVariant }]}>
+          <Text variant="muted" className="mt-1">
             {employee.role} • {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
           </Text>
         </View>
 
-        <View style={styles.periodSelector}>
-          <SegmentedButtons
-            value={period}
-            onValueChange={(value) => setPeriod(value as PeriodType)}
-            buttons={[
-              { value: 'week', label: t('wages.thisWeek') },
-              { value: 'month', label: t('wages.thisMonth') },
-            ]}
-          />
+        <View className="px-4 py-3">
+          <View className="flex-row rounded-lg border border-border bg-background overflow-hidden">
+            {(['week', 'month'] as PeriodType[]).map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => setPeriod(p)}
+                className={`flex-1 py-2.5 items-center justify-center ${
+                  period === p ? 'bg-primary' : 'bg-background'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-medium ${
+                    period === p ? 'text-primary-foreground' : 'text-foreground'
+                  }`}
+                >
+                  {p === 'week' ? t('wages.thisWeek') : t('wages.thisMonth')}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
-        <Surface style={[styles.summaryCard, { backgroundColor: colors.surface }]} elevation={2}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text variant="bodySmall" style={[styles.summaryLabel, { color: colors.onSurfaceVariant }]}>
+        <Card className="mx-4 mb-3">
+          <CardContent className="p-4">
+            <View className="items-center mb-4">
+              <Text variant="muted" className="mb-1">
                 {t('wages.totalWage')}
               </Text>
-              <Text variant="headlineSmall" style={[styles.totalWage, { color: staticColors.success }]}>
+              <Text variant="h2" className="font-bold text-emerald-500">
                 {formatCurrency(wageData.totalWage)}
               </Text>
             </View>
-          </View>
 
-          {paidAmount > 0 && (
-            <>
-              <View style={styles.paymentStatusRow}>
-                <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
-                  {t('wages.paid')}:
+            {paidAmount > 0 && (
+              <>
+                <View className="flex-row justify-between items-center mb-1">
+                  <Text variant="p" className="text-muted-foreground">
+                    {t('wages.paid')}:
+                  </Text>
+                  <Text variant="p" className="font-semibold text-emerald-500">
+                    {formatCurrency(paidAmount)}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text variant="p" className="text-muted-foreground">
+                    {t('wages.remaining')}:
+                  </Text>
+                  <Text variant="p" className={`font-semibold ${isFullyPaid ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {formatCurrency(remainingAmount)}
+                  </Text>
+                </View>
+                <View className="border-t border-border pt-3" />
+              </>
+            )}
+
+            <View className="flex-row justify-around pt-2">
+              <View className="items-center">
+                <Text variant="h3" className="font-bold text-emerald-500">
+                  {wageData.totalDaysPresent}
                 </Text>
-                <Text variant="bodyMedium" style={{ fontWeight: '600', color: staticColors.success }}>
-                  {formatCurrency(paidAmount)}
+                <Text variant="muted" className="text-xs mt-1">
+                  {t('wages.daysPresent')}
                 </Text>
               </View>
-              <View style={styles.paymentStatusRow}>
-                <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
-                  {t('wages.remaining')}:
+              <View className="items-center">
+                <Text variant="h3" className="font-bold text-amber-500">
+                  {wageData.totalHalfDays}
                 </Text>
-                <Text variant="bodyMedium" style={{ fontWeight: '600', color: isFullyPaid ? staticColors.success : colors.error }}>
-                  {formatCurrency(remainingAmount)}
+                <Text variant="muted" className="text-xs mt-1">
+                  {t('wages.halfDays')}
                 </Text>
               </View>
-              <Divider style={{ marginVertical: sizes.paddingSmall }} />
-            </>
-          )}
-
-          <View style={[styles.statsRow, { borderTopColor: colors.outline }]}>
-            <View style={styles.statItem}>
-              <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.present }]}>
-                {wageData.totalDaysPresent}
-              </Text>
-              <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-                {t('wages.daysPresent')}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.halfDay }]}>
-                {wageData.totalHalfDays}
-              </Text>
-              <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-                {t('wages.halfDays')}
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text variant="titleMedium" style={[styles.statValue, { color: staticColors.absent }]}>
-                {wageData.totalDaysAbsent}
-              </Text>
-              <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-                {t('wages.daysAbsent')}
-              </Text>
-            </View>
-            {employee.wageType === WageType.HOURLY && (
-              <View style={styles.statItem}>
-                <Text variant="titleMedium" style={styles.statValue}>
-                  {wageData.totalHoursWorked?.toFixed(1) || 0}
+              <View className="items-center">
+                <Text variant="h3" className="font-bold text-red-500">
+                  {wageData.totalDaysAbsent}
                 </Text>
-                <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-                  {t('wages.hours')}
+                <Text variant="muted" className="text-xs mt-1">
+                  {t('wages.daysAbsent')}
+                </Text>
+              </View>
+              {employee.wageType === WageType.HOURLY && (
+                <View className="items-center">
+                  <Text variant="h3" className="font-bold text-foreground">
+                    {wageData.totalHoursWorked?.toFixed(1) || 0}
+                  </Text>
+                  <Text variant="muted" className="text-xs mt-1">
+                    {t('wages.hours')}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {!isFullyPaid && wageData.totalWage > 0 && (
+              <Button onPress={openPayDialog} className="mt-4">
+                {t('wages.markAsPaid')}
+              </Button>
+            )}
+
+            {isFullyPaid && (
+              <View className="mt-4 items-center py-2 bg-emerald-500/15 rounded-lg">
+                <Text className="text-emerald-500 font-bold">
+                  {t('wages.fullyPaid')}
                 </Text>
               </View>
             )}
-          </View>
-
-          {!isFullyPaid && wageData.totalWage > 0 && (
-            <Button
-              mode="contained"
-              onPress={openPayDialog}
-              style={{ marginTop: sizes.padding }}
-              icon="cash-check"
-            >
-              {t('wages.markAsPaid')}
-            </Button>
-          )}
-
-          {isFullyPaid && (
-            <View style={styles.paidBadge}>
-              <Text variant="bodyMedium" style={{ color: staticColors.success, fontWeight: 'bold' }}>
-                {t('wages.fullyPaid')}
-              </Text>
-            </View>
-          )}
-        </Surface>
+          </CardContent>
+        </Card>
 
         {payments.length > 0 && (
-          <Surface style={[styles.paymentsCard, { backgroundColor: colors.surface }]} elevation={1}>
-            <Text variant="titleSmall" style={{ marginBottom: sizes.paddingSmall }}>
-              {t('wages.paymentHistory')}
-            </Text>
-            {payments.map((p) => (
-              <View key={p.id} style={styles.paymentRow}>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  {formatDate(p.paymentDate)}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text variant="bodyMedium" style={{ fontWeight: '600', color: staticColors.success }}>
-                    {formatCurrency(p.amount)}
+          <Card className="mx-4 mb-3">
+            <CardContent className="p-4">
+              <Text variant="large" className="font-semibold text-foreground mb-3">
+                {t('wages.paymentHistory')}
+              </Text>
+              {payments.map((p) => (
+                <View key={p.id} className="flex-row justify-between items-center py-1">
+                  <Text variant="muted" className="text-sm">
+                    {formatDate(p.paymentDate)}
                   </Text>
-                  <IconButton
-                    icon="delete-outline"
-                    size={16}
-                    iconColor={colors.error}
-                    onPress={() => handleDeletePayment(p.id)}
-                    style={{ margin: 0 }}
-                  />
+                  <View className="flex-row items-center gap-2">
+                    <Text variant="p" className="font-semibold text-emerald-500">
+                      {formatCurrency(p.amount)}
+                    </Text>
+                    <Pressable onPress={() => handleDeletePayment(p.id)} className="p-1">
+                      <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </Surface>
+              ))}
+            </CardContent>
+          </Card>
         )}
 
-        <Text variant="titleSmall" style={[styles.breakdownTitle, { color: colors.onSurfaceVariant }]}>
+        <Text variant="large" className="font-semibold text-muted-foreground px-4 mb-2">
           {t('wages.dailyBreakdown')}
         </Text>
 
         {wageData.details.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('wages.noAttendanceRecords')}</Text>
+          <View className="px-4 py-4 items-center">
+            <Text className="text-muted-foreground">{t('wages.noAttendanceRecords')}</Text>
           </View>
         ) : (
           wageData.details.map((item) => (
-            <Card key={item.date} style={[styles.detailCard, { backgroundColor: colors.surface }]}>
-              <Card.Content style={styles.detailContent}>
-                <View style={styles.detailInfo}>
-                  <Text variant="bodyMedium" style={styles.detailDate}>
+            <Card key={item.date} className="mx-4 mb-2">
+              <CardContent className="p-4 flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <Text variant="p" className="font-medium text-foreground">
                     {formatDateShort(item.date)}
                   </Text>
                   <StatusChip type="attendance" status={item.status} />
                 </View>
-                <Text variant="bodyMedium" style={styles.detailWage}>
+                <Text variant="p" className="font-semibold text-foreground">
                   {formatCurrency(item.wageEarned)}
                 </Text>
-              </Card.Content>
+              </CardContent>
             </Card>
           ))
         )}
       </ScrollView>
 
-      <Portal>
-        <Dialog visible={payDialogVisible} onDismiss={() => setPayDialogVisible(false)}>
-          <Dialog.Title>{t('wages.recordPayment')}</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium" style={{ marginBottom: sizes.padding }}>
+      {/* Payment Dialog */}
+      <Modal
+        visible={payDialogVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPayDialogVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          <View className="w-full bg-card rounded-xl p-5 border border-border">
+            <Text variant="h3" className="font-bold text-foreground mb-4">
+              {t('wages.recordPayment')}
+            </Text>
+            <Text variant="p" className="text-muted-foreground mb-1">
               {t('wages.totalWage')}: {formatCurrency(wageData.totalWage)}
             </Text>
-            <Text variant="bodyMedium" style={{ marginBottom: sizes.padding }}>
+            <Text variant="p" className="text-muted-foreground mb-4">
               {t('wages.remaining')}: {formatCurrency(remainingAmount)}
             </Text>
             <TextInput
-              mode="outlined"
-              label={t('wages.paymentAmount')}
+              placeholder={t('wages.paymentAmount')}
               value={payAmount}
               onChangeText={setPayAmount}
               keyboardType="decimal-pad"
-              style={{ marginBottom: sizes.paddingSmall }}
-              error={!!paymentValidationError}
+              placeholderTextColor="hsl(215 16% 47%)"
+              className={`w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground mb-1 ${
+                paymentValidationError ? 'border-destructive' : 'border-border'
+              }`}
             />
             {paymentValidationError && (
-              <Text variant="bodySmall" style={{ color: colors.error, marginBottom: sizes.paddingSmall }}>
-                {paymentValidationError}
-              </Text>
+              <Text className="text-sm text-destructive mb-2">{paymentValidationError}</Text>
             )}
             <TextInput
-              mode="outlined"
-              label={t('wages.notesOptional')}
+              placeholder={t('wages.notesOptional')}
               value={payNotes}
               onChangeText={setPayNotes}
               multiline
               numberOfLines={2}
+              placeholderTextColor="hsl(215 16% 47%)"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground mb-4"
             />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setPayDialogVisible(false)}>{t('common.cancel')}</Button>
-            <Button
-              onPress={handlePay}
-              loading={payLoading}
-              disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) <= 0}
-            >
-              {t('wages.confirmPayment')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+            <View className="flex-row gap-3">
+              <Button variant="outline" className="flex-1" onPress={() => setPayDialogVisible(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                className="flex-1"
+                onPress={handlePay}
+                isLoading={payLoading}
+                disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) <= 0}
+              >
+                {t('wages.confirmPayment')}
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: sizes.paddingLarge,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-  header: {
-    padding: sizes.padding,
-    borderBottomWidth: 1,
-  },
-  employeeName: {
-    fontWeight: 'bold',
-  },
-  employeeInfo: {
-    marginTop: 4,
-  },
-  periodSelector: {
-    padding: sizes.padding,
-  },
-  summaryCard: {
-    margin: sizes.padding,
-    marginTop: 0,
-    padding: sizes.padding,
-    borderRadius: sizes.borderRadius,
-  },
-  summaryRow: {
-    alignItems: 'center',
-    marginBottom: sizes.padding,
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    marginBottom: 4,
-  },
-  totalWage: {
-    fontWeight: 'bold',
-  },
-  paymentStatusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    paddingTop: sizes.padding,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    marginTop: 2,
-  },
-  paidBadge: {
-    marginTop: sizes.padding,
-    alignItems: 'center',
-    padding: sizes.paddingSmall,
-    backgroundColor: staticColors.success + '15',
-    borderRadius: sizes.borderRadius,
-  },
-  paymentsCard: {
-    margin: sizes.padding,
-    marginTop: 0,
-    padding: sizes.padding,
-    borderRadius: sizes.borderRadius,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  breakdownTitle: {
-    paddingHorizontal: sizes.padding,
-    marginBottom: sizes.paddingSmall,
-  },
-  detailCard: {
-    marginHorizontal: sizes.padding,
-    marginBottom: sizes.paddingSmall,
-  },
-  detailContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  detailInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: sizes.paddingSmall,
-  },
-  detailDate: {
-    fontWeight: '500',
-  },
-  detailWage: {
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    padding: sizes.padding,
-    alignItems: 'center',
-  },
-  emptyText: {
-  },
-  error: {
-  },
-});

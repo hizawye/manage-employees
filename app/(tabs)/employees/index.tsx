@@ -1,11 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, I18nManager } from 'react-native';
-import { FAB, useTheme } from 'react-native-paper';
+import { useState, useCallback, useEffect } from 'react';
+import { View, FlatList, RefreshControl, Pressable, I18nManager } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployees, useRefresh, useDebounce } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
 import { t } from '../../../src/i18n';
 import { LoadingSpinner, EmptyState, ErrorMessage, EmployeeCard, SearchInput } from '../../../src/components';
 
@@ -13,13 +12,11 @@ const isRTL = I18nManager.isRTL;
 
 export default function EmployeeListScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { employees, loading, error, refresh, search } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refresh();
@@ -28,7 +25,6 @@ export default function EmployeeListScreen() {
 
   const { refreshing, onRefresh } = useRefresh(refresh);
 
-  // Execute search when debounced value changes
   useEffect(() => {
     search(debouncedSearch);
   }, [debouncedSearch, search]);
@@ -45,12 +41,12 @@ export default function EmployeeListScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View className="flex-1 bg-background">
       <SearchInput
         placeholder={t('employee.searchPlaceholder')}
         onChangeText={setSearchQuery}
         value={searchQuery}
-        style={styles.searchBar}
+        className="mx-4 mt-4 mb-2"
       />
 
       {error ? (
@@ -65,49 +61,24 @@ export default function EmployeeListScreen() {
           data={employees}
           keyExtractor={(item) => item.id}
           renderItem={renderEmployee}
-          contentContainerStyle={styles.list}
+          contentContainerClassName="px-4 pb-4"
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           windowSize={10}
           initialNumToRender={15}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         />
       )}
 
-      <FAB
-        icon="plus"
-        style={[styles.fab, { backgroundColor: colors.primary }, isRTL && styles.fabRTL]}
+      <Pressable
         onPress={() => router.push('/employees/add')}
-      />
+        className={`absolute bottom-6 ${isRTL ? 'left-6' : 'right-6'} w-14 h-14 rounded-2xl bg-primary items-center justify-center shadow-lg active:opacity-90`}
+        style={{ elevation: 6 }}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="white" />
+      </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  searchBar: {
-    margin: sizes.padding,
-  },
-  list: {
-    padding: sizes.padding,
-    paddingTop: 0,
-  },
-  fab: {
-    position: 'absolute',
-    right: sizes.padding,
-    bottom: sizes.padding,
-    borderRadius: sizes.borderRadiusLarge,
-  },
-  fabRTL: {
-    right: undefined,
-    left: sizes.padding,
-  },
-});

@@ -1,55 +1,42 @@
 import { Tabs } from 'expo-router';
-import { I18nManager } from 'react-native';
+import { I18nManager, useColorScheme } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from 'react-native-paper';
 import { t } from '../../src/i18n';
 
 const isRTL = I18nManager.isRTL;
 
 export default function TabLayout() {
-  const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-  // For RTL, we reverse the tab order so Profile appears on the right
+  const primary = '#3b82f6';
+  const inactive = isDark ? '#94a3b8' : '#64748b';
+  const surface = isDark ? '#0f172a' : '#ffffff';
+  const border = isDark ? '#1e293b' : '#e2e8f0';
+
   const tabs = [
-    {
-      name: 'employees',
-      title: t('tabs.employees'),
-      icon: 'account-group' as const,
-    },
-    {
-      name: 'attendance',
-      title: t('tabs.attendance'),
-      icon: 'calendar-check' as const,
-    },
-    {
-      name: 'wages',
-      title: t('tabs.wages'),
-      icon: 'cash-multiple' as const,
-    },
-    {
-      name: 'profile',
-      title: t('tabs.profile'),
-      icon: 'account-circle' as const,
-    },
+    { name: 'employees', title: t('tabs.employees'), icon: 'account-group' as const },
+    { name: 'attendance', title: t('tabs.attendance'), icon: 'calendar-check' as const },
+    { name: 'wages', title: t('tabs.wages'), icon: 'cash-multiple' as const },
+    { name: 'profile', title: t('tabs.profile'), icon: 'account-circle' as const },
   ];
 
-  // Reverse tabs for RTL so the visual order is correct
   const orderedTabs = isRTL ? [...tabs].reverse() : tabs;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        headerStyle: { backgroundColor: theme.colors.primary },
-        headerTintColor: theme.colors.onPrimary,
+        tabBarActiveTintColor: primary,
+        tabBarInactiveTintColor: inactive,
+        headerStyle: { backgroundColor: primary },
+        headerTintColor: '#ffffff',
         headerTitleStyle: { fontWeight: '600' },
         tabBarStyle: {
           paddingBottom: 6,
           paddingTop: 6,
           height: 65,
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant,
+          backgroundColor: surface,
+          borderTopColor: border,
         },
         tabBarLabelStyle: {
           fontSize: 12,

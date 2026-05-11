@@ -1,25 +1,19 @@
 import { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, I18nManager } from 'react-native';
-import {
-  Button,
-  SegmentedButtons,
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import { View, ScrollView, Alert, I18nManager, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEmployees } from '../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../src/models';
-import { sizes } from '../../../src/constants/theme';
 import { toISODateString } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
 import { FormInput } from '../../../src/components';
+import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
 
 const isRTL = I18nManager.isRTL;
 
-// Zod schema moved outside component for performance
 const employeeSchema = z.object({
   name: z.string().min(1, 'validation.nameRequired'),
   phone: z.string().min(1, 'validation.phoneRequired'),
@@ -36,7 +30,6 @@ type FormData = z.infer<typeof employeeSchema>;
 
 export default function AddEmployeeScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { addEmployee } = useEmployees();
   const [loading, setLoading] = useState(false);
 
@@ -82,7 +75,7 @@ export default function AddEmployeeScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView className="flex-1 bg-background" contentContainerClassName="p-4 pb-8">
       <Controller
         control={control}
         name="name"
@@ -133,19 +126,29 @@ export default function AddEmployeeScreen() {
         control={control}
         name="wageType"
         render={({ field: { onChange, value } }) => (
-          <View style={{ marginBottom: sizes.padding }}>
-            <Text variant="titleSmall" style={[styles.label, { color: colors.onSurfaceVariant }]}>
+          <View className="mb-4">
+            <Text variant="label" className="mb-2 text-foreground">
               {t('employee.wageType')}
             </Text>
-            <SegmentedButtons
-              value={value}
-              onValueChange={onChange}
-              buttons={[
-                { value: WageType.DAILY, label: t('employee.dailyRate') },
-                { value: WageType.HOURLY, label: t('employee.hourlyRate') },
-              ]}
-              style={styles.segmentedButtons}
-            />
+            <View className="flex-row rounded-lg border border-border bg-background overflow-hidden">
+              {([WageType.DAILY, WageType.HOURLY] as WageType[]).map((type) => (
+                <Pressable
+                  key={type}
+                  onPress={() => onChange(type)}
+                  className={`flex-1 py-3 items-center justify-center ${
+                    value === type ? 'bg-primary' : 'bg-background'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${
+                      value === type ? 'text-primary-foreground' : 'text-foreground'
+                    }`}
+                  >
+                    {type === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
       />
@@ -181,64 +184,14 @@ export default function AddEmployeeScreen() {
         )}
       />
 
-      <View style={styles.buttonContainer}>
-        <Button
-          mode="outlined"
-          onPress={() => router.back()}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
-        >
+      <View className="flex-row gap-3 mt-6">
+        <Button variant="outline" className="flex-1" onPress={() => router.back()}>
           {t('common.cancel')}
         </Button>
-        <Button
-          mode="contained"
-          onPress={handleSubmit(onSubmit)}
-          loading={loading}
-          disabled={loading}
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
-        >
+        <Button className="flex-1" onPress={handleSubmit(onSubmit)} isLoading={loading}>
           {t('employee.addEmployee')}
         </Button>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: sizes.padding,
-    paddingBottom: sizes.paddingLarge,
-  },
-  label: {
-    marginBottom: sizes.paddingSmall,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  segmentedButtons: {
-    borderRadius: sizes.borderRadius,
-    marginBottom: sizes.padding,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: sizes.paddingLarge,
-    gap: sizes.paddingSmall,
-  },
-  button: {
-    flex: 1,
-    borderRadius: sizes.borderRadius,
-  },
-  buttonContent: {
-    paddingVertical: 8,
-  },
-  buttonLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});

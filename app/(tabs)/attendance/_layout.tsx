@@ -1,15 +1,14 @@
 import { Stack } from 'expo-router';
-import { useTheme } from 'react-native-paper';
 import { t } from '../../../src/i18n';
 
-export default function AttendanceLayout() {
-  const theme = useTheme();
+const primary = '#3b82f6';
 
+export default function AttendanceLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.primary },
-        headerTintColor: theme.colors.onPrimary,
+        headerStyle: { backgroundColor: primary },
+        headerTintColor: '#ffffff',
         headerTitleStyle: { fontWeight: '600' },
         headerTitleAlign: 'center',
       }}

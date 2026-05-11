@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Surface, ActivityIndicator, Chip, useTheme, IconButton, Button } from 'react-native-paper';
+import { View, FlatList, RefreshControl, Pressable } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,13 +7,15 @@ import { format } from 'date-fns';
 import { useLogs } from '../../src/hooks';
 import { Log, LogActionType } from '../../src/models';
 import { t } from '../../src/i18n';
-import { sizes } from '../../src/constants/theme';
+import { Text } from '../../src/components/ui/text';
+import { Card, CardContent } from '../../src/components/ui/card';
+import { Button } from '../../src/components/ui/button';
+import { Badge } from '../../src/components/ui/badge';
 
 type FilterType = 'all' | 'employee' | 'attendance';
 
 export default function HistoryScreen() {
     const router = useRouter();
-    const { colors } = useTheme();
     const [filter, setFilter] = useState<FilterType>('all');
 
     const entityType = filter === 'all' ? undefined : filter;
@@ -50,54 +51,56 @@ export default function HistoryScreen() {
     }, []);
 
     const renderLogItem = useCallback(({ item }: { item: Log }) => {
-        let icon = 'circle-small';
-        let iconColor = colors.primary;
+        let icon = 'circle-small' as any;
+        let iconColor = 'text-primary';
 
         if (item.action.includes('create') || item.action.includes('mark')) {
             icon = 'plus-circle-outline';
-            iconColor = colors.tertiary;
+            iconColor = 'text-emerald-500';
         } else if (item.action.includes('update')) {
             icon = 'pencil-circle-outline';
-            iconColor = colors.secondary;
+            iconColor = 'text-blue-500';
         } else if (item.action.includes('delete')) {
             icon = 'delete-circle-outline';
-            iconColor = colors.error;
+            iconColor = 'text-red-500';
         }
 
         return (
-            <Surface style={[styles.logItem, { backgroundColor: colors.surface }]} elevation={1}>
-                <View style={styles.logHeader}>
-                    <View style={styles.logIconRow}>
-                        <MaterialCommunityIcons name={icon as any} size={24} color={iconColor} />
-                        <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginStart: 8 }}>
-                            {format(new Date(item.createdAt), 'MMM dd, HH:mm')}
-                        </Text>
+            <Card className="mb-2">
+                <CardContent className="p-4">
+                    <View className="flex-row justify-between items-center mb-1">
+                        <View className="flex-row items-center gap-2">
+                            <MaterialCommunityIcons name={icon} size={22} className={iconColor} />
+                            <Text variant="muted" className="text-sm">
+                                {format(new Date(item.createdAt), 'MMM dd, HH:mm')}
+                            </Text>
+                        </View>
+                        {item.entityType && (
+                            <Badge variant="secondary">
+                                {item.entityType === 'employee' ? t('history.filterEmployee') : item.entityType === 'attendance' ? t('history.filterAttendance') : item.entityType}
+                            </Badge>
+                        )}
                     </View>
-                    {item.entityType && (
-                        <Chip style={{ height: 24 }} textStyle={{ fontSize: 10, lineHeight: 10, marginVertical: 0, marginHorizontal: 8 }}>
-                            {item.entityType === 'employee' ? t('history.filterEmployee') : item.entityType === 'attendance' ? t('history.filterAttendance') : item.entityType}
-                        </Chip>
-                    )}
-                </View>
-                <Text variant="bodyMedium" style={styles.logDescription}>
-                    {getLogMessage(item)}
-                </Text>
-            </Surface>
+                    <Text variant="p" className="ml-7">
+                        {getLogMessage(item)}
+                    </Text>
+                </CardContent>
+            </Card>
         );
-    }, [colors, getLogMessage]);
+    }, [getLogMessage]);
 
     const renderFooter = () => {
         if (loadingMore) {
             return (
-                <View style={styles.footer}>
-                    <ActivityIndicator size="small" />
+                <View className="py-4 items-center">
+                    <MaterialCommunityIcons name="loading" size={24} className="text-primary" />
                 </View>
             );
         }
         if (hasMore && logs.length > 0) {
             return (
-                <View style={styles.footer}>
-                    <Button mode="text" onPress={loadMore} loading={loadingMore}>
+                <View className="py-4 items-center">
+                    <Button variant="ghost" onPress={loadMore}>
                         {t('common.loadMore')}
                     </Button>
                 </View>
@@ -107,66 +110,54 @@ export default function HistoryScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+        <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            <View style={[styles.header, { backgroundColor: colors.surface }]}>
-                <IconButton
-                    icon="arrow-left"
-                    onPress={() => router.back()}
-                />
-                <Text variant="titleLarge" style={styles.headerTitle}>
+            <View className="flex-row items-center px-2 py-2 bg-card border-b border-border">
+                <Pressable onPress={() => router.back()} className="p-2">
+                    <MaterialCommunityIcons name="arrow-left" size={24} className="text-foreground" />
+                </Pressable>
+                <Text variant="h3" className="font-semibold ml-2 text-foreground">
                     {t('history.title')}
                 </Text>
             </View>
 
-            <View style={styles.filterRow}>
-                <Chip
-                    selected={filter === 'all'}
-                    onPress={() => setFilter('all')}
-                    style={styles.filterChip}
-                    showSelectedOverlay
-                >
-                    {t('history.filterAll')}
-                </Chip>
-                <Chip
-                    selected={filter === 'employee'}
-                    onPress={() => setFilter('employee')}
-                    style={styles.filterChip}
-                    showSelectedOverlay
-                >
-                    {t('history.filterEmployee')}
-                </Chip>
-                <Chip
-                    selected={filter === 'attendance'}
-                    onPress={() => setFilter('attendance')}
-                    style={styles.filterChip}
-                    showSelectedOverlay
-                >
-                    {t('history.filterAttendance')}
-                </Chip>
+            <View className="flex-row p-4 gap-2">
+                {(['all', 'employee', 'attendance'] as FilterType[]).map((f) => (
+                    <Pressable
+                        key={f}
+                        onPress={() => setFilter(f)}
+                        className={`flex-1 py-2 rounded-lg items-center justify-center border ${
+                            filter === f ? 'bg-primary border-primary' : 'bg-card border-border'
+                        }`}
+                    >
+                        <Text className={`text-sm font-medium ${filter === f ? 'text-primary-foreground' : 'text-foreground'}`}>
+                            {f === 'all' ? t('history.filterAll') : f === 'employee' ? t('history.filterEmployee') : t('history.filterAttendance')}
+                        </Text>
+                    </Pressable>
+                ))}
             </View>
 
             {loading && logs.length === 0 ? (
-                <View style={styles.centered}>
-                    <ActivityIndicator size="large" />
+                <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
+                    <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
                 </View>
             ) : error ? (
-                <View style={styles.centered}>
-                    <Text style={{ color: colors.error }}>{error}</Text>
+                <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
+                    <Text className="text-destructive text-center">{error}</Text>
                 </View>
             ) : (
                 <FlatList
                     data={logs}
                     renderItem={renderLogItem}
                     keyExtractor={item => item.id}
-                    contentContainerStyle={styles.list}
+                    contentContainerClassName="px-4 pb-4"
                     refreshControl={
-                        <RefreshControl refreshing={loading && logs.length > 0} onRefresh={refresh} colors={[colors.primary]} />
+                        <RefreshControl refreshing={loading && logs.length > 0} onRefresh={refresh} />
                     }
                     ListEmptyComponent={
-                        <View style={styles.centered}>
-                            <Text style={{ color: colors.onSurfaceVariant }}>{t('history.empty')}</Text>
+                        <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
+                            <Text className="text-muted-foreground text-center">{t('history.empty')}</Text>
                         </View>
                     }
                     ListFooterComponent={renderFooter}
@@ -175,63 +166,3 @@ export default function HistoryScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 4,
-        paddingVertical: 8,
-        elevation: 2,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(0,0,0,0.1)',
-    },
-    headerTitle: {
-        fontWeight: '600',
-        marginLeft: 8,
-    },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        minHeight: 200,
-    },
-    filterRow: {
-        flexDirection: 'row',
-        padding: sizes.padding,
-        gap: 8,
-    },
-    filterChip: {
-        flex: 1,
-    },
-    list: {
-        padding: sizes.padding,
-        paddingTop: 0,
-    },
-    logItem: {
-        padding: sizes.padding,
-        marginBottom: sizes.paddingSmall,
-        borderRadius: sizes.borderRadius,
-    },
-    logHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    logIconRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    logDescription: {
-        marginStart: 32,
-    },
-    footer: {
-        paddingVertical: sizes.padding,
-        alignItems: 'center',
-    },
-});

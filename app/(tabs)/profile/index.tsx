@@ -1,21 +1,21 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Surface, ActivityIndicator, Button, RadioButton, useTheme } from 'react-native-paper';
+import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEmployees, useAttendanceStats } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
-import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
-import { t, getLocale, setLocale, isArabic } from '../../../src/i18n';
+import { t, getLocale, setLocale } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 import { useThemeContext } from '../../../src/theme';
+import { Card, CardContent } from '../../../src/components/ui/card';
+import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { user, logout, isGuest } = useAuth();
   const { themeMode, setThemeMode } = useThemeContext();
   const { employees: allEmployees, loading: loadingAll } = useEmployees();
@@ -38,7 +38,6 @@ export default function ProfileScreen() {
   const handleLanguageChange = async (locale: 'en' | 'ar') => {
     await setLocale(locale);
     setCurrentLocale(locale);
-    // Note: App reload required for full RTL switch
   };
 
   const handleLogout = async () => {
@@ -103,362 +102,212 @@ export default function ProfileScreen() {
 
   if ((loadingAll || loadingActive || loadingStats || loadingAttendanceStats) && !refreshing) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View className="flex-1 justify-center items-center">
+        <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
       </View>
     );
   }
 
+  const SectionHeader = ({ icon, title }: { icon: string; title: string }) => (
+    <View className="flex-row items-center gap-2 mb-3">
+      <MaterialCommunityIcons name={icon as any} size={24} className="text-primary" />
+      <Text variant="large" className="font-bold text-foreground">
+        {title}
+      </Text>
+    </View>
+  );
+
+  const RadioItem = ({
+    label,
+    selected,
+    onPress,
+  }: {
+    label: string;
+    selected: boolean;
+    onPress: () => void;
+  }) => (
+    <Pressable onPress={onPress} className="flex-row items-center py-2.5">
+      <View
+        className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+          selected ? 'border-primary' : 'border-muted-foreground'
+        }`}
+      >
+        {selected && <View className="w-2.5 h-2.5 rounded-full bg-primary" />}
+      </View>
+      <Text variant="p" className="text-foreground">
+        {label}
+      </Text>
+    </Pressable>
+  );
+
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
+      className="flex-1 bg-background"
+      contentContainerClassName="p-4 pb-8"
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[colors.primary]}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       {/* Guest Account Conversion Card */}
       {isGuest && (
-        <Surface style={[styles.section, styles.guestCard, { borderLeftColor: colors.primary }]} elevation={3}>
-          <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="account-convert" size={26} color={colors.primary} />
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              {t('profile.createAccountToSave')}
+        <Card className="mb-4 border-l-4 border-l-primary">
+          <CardContent className="p-4">
+            <SectionHeader icon="account-convert" title={t('profile.createAccountToSave')} />
+            <Text variant="muted" className="mb-3 leading-5">
+              {t('profile.guestAccountInfo')}
             </Text>
-          </View>
-          <Text variant="bodyMedium" style={[styles.guestInfo, { color: colors.onSurfaceVariant }]}>
-            {t('profile.guestAccountInfo')}
-          </Text>
-          <Button
-            mode="contained"
-            icon="account-plus"
-            onPress={() => router.push('/(auth)/convert-guest')}
-            style={styles.createAccountButton}
-          >
-            {t('auth.createAccount')}
-          </Button>
-        </Surface>
+            <Button onPress={() => router.push('/(auth)/convert-guest')}>
+              {t('auth.createAccount')}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Employee Stats */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="account-group" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.employeeStats')}
-          </Text>
-        </View>
-        <View style={styles.statsGrid}>
-          <StatCard
-            value={allEmployees.length}
-            label={t('profile.totalEmployees')}
-            icon="account-group"
-          />
-          <StatCard
-            value={activeEmployees.length}
-            label={t('profile.activeEmployees')}
-            color={staticColors.success}
-            icon="account-check"
-          />
-          <StatCard
-            value={inactiveCount}
-            label={t('profile.inactiveEmployees')}
-            color={colors.error}
-            icon="account-off"
-          />
-        </View>
-      </Surface>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="account-group" title={t('profile.employeeStats')} />
+          <View className="flex-row gap-3">
+            <StatCard value={allEmployees.length} label={t('profile.totalEmployees')} icon="account-group" />
+            <StatCard value={activeEmployees.length} label={t('profile.activeEmployees')} color="#10b981" icon="account-check" />
+            <StatCard value={inactiveCount} label={t('profile.inactiveEmployees')} color="#ef4444" icon="account-off" />
+          </View>
+        </CardContent>
+      </Card>
 
       {/* Wage Stats */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="cash-multiple" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.wageStats')}
-          </Text>
-        </View>
-        <View style={styles.wageRow}>
-          <View style={styles.wageItem}>
-            <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
-              {t('profile.thisWeek')}
-            </Text>
-            <Text variant="titleLarge" style={[styles.wageValue, { color: staticColors.success }]}>
-              {formatCurrency(weeklyWages)}
-            </Text>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="cash-multiple" title={t('profile.wageStats')} />
+          <View className="flex-row items-center">
+            <View className="flex-1 items-center py-2">
+              <Text variant="muted" className="mb-2">
+                {t('profile.thisWeek')}
+              </Text>
+              <Text variant="h3" className="font-bold text-emerald-500">
+                {formatCurrency(weeklyWages)}
+              </Text>
+            </View>
+            <View className="w-px h-14 bg-border" />
+            <View className="flex-1 items-center py-2">
+              <Text variant="muted" className="mb-2">
+                {t('profile.thisMonth')}
+              </Text>
+              <Text variant="h3" className="font-bold text-emerald-500">
+                {formatCurrency(monthlyWages)}
+              </Text>
+            </View>
           </View>
-          <View style={[styles.wageDivider, { backgroundColor: colors.outline }]} />
-          <View style={styles.wageItem}>
-            <Text variant="bodyMedium" style={[styles.wageLabel, { color: colors.onSurfaceVariant }]}>
-              {t('profile.thisMonth')}
-            </Text>
-            <Text variant="titleLarge" style={[styles.wageValue, { color: staticColors.success }]}>
-              {formatCurrency(monthlyWages)}
-            </Text>
-          </View>
-        </View>
-      </Surface>
+        </CardContent>
+      </Card>
 
       {/* Attendance Stats */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="calendar-check" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.attendanceStats')}
-          </Text>
-        </View>
-        <View style={styles.attendanceRow}>
-          <View style={styles.attendanceItem}>
-            <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
-              {t('profile.thisWeek')}
-            </Text>
-            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: staticColors.present }]}>
-              {weeklyAttendanceRate}%
-            </Text>
-            <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>
-              {attendanceStats.weeklyPresent} / {attendanceStats.weeklyTotal}
-            </Text>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="calendar-check" title={t('profile.attendanceStats')} />
+          <View className="flex-row justify-around">
+            <View className="items-center flex-1">
+              <Text variant="muted" className="mb-2">
+                {t('profile.thisWeek')}
+              </Text>
+              <Text variant="h2" className="font-bold text-emerald-500">
+                {weeklyAttendanceRate}%
+              </Text>
+              <Text variant="muted" className="mt-1">
+                {attendanceStats.weeklyPresent} / {attendanceStats.weeklyTotal}
+              </Text>
+            </View>
+            <View className="items-center flex-1">
+              <Text variant="muted" className="mb-2">
+                {t('profile.thisMonth')}
+              </Text>
+              <Text variant="h2" className="font-bold text-emerald-500">
+                {monthlyAttendanceRate}%
+              </Text>
+              <Text variant="muted" className="mt-1">
+                {attendanceStats.monthlyPresent} / {attendanceStats.monthlyTotal}
+              </Text>
+            </View>
           </View>
-          <View style={styles.attendanceItem}>
-            <Text variant="bodyMedium" style={[styles.attendanceLabel, { color: colors.onSurfaceVariant }]}>
-              {t('profile.thisMonth')}
-            </Text>
-            <Text variant="headlineMedium" style={[styles.attendanceRate, { color: staticColors.present }]}>
-              {monthlyAttendanceRate}%
-            </Text>
-            <Text variant="bodySmall" style={[styles.attendanceDetail, { color: colors.onSurfaceVariant }]}>
-              {attendanceStats.monthlyPresent} / {attendanceStats.monthlyTotal}
-            </Text>
-          </View>
-        </View>
-      </Surface>
-
+        </CardContent>
+      </Card>
 
       {/* History Link */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="history" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('history.title')}
-          </Text>
-        </View>
-        <Button
-          mode="outlined"
-          onPress={() => router.push('/history')}
-          icon="arrow-right"
-          contentStyle={{ flexDirection: 'row-reverse' }}
-        >
-          {t('attendance.viewHistory')}
-        </Button>
-      </Surface>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="history" title={t('history.title')} />
+          <Button variant="outline" onPress={() => router.push('/history')}>
+            {t('attendance.viewHistory')}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Theme Preference */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="palette" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('theme.preference')}
-          </Text>
-        </View>
-        <RadioButton.Group onValueChange={(value) => setThemeMode(value as 'light' | 'dark' | 'auto')} value={themeMode}>
-          <View style={styles.radioRow}>
-            <RadioButton.Item label={t('theme.light')} value="light" position="leading" />
-          </View>
-          <View style={styles.radioRow}>
-            <RadioButton.Item label={t('theme.dark')} value="dark" position="leading" />
-          </View>
-          <View style={styles.radioRow}>
-            <RadioButton.Item label={t('theme.auto')} value="auto" position="leading" />
-          </View>
-        </RadioButton.Group>
-      </Surface>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="palette" title={t('theme.preference')} />
+          <RadioItem
+            label={t('theme.light')}
+            selected={themeMode === 'light'}
+            onPress={() => setThemeMode('light')}
+          />
+          <RadioItem
+            label={t('theme.dark')}
+            selected={themeMode === 'dark'}
+            onPress={() => setThemeMode('dark')}
+          />
+          <RadioItem
+            label={t('theme.auto')}
+            selected={themeMode === 'auto'}
+            onPress={() => setThemeMode('auto')}
+          />
+        </CardContent>
+      </Card>
 
       {/* Language */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="translate" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.language')}
-          </Text>
-        </View>
-        <RadioButton.Group onValueChange={(value) => handleLanguageChange(value as 'en' | 'ar')} value={currentLocale}>
-          <View style={styles.radioRow}>
-            <RadioButton.Item label="English" value="en" position="leading" />
-          </View>
-          <View style={styles.radioRow}>
-            <RadioButton.Item label="العربية" value="ar" position="leading" />
-          </View>
-        </RadioButton.Group>
-      </Surface>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="translate" title={t('profile.language')} />
+          <RadioItem
+            label="English"
+            selected={currentLocale === 'en'}
+            onPress={() => handleLanguageChange('en')}
+          />
+          <RadioItem
+            label="العربية"
+            selected={currentLocale === 'ar'}
+            onPress={() => handleLanguageChange('ar')}
+          />
+        </CardContent>
+      </Card>
 
       {/* App Info */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="information-outline" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.appInfo')}
-          </Text>
-        </View>
-        <View style={[styles.infoRow, styles.infoRowLast]}>
-          <Text variant="bodyLarge" style={[styles.infoLabel, { color: colors.onSurfaceVariant }]}>
-            {t('profile.version')}
-          </Text>
-          <Text variant="bodyLarge" style={[styles.infoValue, { color: colors.onSurface }]}>
-            1.0.0
-          </Text>
-        </View>
-      </Surface>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="information-outline" title={t('profile.appInfo')} />
+          <View className="flex-row justify-between py-2">
+            <Text variant="p" className="text-muted-foreground">
+              {t('profile.version')}
+            </Text>
+            <Text variant="p" className="font-semibold text-foreground">
+              1.0.0
+            </Text>
+          </View>
+        </CardContent>
+      </Card>
 
       {/* User Account */}
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionHeader}>
-          <MaterialCommunityIcons name="account-circle" size={26} color={colors.primary} />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            {t('profile.loggedInAs')}
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <SectionHeader icon="account-circle" title={t('profile.loggedInAs')} />
+          <Text variant="p" className="text-center text-foreground text-lg font-semibold mb-4">
+            {user?.username}
           </Text>
-        </View>
-        <Text variant="bodyLarge" style={[styles.username, { color: colors.onSurface }]}>
-          {user?.username}
-        </Text>
-        <Button
-          mode="contained"
-          icon="logout"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-          buttonColor={colors.error}
-        >
-          {t('profile.logout')}
-        </Button>
-      </Surface>
-    </ScrollView >
+          <Button variant="destructive" onPress={handleLogout}>
+            {t('profile.logout')}
+          </Button>
+        </CardContent>
+      </Card>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: sizes.padding,
-    paddingBottom: sizes.paddingLarge,
-  },
-  section: {
-    padding: sizes.padding,
-    borderRadius: sizes.borderRadius,
-    marginBottom: sizes.padding,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: sizes.padding,
-    gap: sizes.paddingSmall,
-  },
-  sectionTitle: {
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statCard: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontWeight: '700',
-    fontSize: 32,
-  },
-  statLabel: {
-    marginTop: 6,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  wageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  wageItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: sizes.paddingSmall,
-  },
-  wageDivider: {
-    width: 1,
-    height: 60,
-  },
-  wageLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  wageValue: {
-    fontWeight: '700',
-    fontSize: 20,
-  },
-  attendanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  attendanceItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  attendanceLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  attendanceRate: {
-    fontWeight: '700',
-    fontSize: 28,
-  },
-  attendanceDetail: {
-    marginTop: 6,
-    fontSize: 13,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: sizes.padding,
-    borderBottomWidth: 1,
-  },
-  infoRowLast: {
-    borderBottomWidth: 0,
-  },
-  infoLabel: {
-    fontSize: 15,
-  },
-  infoValue: {
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  username: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: sizes.padding,
-    textAlign: 'center',
-  },
-  logoutButton: {
-    marginTop: sizes.paddingSmall,
-  },
-  guestCard: {
-    borderLeftWidth: 4,
-  },
-  guestInfo: {
-    marginBottom: sizes.padding,
-    lineHeight: 22,
-  },
-  createAccountButton: {
-    marginTop: sizes.paddingSmall,
-  },
-  radioRow: {
-    marginVertical: 0,
-  },
-});

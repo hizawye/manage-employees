@@ -1,33 +1,25 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import {
-  Text,
-  Card,
-  Button,
-  IconButton,
-  ActivityIndicator,
-  SegmentedButtons,
-  TextInput,
-  useTheme,
-} from 'react-native-paper';
+import { View, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployees, useAttendanceByDate, useRefresh } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
-import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
 import { addDays, parseISO } from 'date-fns';
 import { t } from '../../../src/i18n';
+import { Card, CardContent } from '../../../src/components/ui/card';
+import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
+import { Badge } from '../../../src/components/ui/badge';
 
 export default function AttendanceScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  // Refresh employees when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refreshEmployees();
@@ -82,77 +74,77 @@ export default function AttendanceScreen() {
   const renderEmployee = useCallback(({ item }: { item: Employee }) => {
     const currentAttendance = attendanceMap.get(item.id);
     const isSaving = savingId === item.id;
+    const status = currentAttendance?.status;
+
+    const statusButtons = [
+      { value: AttendanceStatus.PRESENT, label: t('attendance.present'), color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+      { value: AttendanceStatus.HALF_DAY, label: t('attendance.halfDay'), color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+      { value: AttendanceStatus.ABSENT, label: t('attendance.absent'), color: 'bg-red-500/15 text-red-600 dark:text-red-400' },
+    ];
 
     return (
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.employeeHeader}>
-            <View style={styles.employeeInfo}>
-              <Text variant="titleMedium" style={styles.name}>
+      <Card className="mb-3">
+        <CardContent className="p-4">
+          <View className="flex-row justify-between items-start mb-3">
+            <View className="flex-1">
+              <Text variant="large" className="font-semibold text-foreground">
                 {item.name}
               </Text>
-              <Text variant="bodySmall" style={[styles.role, { color: colors.onSurfaceVariant }]}>
+              <Text variant="muted" className="mt-0.5">
                 {item.role} • {item.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}
               </Text>
             </View>
-            {isSaving && <ActivityIndicator size="small" />}
+            {isSaving && <ActivityIndicator size="small" className="text-primary" />}
           </View>
 
-          <View style={styles.statusButtons}>
-            <SegmentedButtons
-              value={currentAttendance?.status || ''}
-              onValueChange={(value) =>
-                handleMarkAttendance(
-                  item.id,
-                  value as AttendanceStatus,
-                  item.wageType === WageType.HOURLY ? 8 : undefined
-                )
-              }
-              buttons={[
-                {
-                  value: AttendanceStatus.PRESENT,
-                  label: t('attendance.present'),
-                  style: currentAttendance?.status === AttendanceStatus.PRESENT
-                    ? { backgroundColor: staticColors.present + '20' }
-                    : undefined,
-                },
-                {
-                  value: AttendanceStatus.HALF_DAY,
-                  label: t('attendance.halfDay'),
-                  style: currentAttendance?.status === AttendanceStatus.HALF_DAY
-                    ? { backgroundColor: staticColors.halfDay + '20' }
-                    : undefined,
-                },
-                {
-                  value: AttendanceStatus.ABSENT,
-                  label: t('attendance.absent'),
-                  style: currentAttendance?.status === AttendanceStatus.ABSENT
-                    ? { backgroundColor: staticColors.absent + '20' }
-                    : undefined,
-                },
-              ]}
-            />
+          <View className="flex-row gap-2">
+            {statusButtons.map((btn) => {
+              const isActive = status === btn.value;
+              return (
+                <Pressable
+                  key={btn.value}
+                  onPress={() =>
+                    handleMarkAttendance(
+                      item.id,
+                      btn.value,
+                      item.wageType === WageType.HOURLY ? 8 : undefined
+                    )
+                  }
+                  className={`flex-1 py-2.5 rounded-lg items-center justify-center border ${
+                    isActive
+                      ? 'bg-primary border-primary'
+                      : 'bg-card border-border'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${
+                      isActive ? 'text-primary-foreground' : 'text-foreground'
+                    }`}
+                  >
+                    {btn.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
-          {item.wageType === WageType.HOURLY && currentAttendance?.status === AttendanceStatus.PRESENT && (
-            <View style={styles.hoursContainer}>
-              <Text variant="bodySmall" style={[styles.hoursLabel, { color: colors.onSurfaceVariant }]}>
+          {item.wageType === WageType.HOURLY && status === AttendanceStatus.PRESENT && (
+            <View className="flex-row items-center mt-3">
+              <Text variant="muted" className="mr-2">
                 {t('attendance.hoursWorked')}:
               </Text>
               <TextInput
-                mode="outlined"
-                dense
                 keyboardType="decimal-pad"
-                value={currentAttendance?.hoursWorked?.toString() || '8'}
-                onChangeText={(text) => {
-                  const hours = parseFloat(text) || 0;
+                defaultValue={currentAttendance?.hoursWorked?.toString() || '8'}
+                onEndEditing={(e) => {
+                  const hours = parseFloat(e.nativeEvent.text) || 0;
                   handleMarkAttendance(item.id, AttendanceStatus.PRESENT, hours);
                 }}
-                style={styles.hoursInput}
+                className="w-20 h-9 rounded-md border border-border bg-background px-2 text-center text-foreground"
               />
             </View>
           )}
-        </Card.Content>
+        </CardContent>
       </Card>
     );
   }, [attendanceMap, savingId, handleMarkAttendance]);
@@ -161,60 +153,46 @@ export default function AttendanceScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" className="text-primary" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.dateSelector, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
-        <IconButton
-          icon="chevron-left"
-          size={28}
-          onPress={() => changeDate(-1)}
-        />
-        <Text variant="titleMedium" style={styles.dateText}>
+    <View className="flex-1 bg-background">
+      {/* Date Selector */}
+      <View className="flex-row items-center justify-center py-3 bg-card border-b border-border">
+        <Pressable onPress={() => changeDate(-1)} className="p-2">
+          <MaterialCommunityIcons name="chevron-left" size={28} className="text-foreground" />
+        </Pressable>
+        <Text variant="large" className="min-w-[140px] text-center font-semibold text-foreground">
           {formatDate(selectedDate)}
         </Text>
-        <IconButton
-          icon="chevron-right"
-          size={28}
-          onPress={() => changeDate(1)}
-        />
+        <Pressable onPress={() => changeDate(1)} className="p-2">
+          <MaterialCommunityIcons name="chevron-right" size={28} className="text-foreground" />
+        </Pressable>
       </View>
 
-      <View style={styles.quickActions}>
-        <Button
-          mode="outlined"
-          compact
-          onPress={() => setSelectedDate(getTodayString())}
-          style={styles.todayButton}
-        >
+      {/* Quick Actions */}
+      <View className="flex-row items-center justify-between px-4 py-2 gap-2">
+        <Button variant="outline" size="sm" onPress={() => setSelectedDate(getTodayString())}>
           {t('common.today')}
         </Button>
-        <Button
-          mode="contained-tonal"
-          compact
-          onPress={handleMarkAllPresent}
-          icon="check-all"
-        >
+        <Button variant="secondary" size="sm" onPress={handleMarkAllPresent}>
           {t('attendance.markAllPresent')}
         </Button>
-        <Button
-          mode="text"
-          compact
-          onPress={() => router.push('/attendance/history')}
-        >
+        <Button variant="ghost" size="sm" onPress={() => router.push('/attendance/history')}>
           {t('attendance.viewHistory')}
         </Button>
       </View>
 
       {employees.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('attendance.noActiveEmployees')}</Text>
-          <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
+        <View className="flex-1 justify-center items-center px-4">
+          <Text variant="h4" className="text-center text-muted-foreground mb-2">
+            {t('attendance.noActiveEmployees')}
+          </Text>
+          <Text variant="muted" className="text-center">
             {t('attendance.noActiveEmployeesHint')}
           </Text>
         </View>
@@ -223,96 +201,12 @@ export default function AttendanceScreen() {
           data={employees}
           keyExtractor={(item) => item.id}
           renderItem={renderEmployee}
-          contentContainerStyle={styles.list}
+          contentContainerClassName="px-4 pb-4"
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-  dateSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: sizes.paddingSmall,
-    borderBottomWidth: 1,
-  },
-  dateText: {
-    minWidth: 140,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: sizes.paddingSmall,
-    paddingHorizontal: sizes.padding,
-    gap: 6,
-  },
-  todayButton: {
-    borderRadius: sizes.borderRadius,
-  },
-  list: {
-    padding: sizes.padding,
-    paddingTop: 0,
-  },
-  card: {
-    marginBottom: sizes.paddingSmall,
-  },
-  employeeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: sizes.paddingSmall,
-  },
-  employeeInfo: {
-    flex: 1,
-  },
-  name: {
-    fontWeight: '600',
-  },
-  role: {
-    marginTop: 2,
-  },
-  statusButtons: {
-    marginTop: sizes.paddingSmall,
-  },
-  hoursContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: sizes.paddingSmall,
-  },
-  hoursLabel: {
-    marginRight: sizes.paddingSmall,
-  },
-  hoursInput: {
-    width: 80,
-    height: 36,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  emptySubtext: {
-    marginTop: 8,
-    textAlign: 'center',
-  },
-});

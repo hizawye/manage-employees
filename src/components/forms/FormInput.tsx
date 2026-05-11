@@ -1,19 +1,17 @@
-import { View, StyleSheet, I18nManager } from 'react-native';
-import { TextInput, HelperText, TextInputProps, useTheme } from 'react-native-paper';
-import { sizes } from '../../constants/theme';
+import { View, TextInput, TextInputProps, I18nManager } from 'react-native';
+import { cn } from '@/lib/utils';
+import { Text } from '../ui/text';
 import { t } from '../../i18n';
 
 const isRTL = I18nManager.isRTL;
 
-interface FormInputProps extends Omit<TextInputProps, 'mode' | 'style'> {
+interface FormInputProps extends Omit<TextInputProps, 'style'> {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
   onBlur?: () => void;
   error?: boolean;
   errorMessage?: string | undefined;
-  multiline?: boolean;
-  numberOfLines?: number;
 }
 
 export function FormInput({
@@ -25,51 +23,34 @@ export function FormInput({
   errorMessage,
   multiline = false,
   numberOfLines,
+  className,
   ...rest
 }: FormInputProps) {
-  const { colors } = useTheme();
-
   return (
-    <View style={styles.inputContainer}>
+    <View className={cn("mb-4", className)}>
+      <Text variant="label" className="mb-1.5 text-foreground">
+        {label}
+      </Text>
       <TextInput
-        label={label}
-        mode="outlined"
         value={value}
         onChangeText={onChangeText}
         onBlur={onBlur}
-        error={error}
         multiline={multiline}
         numberOfLines={numberOfLines}
-        style={[styles.input, { backgroundColor: colors.surface }, multiline && styles.textArea]}
-        contentStyle={styles.inputContent}
-        outlineStyle={styles.inputOutline}
+        placeholderTextColor="hsl(215 16% 47%)"
+        className={cn(
+          "w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground",
+          error ? "border-destructive" : "border-border",
+          multiline && "min-h-[100px] text-align-top"
+        )}
+        style={{ textAlign: isRTL ? 'right' : 'left' }}
         {...rest}
       />
       {error && errorMessage && (
-        <HelperText type="error" style={styles.errorText}>
+        <Text className="text-sm text-destructive mt-1">
           {t(errorMessage || 'validation.required')}
-        </HelperText>
+        </Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  inputContainer: {
-    marginBottom: sizes.padding,
-  },
-  input: {
-  },
-  inputContent: {
-    textAlign: isRTL ? 'right' : 'left',
-  },
-  inputOutline: {
-    borderRadius: sizes.borderRadius,
-  },
-  textArea: {
-    minHeight: 100,
-  },
-  errorText: {
-    fontSize: 13,
-  },
-});

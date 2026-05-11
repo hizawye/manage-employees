@@ -1,30 +1,14 @@
-import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
-import { sizes } from '../../constants/theme';
+import { View } from 'react-native';
+import { Text } from '../ui/text';
 
 interface ErrorMessageProps {
   message: string;
 }
 
 export function ErrorMessage({ message }: ErrorMessageProps) {
-  const { colors } = useTheme();
-
   return (
-    <View style={styles.centered}>
-      <Text style={[styles.error, { color: colors.error }]}>{message}</Text>
+    <View className="flex-1 justify-center items-center p-4">
+      <Text className="text-center text-destructive text-base">{message}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-  error: {
-    textAlign: 'center',
-    fontSize: 15,
-  },
-});

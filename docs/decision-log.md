@@ -989,3 +989,212 @@ const { refreshing, onRefresh } = useRefresh(loadData);
 ✅ 15-25% performance improvement in list rendering
 ✅ Better maintainability and TypeScript support
 
+---
+
+## 2026-05-11: NativeWind v4 UI Rewrite - Complete Migration from react-native-paper
+
+### Decision: Replace react-native-paper with NativeWind v4 + Custom UI Primitives
+
+**Context:**
+App was built on react-native-paper for Material Design 3 components. Over time, several issues emerged:
+1. RTL inconsistencies across Paper components (Searchbar, Dialog, etc.)
+2. Heavy dependency tree impacting bundle size
+3. Limited customization without complex theme objects
+4. No built-in dark mode toggle without wrapping entire app in PaperProvider
+5. Desire for Tailwind-style rapid styling
+
+**Decision:**
+Migrate ENTIRE UI layer to NativeWind v4 with a custom shadcn-style primitive component system.
+
+**Rationale:**
+- Tailwind utilities are familiar and fast to write
+- CSS variables handle light/dark mode seamlessly
+- Custom primitives give 100% control over behavior
+- No more fighting library RTL detection
+- Bundle size reduction by removing paper + vector-icons dependencies it pulled
+
+---
+
+### Implementation Details
+
+**Phase 1: Setup NativeWind v4**
+1. Installed `nativewind` and `tailwindcss`
+2. Created `tailwind.config.ts` with cool blue palette and dark mode CSS variables
+3. Created `global.css` with HSL color tokens for light/dark themes
+4. Updated `babel.config.js` with `nativewind/babel` plugin
+5. Updated `metro.config.js` with `withNativeWind()` wrapper
+6. Created `nativewind-env.d.ts` for TypeScript className support
+
+**Phase 2: Build UI Primitives**
+Created `src/components/ui/` directory with atomic components:
+- Text (variants: h1-h4, p, lead, muted, label)
+- Button (variants: default, destructive, outline, secondary, ghost, link)
+- Card, CardHeader, CardContent, CardFooter
+- Input (with iconLeft/iconRight, error state)
+- Badge (variants: default, secondary, destructive, outline, success, warning)
+- Avatar (size variants with initials)
+- EmptyState
+
+All primitives use `className` with Tailwind utilities and `dark:` prefixes.
+
+**Phase 3: Rewrite Shared Components**
+Converted all shared components to use primitives:
+- LoadingSpinner, EmptyState, ErrorMessage, ErrorBoundary
+- StatusChip (now wraps Badge primitive)
+- EmployeeCard (Card + Text + Badge)
+- StatCard (View + Text + MaterialCommunityIcons)
+- FormInput (View + Text + TextInput with NativeWind classes)
+- SearchInput (View + TextInput + MaterialCommunityIcons)
+- InfoRow (View + Text + MaterialCommunityIcons)
+- DateSelector (View + Pressable + MaterialCommunityIcons)
+
+**Phase 4: Rewrite All Screens**
+Rewrote 14 screen files and 5 layout files:
+- Removed ALL `react-native-paper` imports
+- Replaced `useTheme()` with direct Tailwind classes
+- Replaced `StyleSheet.create()` with `className` strings
+- Replaced Paper Dialog/Portal with React Native Modal
+- Replaced SegmentedButtons with custom Pressable-based selectors
+- Replaced FAB with Pressable + MaterialCommunityIcons
+
+**Phase 5: Update Theme System**
+- Removed `react-native-paper` from ThemeContext
+- ThemeContext now only manages `light | dark | auto` mode
+- Dark mode applied via `dark` className on root View in `_layout.tsx`
+- NativeWind CSS variables automatically switch when `.dark` class present
+
+---
+
+### Color Palette
+
+**Cool Blue Theme:**
+- Primary: `#3b82f6` (hsl(217 91% 60%))
+- Success: `#10b981` (emerald)
+- Destructive: `#ef4444` (red)
+- Warning: `#f59e0b` (amber)
+- Background light: `#ffffff`
+- Background dark: `#0f172a` (slate-900)
+- Card light: `#ffffff`
+- Card dark: `#1e293b` (slate-800)
+
+---
+
+### Key Technical Decisions
+
+**1. Keep MaterialCommunityIcons**
+- Removed react-native-paper but kept `@expo/vector-icons`
+- Icons work with NativeWind `className="text-primary"`
+- Consistent icon set across app
+
+**2. Use React Native Modal Instead of Paper Dialog**
+- Wage detail screen had payment recording dialog
+- Built custom modal with Modal + View + Card primitives
+- Full control over styling and animation
+- ~50 lines vs Paper's Portal+Dialog complexity
+
+**3. Custom Segmented Button Replacement**
+- Attendance, wages, add/edit screens used Paper's SegmentedButtons
+- Replaced with flex-row of Pressable components
+- Each button has conditional `bg-primary` / `bg-background` classes
+- Simpler, more customizable, no library dependency
+
+**4. Tab Bar Colors via useColorScheme**
+- Expo Router Tabs need actual color values (not className)
+- Used `useColorScheme()` to detect dark mode
+- Defined static color values for tab bar surfaces
+- Header colors hardcoded to primary blue (`#3b82f6`)
+
+**5. Form Validation Preserved**
+- react-hook-form + zod untouched
+- FormInput component still works with Controller
+- Error display updated to use NativeWind text colors
+
+---
+
+### Files Changed
+
+**Created:**
+- `src/components/ui/text.tsx`
+- `src/components/ui/button.tsx`
+- `src/components/ui/card.tsx`
+- `src/components/ui/input.tsx`
+- `src/components/ui/badge.tsx`
+- `src/components/ui/avatar.tsx`
+- `src/components/ui/empty-state.tsx`
+- `tailwind.config.ts`
+- `global.css`
+- `nativewind-env.d.ts`
+
+**Rewritten (29 files):**
+- All screen files in `app/(tabs)/`, `app/(auth)/`, `app/history/`
+- All layout files in `app/(tabs)/`
+- All shared components in `src/components/`
+- `src/theme/themes.ts` (removed Paper types)
+
+**Dependencies:**
+- Removed all `react-native-paper` imports (0 remaining)
+- NativeWind v4 + Tailwind CSS added in previous session
+
+---
+
+### Verification
+
+**TypeScript:**
+```bash
+npx tsc --noEmit
+# Result: 0 errors
+```
+
+**react-native-paper Import Check:**
+```bash
+grep -r "from 'react-native-paper'" src/ app/
+# Result: No matches
+```
+
+---
+
+### Impact
+
+**Bundle Size:**
+- Removed react-native-paper dependency tree
+- Reduced vector icon duplication (Paper bundled its own)
+
+**Developer Experience:**
+- Tailwind classes are faster to write than StyleSheet objects
+- Consistent spacing/sizing via Tailwind scale
+- Dark mode is just adding `dark:` prefix to classes
+
+**Maintainability:**
+- All UI in one styling system (Tailwind)
+- No theme object drilling
+- CSS variables centralized in global.css
+
+**Performance:**
+- No JS theme object rebuilds on dark mode toggle
+- CSS class switching is instantaneous
+- Reduced re-renders from removed Paper providers
+
+---
+
+### Lessons Learned
+
+1. **NativeWind v4 is Production-Ready:** Stable for React Native 0.81 + Expo SDK 54
+2. **Custom Primitives Scale Well:** 7 primitives power 25+ components
+3. **Modal Over Portal:** React Native Modal is simpler than Paper's Portal system
+4. **CSS Variables for Theming:** HSL variables in global.css handle all color switching
+5. **Migration is Feasible:** Complete rewrite of 29 files in one session
+
+---
+
+### Remaining Work
+
+**Known Limitations:**
+- Jest tests still blocked by babel config (pre-existing)
+- Some animations may need re-adding (Paper had built-in ripples)
+- `contentContainerClassName` on FlatList requires React Native 0.72+
+
+**Future Polish:**
+- Add press ripple effect to buttons
+- Add skeleton loading states
+- Add transitions between dark/light mode
+

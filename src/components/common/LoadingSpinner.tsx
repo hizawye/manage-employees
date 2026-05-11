@@ -1,28 +1,14 @@
-import { View, StyleSheet } from 'react-native';
-import { ActivityIndicator, useTheme } from 'react-native-paper';
-import { sizes } from '../../constants/theme';
+import { View, ActivityIndicator } from 'react-native';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'large';
-  color?: string;
+  className?: string;
 }
 
-export function LoadingSpinner({ size = 'large', color }: LoadingSpinnerProps) {
-  const { colors } = useTheme();
-  const spinnerColor = color || colors.primary;
-
+export function LoadingSpinner({ size = 'large', className }: LoadingSpinnerProps) {
   return (
-    <View style={styles.centered}>
-      <ActivityIndicator size={size} color={spinnerColor} />
+    <View className={`flex-1 justify-center items-center p-4 ${className || ''}`}>
+      <ActivityIndicator size={size} className="text-primary" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-});

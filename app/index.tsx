@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from 'react-native-paper';
 import { useAuth } from '../src/auth/useAuth';
 
 export default function Index() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
@@ -20,16 +18,8 @@ export default function Index() {
   }, [user, isLoading]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ActivityIndicator size="large" color={colors.primary} />
+    <View className="flex-1 justify-center items-center bg-background">
+      <ActivityIndicator size="large" className="text-primary" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar, useTheme } from 'react-native-paper';
-import { useRouter, Link } from 'expo-router';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { Link } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
-import { sizes } from '../../src/constants/theme';
+import { Text } from '../../src/components/ui/text';
+import { Input } from '../../src/components/ui/input';
+import { Button } from '../../src/components/ui/button';
+import { Card, CardContent } from '../../src/components/ui/card';
 
 const signupSchema = z.object({
   username: z
@@ -28,9 +31,7 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function SignupScreen() {
-  const router = useRouter();
   const { signup } = useAuth();
-  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,11 +39,7 @@ export default function SignupScreen() {
 
   const { control, handleSubmit, formState: { errors } } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-      confirmPassword: '',
-    },
+    defaultValues: { username: '', password: '', confirmPassword: '' },
   });
 
   const onSubmit = async (data: SignupFormData) => {
@@ -50,7 +47,6 @@ export default function SignupScreen() {
       setLoading(true);
       setError('');
       await signup(data.username, data.password);
-      router.replace('/(tabs)/employees');
     } catch (err: any) {
       if (err.message.includes('already exists')) {
         setError(t('auth.usernameExists'));
@@ -64,169 +60,123 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="flex-grow justify-center px-6 py-8"
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={[styles.formSurface, { backgroundColor: colors.surface }]} elevation={2}>
-          <Text variant="headlineMedium" style={styles.title}>
-            {t('auth.signup')}
-          </Text>
+        <Card>
+          <CardContent className="py-6">
+            <View className="items-center mb-6">
+              <MaterialCommunityIcons name="account-plus" size={48} className="text-primary" />
+              <Text variant="h2" className="mt-4">{t('auth.signup')}</Text>
+            </View>
 
-          <Controller
-            control={control}
-            name="username"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.username')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.username}
-                style={styles.input}
-                autoCapitalize="none"
-                autoCorrect={false}
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.username && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.username.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="username"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.username')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="account" size={20} className="text-muted-foreground" />}
+                  error={errors.username ? t(errors.username.message || '') : undefined}
+                  className="mb-4"
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.password')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.password}
-                style={styles.input}
-                secureTextEntry={!showPassword}
-                right={
-                  <TextInput.Icon
-                    icon={showPassword ? 'eye-off' : 'eye'}
-                    onPress={() => setShowPassword(!showPassword)}
-                  />
-                }
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.password && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.password.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.password')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="lock" size={20} className="text-muted-foreground" />}
+                  iconRight={
+                    <Pressable onPress={() => setShowPassword(!showPassword)}>
+                      <MaterialCommunityIcons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Pressable>
+                  }
+                  error={errors.password ? t(errors.password.message || '') : undefined}
+                  className="mb-4"
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="confirmPassword"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.confirmPassword')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.confirmPassword}
-                style={styles.input}
-                secureTextEntry={!showConfirmPassword}
-                right={
-                  <TextInput.Icon
-                    icon={showConfirmPassword ? 'eye-off' : 'eye'}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  />
-                }
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.confirmPassword && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.confirmPassword.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="confirmPassword"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.confirmPassword')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="lock-check" size={20} className="text-muted-foreground" />}
+                  iconRight={
+                    <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      <MaterialCommunityIcons
+                        name={showConfirmPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Pressable>
+                  }
+                  error={errors.confirmPassword ? t(errors.confirmPassword.message || '') : undefined}
+                  className="mb-6"
+                />
+              )}
+            />
 
-          <Button
-            mode="contained"
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            disabled={loading}
-            style={styles.signupButton}
-          >
-            {loading ? t('auth.signingUp') : t('auth.signup')}
-          </Button>
+            <Text variant="muted" className="mb-4 text-center">
+              {t('auth.passwordTooShort')} · {t('auth.passwordNoNumber')}
+            </Text>
 
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>{t('auth.alreadyHaveAccount')} </Text>
-            <Link href="/(auth)/login" asChild>
-              <Text style={[styles.loginLink, { color: colors.primary }]}>{t('auth.loginLink')}</Text>
-            </Link>
-          </View>
-        </Surface>
+            <Button
+              onPress={handleSubmit(onSubmit)}
+              isLoading={loading}
+              disabled={loading}
+              className="w-full mb-4"
+            >
+              {t('auth.signup')}
+            </Button>
+
+            <View className="flex-row justify-center items-center">
+              <Text variant="muted">{t('auth.alreadyHaveAccount')} </Text>
+              <Link href="/(auth)/login" asChild>
+                <Pressable>
+                  <Text className="text-primary font-semibold">{t('auth.loginLink')}</Text>
+                </Pressable>
+              </Link>
+            </View>
+          </CardContent>
+        </Card>
       </ScrollView>
 
-      <Snackbar
-        visible={!!error}
-        onDismiss={() => setError('')}
-        duration={4000}
-        action={{
-          label: t('common.ok'),
-          onPress: () => setError(''),
-        }}
-      >
-        {error}
-      </Snackbar>
+      {error ? (
+        <View className="absolute bottom-6 left-6 right-6 bg-destructive px-4 py-3 rounded-lg">
+          <Text className="text-destructive-foreground text-sm">{error}</Text>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: sizes.paddingLarge,
-    paddingVertical: sizes.paddingLarge,
-  },
-  formSurface: {
-    padding: sizes.paddingLarge,
-    borderRadius: sizes.borderRadiusLarge,
-  },
-  title: {
-    marginBottom: sizes.paddingLarge,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  input: {
-    marginBottom: sizes.paddingSmall,
-  },
-  errorText: {
-    fontSize: 12,
-    marginBottom: sizes.padding,
-    marginTop: -4,
-  },
-  signupButton: {
-    marginTop: sizes.padding,
-    marginBottom: sizes.paddingLarge,
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginText: {
-    fontSize: 14,
-  },
-  loginLink: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});

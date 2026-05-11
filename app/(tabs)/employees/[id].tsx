@@ -1,17 +1,18 @@
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Divider, ActivityIndicator, useTheme } from 'react-native-paper';
+import { View, ScrollView, Alert, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useEmployees } from '../../../src/hooks';
 import { StatusChip, InfoRow } from '../../../src/components';
-import { WageType, EmployeeStatus } from '../../../src/models';
-import { sizes, rtlStyles } from '../../../src/constants/theme';
+import { WageType } from '../../../src/models';
 import { formatDate, formatCurrency } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
+import { Card, CardContent } from '../../../src/components/ui/card';
+import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
 
 export default function EmployeeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { colors } = useTheme();
   const { employee, loading, error } = useEmployee(id);
   const { removeEmployee } = useEmployees();
 
@@ -37,17 +38,17 @@ export default function EmployeeDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center">
+        <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
       </View>
     );
   }
 
   if (error || !employee) {
     return (
-      <View style={styles.centered}>
-        <Text style={[styles.error, { color: colors.error }]}>{error || t('employee.employeeNotFound')}</Text>
-        <Button mode="outlined" onPress={() => router.back()} style={styles.backButton}>
+      <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-destructive text-center mb-4">{error || t('employee.employeeNotFound')}</Text>
+        <Button variant="outline" onPress={() => router.back()}>
           {t('common.goBack')}
         </Button>
       </View>
@@ -55,116 +56,65 @@ export default function EmployeeDetailScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.header}>
-            <Text variant="headlineMedium" style={styles.name}>
+    <ScrollView className="flex-1 bg-background">
+      <Card className="m-4">
+        <CardContent className="p-4">
+          <View className="flex-row justify-between items-start mb-2">
+            <Text variant="h2" className="font-bold text-foreground flex-1">
               {employee.name}
             </Text>
             <StatusChip type="employee" status={employee.status} compact={false} />
           </View>
 
-          <Text variant="titleMedium" style={[styles.role, { color: colors.onSurfaceVariant }]}>
+          <Text variant="p" className="text-muted-foreground mb-4">
             {employee.role}
           </Text>
 
-          <Divider style={styles.divider} />
-
-          <InfoRow label={t('employee.phone')} value={employee.phone} icon="phone" />
-          <InfoRow
-            label={t('employee.wageType')}
-            value={employee.wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
-            icon="cash"
-          />
-          <InfoRow
-            label={employee.wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
-            value={formatCurrency(employee.wageRate)}
-            icon="currency-usd"
-          />
-          <InfoRow label={t('employee.joinDate')} value={formatDate(employee.joinDate)} icon="calendar" />
+          <View className="border-t border-border pt-2">
+            <InfoRow label={t('employee.phone')} value={employee.phone} icon="phone" />
+            <InfoRow
+              label={t('employee.wageType')}
+              value={employee.wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
+              icon="cash"
+            />
+            <InfoRow
+              label={employee.wageType === WageType.DAILY ? t('employee.dailyRate') : t('employee.hourlyRate')}
+              value={formatCurrency(employee.wageRate)}
+              icon="currency-usd"
+            />
+            <InfoRow label={t('employee.joinDate')} value={formatDate(employee.joinDate)} icon="calendar" />
+          </View>
 
           {employee.notes && (
             <>
-              <Divider style={styles.divider} />
-              <Text style={styles.label}>{t('employee.notes')}:</Text>
-              <Text style={[styles.notes, { color: colors.onSurface }]}>{employee.notes}</Text>
+              <View className="border-t border-border pt-3 mt-2">
+                <Text variant="label" className="font-semibold text-foreground mb-2">
+                  {t('employee.notes')}:
+                </Text>
+                <Text variant="p" className="text-foreground leading-5">
+                  {employee.notes}
+                </Text>
+              </View>
             </>
           )}
-        </Card.Content>
+        </CardContent>
       </Card>
 
-      <View style={styles.buttonContainer}>
+      <View className="flex-row px-4 gap-3">
         <Button
-          mode="contained"
+          className="flex-1"
           onPress={() => router.push(`/employees/edit/${id}`)}
-          style={styles.button}
-          icon="pencil"
         >
           {t('common.edit')}
         </Button>
         <Button
-          mode="outlined"
+          variant="outline"
+          className="flex-1"
           onPress={handleDelete}
-          style={styles.button}
-          icon="delete"
-          textColor={colors.error}
         >
-          {t('common.delete')}
+          <Text className="text-destructive">{t('common.delete')}</Text>
         </Button>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-  card: {
-    margin: sizes.padding,
-  },
-  header: {
-    ...rtlStyles.row,
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  name: {
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  role: {
-    marginTop: 4,
-  },
-  divider: {
-    marginVertical: sizes.padding,
-  },
-  label: {
-    fontWeight: '600',
-    marginBottom: sizes.paddingSmall,
-  },
-  notes: {
-    marginTop: sizes.paddingSmall,
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    padding: sizes.padding,
-    gap: sizes.paddingSmall,
-  },
-  button: {
-    flex: 1,
-  },
-  error: {
-    marginBottom: sizes.padding,
-  },
-  backButton: {
-    marginTop: sizes.padding,
-  },
-});

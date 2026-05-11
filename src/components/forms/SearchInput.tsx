@@ -1,73 +1,38 @@
-import { View, TextInput, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { Icon, useTheme } from 'react-native-paper';
-import { sizes } from '../../constants/theme';
+import { View, TextInput, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { cn } from '@/lib/utils';
 
 interface SearchInputProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
-  style?: ViewStyle;
+  className?: string;
 }
 
-export function SearchInput({ placeholder, value, onChangeText, style }: SearchInputProps) {
-  const { colors } = useTheme();
+export function SearchInput({ placeholder, value, onChangeText, className }: SearchInputProps) {
   const handleClear = () => onChangeText('');
   const showClearButton = value.length > 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }, style]}>
-      {/* Search Icon (RIGHT for RTL) */}
-      <Icon
-        source="magnify"
-        size={24}
-        color={colors.primary}
-      />
-
-      {/* Text Input with RTL support */}
+    <View
+      className={cn(
+        "flex-row items-center rounded-xl border border-border bg-card px-4 py-2.5 gap-3",
+        className
+      )}
+    >
+      <MaterialCommunityIcons name="magnify" size={22} className="text-primary" />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.onSurfaceVariant}
-        style={[styles.input, { color: colors.onSurface }]}
+        placeholderTextColor="hsl(215 16% 47%)"
+        className="flex-1 text-base text-foreground h-full"
       />
-
-      {/* Clear Button (LEFT for RTL, only when text exists) */}
       {showClearButton && (
-        <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-          <Icon
-            source="close-circle"
-            size={20}
-            color={colors.onSurfaceVariant}
-          />
+        <TouchableOpacity onPress={handleClear} className="p-1">
+          <MaterialCommunityIcons name="close-circle" size={20} className="text-muted-foreground" />
         </TouchableOpacity>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row-reverse',  // Icons in RTL positions
-    alignItems: 'center',
-    borderRadius: sizes.borderRadius,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    textAlign: 'right',      // RTL alignment
-    writingDirection: 'rtl',  // Force RTL text flow
-    paddingVertical: 4,
-  },
-  clearButton: {
-    padding: 4,
-  },
-});

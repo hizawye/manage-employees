@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import { Text, Surface, useTheme } from 'react-native-paper';
+import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { sizes } from '../../constants/theme';
+import { Text } from '../ui/text';
 
 interface StatCardProps {
   value: string | number;
@@ -10,7 +9,7 @@ interface StatCardProps {
   variant?: 'default' | 'colored';
   color?: string;
   icon?: string;
-  style?: ViewStyle;
+  className?: string;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -19,77 +18,38 @@ export const StatCard: React.FC<StatCardProps> = ({
   variant = 'default',
   color,
   icon,
-  style,
+  className,
 }) => {
-  const theme = useTheme();
-  const cardColor = color || theme.colors.primary;
+  const cardColor = color || 'hsl(217 91% 60%)';
 
   return (
-    <Surface
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.surface },
-        variant === 'colored' && { backgroundColor: cardColor },
-        style,
-      ]}
-      elevation={2}
+    <View
+      className={`flex-1 items-center justify-center p-4 rounded-xl min-h-[100px] ${
+        variant === 'colored' ? '' : 'bg-card border border-border'
+      } ${className || ''}`}
+      style={variant === 'colored' ? { backgroundColor: cardColor } : undefined}
     >
       {icon && (
         <MaterialCommunityIcons
           name={icon as any}
           size={24}
           color={variant === 'colored' ? '#fff' : cardColor}
-          style={styles.icon}
+          className="mb-2"
         />
       )}
       <Text
-        variant="headlineSmall"
-        style={[
-          styles.value,
-          variant === 'colored' && styles.coloredValue,
-          variant !== 'colored' && { color: cardColor },
-        ]}
+        variant="h3"
+        className={`font-bold mb-1 ${variant === 'colored' ? 'text-white' : ''}`}
+        style={variant !== 'colored' ? { color: cardColor } : undefined}
       >
         {value}
       </Text>
       <Text
-        variant="bodySmall"
-        style={[
-          styles.label,
-          { color: theme.colors.onSurfaceVariant },
-          variant === 'colored' && styles.coloredLabel,
-        ]}
+        variant="small"
+        className={`text-center ${variant === 'colored' ? 'text-white/90' : 'text-muted-foreground'}`}
       >
         {label}
       </Text>
-    </Surface>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: sizes.padding,
-    borderRadius: sizes.borderRadius,
-    minHeight: 100,
-  },
-  icon: {
-    marginBottom: sizes.paddingSmall,
-  },
-  value: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  label: {
-    textAlign: 'center',
-  },
-  coloredValue: {
-    color: '#fff',
-  },
-  coloredLabel: {
-    color: '#fff',
-    opacity: 0.9,
-  },
-});

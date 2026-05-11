@@ -1,8 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { sizes } from '../../constants/theme';
+import { Text } from '../ui/text';
 
 interface InfoRowProps {
   label: string;
@@ -11,49 +10,23 @@ interface InfoRowProps {
 }
 
 export const InfoRow: React.FC<InfoRowProps> = ({ label, value, icon }) => {
-  const { colors } = useTheme();
-
   return (
-    <View style={[styles.container, { borderBottomColor: colors.outlineVariant }]}>
-      <View style={styles.labelContainer}>
+    <View className="flex-row justify-between items-center py-2 border-b border-border">
+      <View className="flex-row items-center flex-1">
         {icon && (
           <MaterialCommunityIcons
             name={icon as any}
             size={20}
-            color={colors.onSurfaceVariant}
-            style={styles.icon}
+            className="text-muted-foreground mr-2"
           />
         )}
-        <Text variant="bodyMedium" style={[styles.label, { color: colors.onSurfaceVariant }]}>
+        <Text variant="p" className="text-muted-foreground">
           {label}
         </Text>
       </View>
-      <Text variant="bodyMedium" style={[styles.value, { color: colors.onSurface }]}>
+      <Text variant="p" className="font-semibold text-foreground">
         {value}
       </Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: sizes.paddingSmall,
-    borderBottomWidth: 1,
-  },
-  labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  icon: {
-    marginRight: sizes.paddingSmall,
-  },
-  label: {
-  },
-  value: {
-    fontWeight: '600',
-  },
-});

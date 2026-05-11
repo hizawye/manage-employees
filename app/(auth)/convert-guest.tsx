@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar, useTheme } from 'react-native-paper';
+import { View, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
-import { sizes } from '../../src/constants/theme';
+import { Text } from '../../src/components/ui/text';
+import { Input } from '../../src/components/ui/input';
+import { Button } from '../../src/components/ui/button';
+import { Card, CardContent } from '../../src/components/ui/card';
 
 const convertGuestSchema = z.object({
   username: z.string().min(3, 'auth.usernameTooShort').max(20, 'auth.usernameTooLong'),
@@ -23,7 +26,6 @@ type ConvertGuestFormData = z.infer<typeof convertGuestSchema>;
 export default function ConvertGuestScreen() {
   const router = useRouter();
   const { convertGuestToUser, isGuest } = useAuth();
-  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,24 +33,16 @@ export default function ConvertGuestScreen() {
 
   const { control, handleSubmit, formState: { errors } } = useForm<ConvertGuestFormData>({
     resolver: zodResolver(convertGuestSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-      confirmPassword: '',
-    },
+    defaultValues: { username: '', password: '', confirmPassword: '' },
   });
 
-  // Redirect if not guest (use useEffect to avoid setState during render)
   useEffect(() => {
     if (!isGuest) {
       router.replace('/(tabs)/profile');
     }
   }, [isGuest, router]);
 
-  // Show nothing while redirecting
-  if (!isGuest) {
-    return null;
-  }
+  if (!isGuest) return null;
 
   const onSubmit = async (data: ConvertGuestFormData) => {
     try {
@@ -65,165 +59,119 @@ export default function ConvertGuestScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.content}>
-        <Surface style={[styles.formSurface, { backgroundColor: colors.surface }]} elevation={2}>
-          <Text variant="headlineMedium" style={styles.title}>
-            {t('auth.createAccount')}
-          </Text>
-          <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-            {t('auth.saveDataPermanently')}
-          </Text>
+      <View className="flex-1 justify-center px-6">
+        <Card>
+          <CardContent className="py-6">
+            <View className="items-center mb-6">
+              <MaterialCommunityIcons name="account-convert" size={48} className="text-primary" />
+              <Text variant="h2" className="mt-4">{t('auth.createAccount')}</Text>
+              <Text variant="muted" className="text-center mt-2">
+                {t('auth.saveDataPermanently')}
+              </Text>
+            </View>
 
-          <Controller
-            control={control}
-            name="username"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.username')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.username}
-                style={styles.input}
-                autoCapitalize="none"
-                autoCorrect={false}
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.username && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.username.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="username"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.username')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="account" size={20} className="text-muted-foreground" />}
+                  error={errors.username ? t(errors.username.message || '') : undefined}
+                  className="mb-4"
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.password')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.password}
-                style={styles.input}
-                secureTextEntry={!showPassword}
-                right={
-                  <TextInput.Icon
-                    icon={showPassword ? 'eye-off' : 'eye'}
-                    onPress={() => setShowPassword(!showPassword)}
-                  />
-                }
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.password && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.password.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.password')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="lock" size={20} className="text-muted-foreground" />}
+                  iconRight={
+                    <Pressable onPress={() => setShowPassword(!showPassword)}>
+                      <MaterialCommunityIcons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Pressable>
+                  }
+                  error={errors.password ? t(errors.password.message || '') : undefined}
+                  className="mb-4"
+                />
+              )}
+            />
 
-          <Controller
-            control={control}
-            name="confirmPassword"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                mode="outlined"
-                label={t('auth.confirmPassword')}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={!!errors.confirmPassword}
-                style={styles.input}
-                secureTextEntry={!showConfirmPassword}
-                right={
-                  <TextInput.Icon
-                    icon={showConfirmPassword ? 'eye-off' : 'eye'}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  />
-                }
-                disabled={loading}
-              />
-            )}
-          />
-          {errors.confirmPassword && (
-            <Text style={[styles.errorText, { color: colors.error }]}>{t(errors.confirmPassword.message || '')}</Text>
-          )}
+            <Controller
+              control={control}
+              name="confirmPassword"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  placeholder={t('auth.confirmPassword')}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showConfirmPassword}
+                  editable={!loading}
+                  iconLeft={<MaterialCommunityIcons name="lock-check" size={20} className="text-muted-foreground" />}
+                  iconRight={
+                    <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      <MaterialCommunityIcons
+                        name={showConfirmPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Pressable>
+                  }
+                  error={errors.confirmPassword ? t(errors.confirmPassword.message || '') : undefined}
+                  className="mb-6"
+                />
+              )}
+            />
 
-          <Button
-            mode="contained"
-            onPress={handleSubmit(onSubmit)}
-            loading={loading}
-            disabled={loading}
-            style={styles.convertButton}
-          >
-            {loading ? t('auth.convertingGuest') : t('auth.convertGuest')}
-          </Button>
+            <Button
+              onPress={handleSubmit(onSubmit)}
+              isLoading={loading}
+              disabled={loading}
+              className="w-full mb-4"
+            >
+              {t('auth.convertGuest')}
+            </Button>
 
-          <Button
-            mode="text"
-            onPress={() => router.back()}
-            disabled={loading}
-            style={styles.cancelButton}
-          >
-            {t('common.cancel')}
-          </Button>
-        </Surface>
+            <Button
+              variant="ghost"
+              onPress={() => router.back()}
+              disabled={loading}
+              className="w-full"
+            >
+              {t('common.cancel')}
+            </Button>
+          </CardContent>
+        </Card>
       </View>
 
-      <Snackbar
-        visible={!!error}
-        onDismiss={() => setError('')}
-        duration={4000}
-        action={{
-          label: t('common.ok'),
-          onPress: () => setError(''),
-        }}
-      >
-        {error}
-      </Snackbar>
+      {error ? (
+        <View className="absolute bottom-6 left-6 right-6 bg-destructive px-4 py-3 rounded-lg">
+          <Text className="text-destructive-foreground text-sm">{error}</Text>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: sizes.paddingLarge,
-  },
-  formSurface: {
-    padding: sizes.paddingLarge,
-    borderRadius: sizes.borderRadiusLarge,
-  },
-  title: {
-    marginBottom: sizes.paddingSmall,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    marginBottom: sizes.paddingLarge,
-    textAlign: 'center',
-  },
-  input: {
-    marginBottom: sizes.paddingSmall,
-  },
-  errorText: {
-    fontSize: 12,
-    marginBottom: sizes.padding,
-    marginTop: -4,
-  },
-  convertButton: {
-    marginTop: sizes.padding,
-    marginBottom: sizes.paddingSmall,
-  },
-  cancelButton: {
-    marginTop: sizes.paddingSmall,
-  },
-});

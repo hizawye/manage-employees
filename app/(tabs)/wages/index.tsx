@@ -1,20 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import {
-  Text,
-  Card,
-  SegmentedButtons,
-  ActivityIndicator,
-  Surface,
-  useTheme,
-  Chip,
-} from 'react-native-paper';
+import { View, FlatList, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
-import { sizes, colors as staticColors } from '../../../src/constants/theme';
 import {
   formatCurrency,
   formatDate,
@@ -25,6 +15,9 @@ import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/servi
 import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
+import { Card, CardContent } from '../../../src/components/ui/card';
+import { Text } from '../../../src/components/ui/text';
+import { Badge } from '../../../src/components/ui/badge';
 
 type PeriodType = 'week' | 'month';
 
@@ -36,7 +29,6 @@ interface WageWithPayment extends WageCalculation {
 
 export default function WageSummaryScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { user } = useAuth();
   const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [period, setPeriod] = useState<PeriodType>('week');
@@ -63,7 +55,6 @@ export default function WageSummaryScreen() {
         dateRange.end
       );
 
-      // Fetch payment status for each employee
       const withPayments = await Promise.all(
         results.map(async (calc) => {
           const paid = await PaymentService.getPaidAmount(
@@ -94,7 +85,6 @@ export default function WageSummaryScreen() {
     loadWages();
   }, [loadWages]);
 
-  // Refresh employees when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refreshEmployees();
@@ -114,96 +104,109 @@ export default function WageSummaryScreen() {
   );
 
   const renderWageCard = useCallback(({ item }: { item: WageWithPayment }) => (
-    <Card
-      style={[styles.card, { backgroundColor: colors.surface }]}
-      onPress={() => router.push(`/wages/${item.employeeId}`)}
-    >
-      <Card.Content>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardInfo}>
-            <Text variant="titleMedium" style={styles.name}>
-              {item.employeeName}
-            </Text>
-            <Text variant="bodySmall" style={[styles.details, { color: colors.onSurfaceVariant }]}>
-              {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
-            </Text>
-            {item.paidAmount > 0 && (
-              <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                {t('wages.paid')}: {formatCurrency(item.paidAmount)} • {t('wages.remaining')}: {formatCurrency(item.remaining)}
+    <Pressable onPress={() => router.push(`/wages/${item.employeeId}`)}>
+      <Card className="mb-3">
+        <CardContent className="p-4">
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text variant="large" className="font-semibold text-foreground">
+                {item.employeeName}
               </Text>
-            )}
+              <Text variant="muted" className="mt-0.5">
+                {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
+              </Text>
+              {item.paidAmount > 0 && (
+                <Text variant="muted" className="mt-0.5">
+                  {t('wages.paid')}: {formatCurrency(item.paidAmount)} • {t('wages.remaining')}: {formatCurrency(item.remaining)}
+                </Text>
+              )}
+            </View>
+            <View className="items-end">
+              <Text variant="large" className="font-bold text-emerald-500">
+                {formatCurrency(item.totalWage)}
+              </Text>
+              {item.totalWage > 0 && (
+                <Badge
+                  variant={item.isFullyPaid ? 'success' : 'destructive'}
+                  className="mt-1"
+                >
+                  {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
+                </Badge>
+              )}
+            </View>
           </View>
-          <View style={styles.wageColumn}>
-            <Text variant="titleMedium" style={[styles.wage, { color: staticColors.success }]}>
-              {formatCurrency(item.totalWage)}
-            </Text>
-            {item.totalWage > 0 && (
-              <Chip
-                style={[
-                  styles.statusChip,
-                  { backgroundColor: item.isFullyPaid ? staticColors.success + '20' : colors.error + '20' }
-                ]}
-                textStyle={{ color: item.isFullyPaid ? staticColors.success : colors.error, fontSize: 10 }}
-              >
-                {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
-              </Chip>
-            )}
-          </View>
-        </View>
-      </Card.Content>
-    </Card>
-  ), [router, colors]);
+        </CardContent>
+      </Card>
+    </Pressable>
+  ), [router]);
 
   if ((loadingEmployees || loading) && !refreshing) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" className="text-primary" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.periodSelector, { backgroundColor: colors.surface, borderBottomColor: colors.outline }]}>
-        <SegmentedButtons
-          value={period}
-          onValueChange={(value) => setPeriod(value as PeriodType)}
-          buttons={[
-            { value: 'week', label: t('wages.thisWeek') },
-            { value: 'month', label: t('wages.thisMonth') },
-          ]}
-        />
-        <Text variant="bodySmall" style={[styles.dateRange, { color: colors.onSurfaceVariant }]}>
+    <View className="flex-1 bg-background">
+      {/* Period Selector */}
+      <View className="px-4 py-4 bg-card border-b border-border">
+        <View className="flex-row rounded-lg border border-border bg-background overflow-hidden">
+          {(['week', 'month'] as PeriodType[]).map((p) => (
+            <Pressable
+              key={p}
+              onPress={() => setPeriod(p)}
+              className={`flex-1 py-2.5 items-center justify-center ${
+                period === p ? 'bg-primary' : 'bg-background'
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  period === p ? 'text-primary-foreground' : 'text-foreground'
+                }`}
+              >
+                {p === 'week' ? t('wages.thisWeek') : t('wages.thisMonth')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text variant="muted" className="text-center mt-2">
           {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
         </Text>
       </View>
 
-      <Surface style={[styles.summaryCard, { backgroundColor: colors.surface }]} elevation={2}>
-        <View style={styles.statsGrid}>
-          <StatCard
-            value={formatCurrency(totalWages)}
-            label={t('wages.totalWages')}
-            color={staticColors.success}
-            icon="cash-multiple"
-          />
-          <StatCard
-            value={totalDaysWorked.toFixed(1)}
-            label={t('wages.daysWorked')}
-            color={colors.primary}
-            icon="calendar-check"
-          />
-          <StatCard
-            value={calculations.length}
-            label={t('wages.employees')}
-            icon="account-group"
-          />
-        </View>
-      </Surface>
+      {/* Summary */}
+      <Card className="mx-4 mt-4 mb-2">
+        <CardContent className="p-4">
+          <View className="flex-row gap-3">
+            <StatCard
+              value={formatCurrency(totalWages)}
+              label={t('wages.totalWages')}
+              color="#10b981"
+              icon="cash-multiple"
+            />
+            <StatCard
+              value={totalDaysWorked.toFixed(1)}
+              label={t('wages.daysWorked')}
+              color="#3b82f6"
+              icon="calendar-check"
+            />
+            <StatCard
+              value={calculations.length}
+              label={t('wages.employees')}
+              icon="account-group"
+            />
+          </View>
+        </CardContent>
+      </Card>
 
       {calculations.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>{t('wages.noWageData')}</Text>
-          <Text style={[styles.emptySubtext, { color: colors.onSurfaceVariant }]}>
+        <View className="flex-1 justify-center items-center px-4">
+          <Text variant="h4" className="text-center text-muted-foreground mb-2">
+            {t('wages.noWageData')}
+          </Text>
+          <Text variant="muted" className="text-center">
             {t('wages.noWageDataHint')}
           </Text>
         </View>
@@ -212,85 +215,12 @@ export default function WageSummaryScreen() {
           data={calculations}
           keyExtractor={(item) => item.employeeId}
           renderItem={renderWageCard}
-          contentContainerStyle={styles.list}
+          contentContainerClassName="px-4 pb-4"
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: sizes.padding,
-  },
-  periodSelector: {
-    padding: sizes.padding,
-    borderBottomWidth: 1,
-  },
-  dateRange: {
-    textAlign: 'center',
-    marginTop: sizes.paddingSmall,
-  },
-  summaryCard: {
-    margin: sizes.padding,
-    padding: sizes.padding,
-    borderRadius: sizes.borderRadius,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: sizes.paddingSmall,
-  },
-  list: {
-    padding: sizes.padding,
-    paddingTop: 0,
-  },
-  card: {
-    marginBottom: sizes.paddingSmall,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  name: {
-    fontWeight: '600',
-  },
-  details: {
-    marginTop: 2,
-  },
-  wageColumn: {
-    alignItems: 'flex-end',
-  },
-  wage: {
-    fontWeight: 'bold',
-  },
-  statusChip: {
-    marginTop: 4,
-    height: 24,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  emptySubtext: {
-    marginTop: 8,
-    textAlign: 'center',
-  },
-});

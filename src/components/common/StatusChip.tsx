@@ -1,10 +1,8 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { Badge } from '../ui/badge';
 import { EmployeeStatus, AttendanceStatus } from '../../models';
 import { getStatusLabel } from '../../utils/attendanceUtils';
 import { t } from '../../i18n';
-import { colors } from '../../constants/theme';
 
 interface StatusChipProps {
   type: 'employee' | 'attendance';
@@ -12,72 +10,30 @@ interface StatusChipProps {
   compact?: boolean;
 }
 
-export const StatusChip: React.FC<StatusChipProps> = ({ type, status, compact = true }) => {
+export const StatusChip: React.FC<StatusChipProps> = ({ type, status }) => {
   if (type === 'attendance') {
-    const getAttendanceStatusColor = (status: AttendanceStatus) => {
-      switch (status) {
-        case AttendanceStatus.PRESENT:
-          return colors.present;
-        case AttendanceStatus.HALF_DAY:
-          return colors.halfDay;
-        case AttendanceStatus.ABSENT:
-          return colors.absent;
-        default:
-          return colors.textSecondary;
-      }
-    };
+    const variant =
+      status === AttendanceStatus.PRESENT
+        ? 'success'
+        : status === AttendanceStatus.HALF_DAY
+        ? 'warning'
+        : status === AttendanceStatus.ABSENT
+        ? 'destructive'
+        : 'secondary';
 
     return (
-      <Chip
-        compact={compact}
-        style={[styles.chip, { backgroundColor: getAttendanceStatusColor(status as AttendanceStatus) }]}
-        textStyle={styles.chipText}
-      >
+      <Badge variant={variant}>
         {getStatusLabel(status as AttendanceStatus)}
-      </Chip>
+      </Badge>
     );
   }
 
-  // Employee status
-  const getEmployeeStatusColor = (status: EmployeeStatus) => {
-    switch (status) {
-      case EmployeeStatus.ACTIVE:
-        return colors.success;
-      case EmployeeStatus.INACTIVE:
-        return colors.error;
-      default:
-        return colors.textSecondary;
-    }
-  };
-
-  const getEmployeeStatusLabel = (status: EmployeeStatus) => {
-    switch (status) {
-      case EmployeeStatus.ACTIVE:
-        return t('employee.active');
-      case EmployeeStatus.INACTIVE:
-        return t('employee.inactive');
-      default:
-        return status;
-    }
-  };
+  const variant = status === EmployeeStatus.ACTIVE ? 'success' : 'destructive';
+  const label = status === EmployeeStatus.ACTIVE ? t('employee.active') : t('employee.inactive');
 
   return (
-    <Chip
-      compact={compact}
-      style={[styles.chip, { backgroundColor: getEmployeeStatusColor(status as EmployeeStatus) }]}
-      textStyle={styles.chipText}
-    >
-      {getEmployeeStatusLabel(status as EmployeeStatus)}
-    </Chip>
+    <Badge variant={variant}>
+      {label}
+    </Badge>
   );
 };
-
-const styles = StyleSheet.create({
-  chip: {
-    height: 24,
-  },
-  chipText: {
-    fontSize: 10,
-    color: '#fff',
-  },
-});

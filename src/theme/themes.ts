@@ -1,7 +1,5 @@
-import { MD3LightTheme, MD3DarkTheme, MD3Theme } from 'react-native-paper';
-
-// Light theme colors (current app colors)
-const lightColors = {
+// Theme colors for direct access if needed
+export const lightColors = {
   primary: '#1976d2',
   primaryContainer: '#bbdefb',
   secondary: '#26a69a',
@@ -26,15 +24,6 @@ const lightColors = {
   onBackground: '#212121',
   onSurface: '#212121',
   onSurfaceVariant: '#757575',
-  inverseSurface: '#2c2c2c',
-  inverseOnSurface: '#f5f5f5',
-  inversePrimary: '#64b5f6',
-  shadow: '#000000',
-  scrim: '#000000',
-  surfaceDisabled: 'rgba(33, 33, 33, 0.12)',
-  onSurfaceDisabled: 'rgba(33, 33, 33, 0.38)',
-  backdrop: 'rgba(0, 0, 0, 0.4)',
-  // Custom colors
   success: '#4caf50',
   present: '#4caf50',
   absent: '#d32f2f',
@@ -42,8 +31,7 @@ const lightColors = {
   border: '#e0e0e0',
 };
 
-// Dark theme colors
-const darkColors = {
+export const darkColors = {
   primary: '#64b5f6',
   primaryContainer: '#1565c0',
   secondary: '#4db6ac',
@@ -68,37 +56,9 @@ const darkColors = {
   onBackground: '#e0e0e0',
   onSurface: '#e0e0e0',
   onSurfaceVariant: '#a0a0a0',
-  inverseSurface: '#e0e0e0',
-  inverseOnSurface: '#1e1e1e',
-  inversePrimary: '#1976d2',
-  shadow: '#000000',
-  scrim: '#000000',
-  surfaceDisabled: 'rgba(224, 224, 224, 0.12)',
-  onSurfaceDisabled: 'rgba(224, 224, 224, 0.38)',
-  backdrop: 'rgba(0, 0, 0, 0.6)',
-  // Custom colors
   success: '#66bb6a',
   present: '#66bb6a',
   absent: '#ef5350',
   halfDay: '#ffa726',
   border: '#424242',
 };
-
-export const lightTheme: MD3Theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    ...lightColors,
-  },
-};
-
-export const darkTheme: MD3Theme = {
-  ...MD3DarkTheme,
-  colors: {
-    ...MD3DarkTheme.colors,
-    ...darkColors,
-  },
-};
-
-// Export individual color palettes for direct access if needed
-export { lightColors, darkColors };

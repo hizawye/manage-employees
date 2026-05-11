@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, IconButton, useTheme } from 'react-native-paper';
-import { sizes } from '../../constants/theme';
+import { View, Pressable } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text } from '../ui/text';
 
 interface DateSelectorProps {
   mode: 'day' | 'week' | 'month';
@@ -16,8 +16,6 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   onChange,
   formatDisplay,
 }) => {
-  const { colors } = useTheme();
-
   const handlePrevious = () => {
     const newDate = new Date(value);
     switch (mode) {
@@ -68,43 +66,18 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   const displayText = formatDisplay ? formatDisplay(value) : defaultFormatDisplay(value);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      <IconButton
-        icon="chevron-right"
-        size={24}
-        onPress={handlePrevious}
-        iconColor={colors.primary}
-      />
-      <View style={styles.dateDisplay}>
-        <Text variant="titleMedium" style={[styles.dateText, { color: colors.onSurface }]} onPress={handleToday}>
+    <View className="flex-row items-center justify-between px-2 rounded-xl bg-card border border-border mb-4">
+      <Pressable onPress={handlePrevious} className="p-2">
+        <MaterialCommunityIcons name="chevron-right" size={24} className="text-primary" />
+      </Pressable>
+      <Pressable onPress={handleToday} className="flex-1 items-center py-3">
+        <Text className="font-semibold text-center text-foreground">
           {displayText}
         </Text>
-      </View>
-      <IconButton
-        icon="chevron-left"
-        size={24}
-        onPress={handleNext}
-        iconColor={colors.primary}
-      />
+      </Pressable>
+      <Pressable onPress={handleNext} className="p-2">
+        <MaterialCommunityIcons name="chevron-left" size={24} className="text-primary" />
+      </Pressable>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: sizes.paddingSmall,
-    borderRadius: sizes.borderRadius,
-    marginBottom: sizes.padding,
-  },
-  dateDisplay: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  dateText: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-});
