@@ -93,6 +93,7 @@ export default function EmployeeWageDetailScreen() {
     if (!user || !wageData) return;
     const amount = parseFloat(payAmount);
     if (isNaN(amount) || amount <= 0) return;
+    if (amount > remainingAmount) return;
 
     setPayLoading(true);
     try {
@@ -115,6 +116,14 @@ export default function EmployeeWageDetailScreen() {
       setPayLoading(false);
     }
   };
+
+  const paymentValidationError = useMemo(() => {
+    const amount = parseFloat(payAmount);
+    if (payAmount && !isNaN(amount) && amount > remainingAmount) {
+      return t('wages.overpaymentError') || 'Amount exceeds remaining balance';
+    }
+    return null;
+  }, [payAmount, remainingAmount]);
 
   const openPayDialog = () => {
     setPayAmount(remainingAmount.toFixed(2));
@@ -345,7 +354,13 @@ export default function EmployeeWageDetailScreen() {
               onChangeText={setPayAmount}
               keyboardType="decimal-pad"
               style={{ marginBottom: sizes.paddingSmall }}
+              error={!!paymentValidationError}
             />
+            {paymentValidationError && (
+              <Text variant="bodySmall" style={{ color: colors.error, marginBottom: sizes.paddingSmall }}>
+                {paymentValidationError}
+              </Text>
+            )}
             <TextInput
               mode="outlined"
               label={t('wages.notesOptional')}
@@ -357,7 +372,11 @@ export default function EmployeeWageDetailScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPayDialogVisible(false)}>{t('common.cancel')}</Button>
-            <Button onPress={handlePay} loading={payLoading} disabled={payLoading}>
+            <Button
+              onPress={handlePay}
+              loading={payLoading}
+              disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) <= 0}
+            >
               {t('wages.confirmPayment')}
             </Button>
           </Dialog.Actions>

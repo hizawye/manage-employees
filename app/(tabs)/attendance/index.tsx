@@ -53,7 +53,7 @@ export default function AttendanceScreen() {
     setSelectedDate(toISODateString(newDate));
   };
 
-  const handleMarkAttendance = async (
+  const handleMarkAttendance = useCallback(async (
     employeeId: string,
     status: AttendanceStatus,
     hoursWorked?: number
@@ -64,7 +64,7 @@ export default function AttendanceScreen() {
     } finally {
       setSavingId(null);
     }
-  };
+  }, [markAttendance]);
 
   const renderEmployee = useCallback(({ item }: { item: Employee }) => {
     const currentAttendance = attendanceMap.get(item.id);

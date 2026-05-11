@@ -191,5 +191,14 @@ export default {
     filterEmployee: 'Employees',
     filterAttendance: 'Attendance',
     details: 'Details',
+    logTemplates: {
+      create_employee: 'Added employee: {{name}}',
+      update_employee: 'Updated employee: {{name}}',
+      delete_employee: 'Deleted employee: {{name}}',
+      mark_attendance: 'Marked attendance for {{name}}: {{status}}',
+      update_attendance: 'Updated attendance for {{name}}: {{status}}',
+      delete_attendance: 'Deleted attendance record',
+      unknown: 'Unknown action',
+    },
   },
 };

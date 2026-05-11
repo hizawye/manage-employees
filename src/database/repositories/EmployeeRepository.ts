@@ -62,7 +62,6 @@ export async function createEmployee(userId: number, input: CreateEmployeeInput)
       input.notes || null,
       now,
       now,
-      now,
     ]
   );
 

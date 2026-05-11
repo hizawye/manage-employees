@@ -53,7 +53,6 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
       input.notes || null,
       now,
       now,
-      now,
     ]
   );
 
