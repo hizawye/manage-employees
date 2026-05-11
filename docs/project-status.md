@@ -426,17 +426,26 @@ manage-employees/
 - **Styling:** Zero StyleSheet objects, all Tailwind utilities
 - **Dark mode:** Instant toggle via CSS class (no JS theme object rebuild)
 
+### Build Fixes (2026-05-11)
+- ✅ **Android build fixed** - react-native-reanimated 3.16.1 incompatible with React Native 0.81
+- ✅ Upgraded reanimated to 3.16.7 + patched for RN 0.81 API changes
+- ✅ Patched `LengthPercentage.resolve()` signature (single float arg)
+- ✅ Patched removed `Systrace.TRACE_TAG_REACT_JAVA_BRIDGE` constant
+- ✅ Removed unused `react-native-paper` dependency from package.json
+- ✅ Added `patch-package` + `postinstall` script for persistent patches
+- ✅ `npm run android` → `BUILD SUCCESSFUL`
+
 ### Known Issues
 - Jest test execution still blocked by babel config (pre-existing)
 
 ### Next Session Start Point
-Full UI rewrite complete. All screens use NativeWind v4 with cool blue palette and dark mode support.
+Full UI rewrite complete. Android build compiles successfully.
 
 **Immediate:**
-1. Test build on Android device/emulator
-2. Verify dark mode toggle works across all screens
-3. Verify RTL layout still correct
-4. Test payment dialog modal on wage detail screen
+1. Verify dark mode toggle works across all screens
+2. Verify RTL layout still correct
+3. Test payment dialog modal on wage detail screen
+4. Install APK on device/emulator and test full app flow
 
 **Future Enhancements:**
 - Add more UI primitives (Select, Switch, Dialog) as needed
