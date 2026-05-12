@@ -11,10 +11,6 @@ adb devices | grep emulator | awk '{print $1}' | xargs -r adb -s "$1" emu kill 2
 echo "=== Starting emulator ==="
 bash scripts/start-emulator.sh
 
-# Build and install
-echo "=== Building and installing ==="
-npm run android:install
-
-# Tail logcat
-echo "=== Starting logcat ==="
-npm run android:logcat
+# Build, install and run in one shot
+echo "=== Building and running ==="
+npx expo run:android 2>&1
