@@ -11,7 +11,7 @@ import { useAuth } from '../auth/useAuth';
 export function useEmployees(statusFilter?: EmployeeStatus) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadEmployees = useCallback(async (forceRefresh = false) => {

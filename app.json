@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6200ee"
+      "backgroundColor": "#023c69"
     },
     "ios": {
       "supportsTablet": true,
@@ -37,7 +37,16 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#023c69"
+        }
+      ]
     ],
     "extra": {
       "supportsRTL": true,

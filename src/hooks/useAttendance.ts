@@ -6,7 +6,7 @@ import { useAuth } from '../auth/useAuth';
 export function useAttendanceByDate(date: string) {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadAttendance = useCallback(async (forceRefresh = false) => {
