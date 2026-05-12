@@ -100,6 +100,7 @@ export default {
     paymentAmount: 'مبلغ الدفع',
     notesOptional: 'ملاحظات (اختياري)',
     confirmPayment: 'تأكيد الدفع',
+    overpaymentError: 'المبلغ يتجاوز الرصيد المتبقي',
     adjustment: 'تعديل',
     adjustmentNote: 'السبب',
     adjustWage: 'تعديل الأجر',

@@ -100,6 +100,7 @@ export default {
     paymentAmount: 'Payment Amount',
     notesOptional: 'Notes (optional)',
     confirmPayment: 'Confirm Payment',
+    overpaymentError: 'Amount exceeds remaining balance',
     adjustment: 'Adjustment',
     adjustmentNote: 'Reason',
     adjustWage: 'Adjust Wage',

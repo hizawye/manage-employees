@@ -14,8 +14,8 @@ export class PaymentService {
     if (!input.employeeId) {
       throw new Error('Employee ID is required');
     }
-    if (input.amount <= 0) {
-      throw new Error('Payment amount must be greater than 0');
+    if (input.amount === 0) {
+      throw new Error('Payment amount must not be zero');
     }
     if (!input.periodStart || !input.periodEnd) {
       throw new Error('Period start and end dates are required');
@@ -59,7 +59,7 @@ export class PaymentService {
     totalWage: number
   ): Promise<{ paid: number; remaining: number; isFullyPaid: boolean }> {
     const paid = await dbGetTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
-    const remaining = Math.max(0, totalWage - paid);
+    const remaining = totalWage - paid;
     return {
       paid,
       remaining,

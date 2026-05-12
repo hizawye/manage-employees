@@ -131,18 +131,16 @@ export default function EmployeeWageDetailScreen() {
 
   const remainingAmount = useMemo(() => {
     if (!wageData) return 0;
-    return Math.max(0, wageData.totalWage - paidAmount);
+    return wageData.totalWage - paidAmount;
   }, [wageData, paidAmount]);
 
   const isFullyPaid = remainingAmount <= 0;
 
   const handlePay = async () => {
     if (!user || !wageData) return;
-    const amount = parseFloat(payAmount);
-    if (isNaN(amount) || amount <= 0) return;
-    if (amount > remainingAmount) return;
+const amount = parseFloat(payAmount);
+    if (isNaN(amount) || amount === 0) return;
 
-    setPayLoading(true);
     try {
       await PaymentService.recordPayment(user.id, {
         userId: user.id,
@@ -166,7 +164,7 @@ export default function EmployeeWageDetailScreen() {
 
   const paymentValidationError = useMemo(() => {
     const amount = parseFloat(payAmount);
-    if (payAmount && !isNaN(amount) && amount > remainingAmount) {
+    if (payAmount && !isNaN(amount) && amount > 0 && amount > remainingAmount) {
       return t('wages.overpaymentError') || 'Amount exceeds remaining balance';
     }
     return null;
@@ -516,7 +514,7 @@ export default function EmployeeWageDetailScreen() {
                 className="flex-1"
                 onPress={handlePay}
                 isLoading={payLoading}
-                disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) <= 0}
+                disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) === 0}
               >
                 {t('wages.confirmPayment')}
               </Button>
