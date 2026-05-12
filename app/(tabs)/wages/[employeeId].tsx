@@ -1,16 +1,24 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, ScrollView, RefreshControl, Pressable, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  FlatList,
+  Modal,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
 import { StatusChip } from '../../../src/components';
-import { WageCalculation, WageType, Payment } from '../../../src/models';
+import { WageCalculation, WageType, Payment, AttendanceStatus } from '../../../src/models';
 import {
   formatCurrency,
   formatDateShort,
   formatDate,
-  getWeekRange,
   getMonthRange,
   getTodayString,
 } from '../../../src/utils/dateUtils';
@@ -20,14 +28,23 @@ import { t } from '../../../src/i18n';
 import { Card, CardContent } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
+import { Badge } from '../../../src/components/ui/badge';
 
-type PeriodType = 'week' | 'month';
+type DayData = {
+  date: string;
+  dayOfMonth: number;
+  dayOfWeek: string;
+  status: AttendanceStatus;
+  hoursWorked?: number;
+  wageEarned: number;
+  // for adjustments
+  hasAdjustment?: boolean;
+};
 
 export default function EmployeeWageDetailScreen() {
   const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
   const { user } = useAuth();
   const { employee, loading: loadingEmployee } = useEmployee(employeeId);
-  const [period, setPeriod] = useState<PeriodType>('week');
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
   const [loading, setLoading] = useState(true);
   const [paidAmount, setPaidAmount] = useState(0);
@@ -37,9 +54,15 @@ export default function EmployeeWageDetailScreen() {
   const [payNotes, setPayNotes] = useState('');
   const [payLoading, setPayLoading] = useState(false);
 
-  const dateRange = useMemo(() => {
-    return period === 'week' ? getWeekRange() : getMonthRange();
-  }, [period]);
+  // Adjustment modal state
+  const [adjustDialogVisible, setAdjustDialogVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustNote, setAdjustNote] = useState('');
+
+  const [monthData, setMonthData] = useState<DayData[]>([]);
+
+  const dateRange = useMemo(() => getMonthRange(), []);
 
   const loadWages = useCallback(async () => {
     if (!employee || !user) {
@@ -58,6 +81,41 @@ export default function EmployeeWageDetailScreen() {
       setWageData(result);
       setPaidAmount(paid);
       setPayments(history);
+
+      // Build day data for the full month
+      const days: DayData[] = [];
+      const start = new Date(dateRange.start);
+      const end = new Date(dateRange.end);
+      const detailMap = new Map<string, typeof result.details[0]>();
+      for (const d of result.details) {
+        detailMap.set(d.date, d);
+      }
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const rec = detailMap.get(dateStr);
+        const dow = d.toLocaleDateString('en-US', { weekday: 'short' });
+        if (rec) {
+          days.push({
+            date: dateStr,
+            dayOfMonth: d.getDate(),
+            dayOfWeek: dow,
+            status: rec.status,
+            hoursWorked: rec.hoursWorked,
+            wageEarned: rec.wageEarned + (rec.adjustment || 0),
+            hasAdjustment: !!rec.adjustment,
+          });
+        } else {
+          days.push({
+            date: dateStr,
+            dayOfMonth: d.getDate(),
+            dayOfWeek: dow,
+            status: AttendanceStatus.ABSENT,
+            wageEarned: 0,
+          });
+        }
+      }
+      setMonthData(days);
     } catch (error) {
       console.error('Failed to calculate wages:', error);
     } finally {
@@ -124,10 +182,109 @@ export default function EmployeeWageDetailScreen() {
     }
   };
 
+  const handleAdjustDay = async () => {
+    if (!user || !selectedDate) return;
+    const amount = parseFloat(adjustAmount);
+    if (isNaN(amount)) return;
+
+    try {
+      setPayLoading(true);
+      // For now, we update state optimistically
+      // In a full implementation, this would be a server API call
+      setMonthData((prev) =>
+        prev.map((day) =>
+          day.date === selectedDate
+            ? {
+                ...day,
+                wageEarned: day.wageEarned + amount,
+                hasAdjustment: true,
+              }
+            : day
+        )
+      );
+      setAdjustDialogVisible(false);
+      setAdjustAmount('');
+      setAdjustNote('');
+    } catch (error) {
+      console.error('Failed to adjust:', error);
+    } finally {
+      setPayLoading(false);
+    }
+  };
+
+  const openAdjustDialog = (date: string) => {
+    setSelectedDate(date);
+    setAdjustAmount('');
+    setAdjustNote('');
+    setAdjustDialogVisible(true);
+  };
+
   const openPayDialog = () => {
-    setPayAmount(remainingAmount.toFixed(2));
     setPayDialogVisible(true);
   };
+
+  const renderDay = useCallback(({ item }: { item: DayData }) => {
+    let statusColor: string;
+    let statusVariant: 'default' | 'success' | 'destructive' | 'outline' | 'secondary' | 'warning' = 'secondary';
+
+    switch (item.status) {
+      case AttendanceStatus.PRESENT:
+        statusColor = '#10b981';
+        statusVariant = 'success';
+        break;
+      case AttendanceStatus.HALF_DAY:
+        statusColor = '#f59e0b';
+        statusVariant = 'warning';
+        break;
+      case AttendanceStatus.ABSENT:
+        statusColor = '#ef4444';
+        statusVariant = 'destructive';
+        break;
+      default: // No record / off
+        statusColor = '#94a3b8';
+        statusVariant = 'outline';
+        break;
+    }
+
+    const isWeekend = ['Sat', 'Sun'].includes(item.dayOfWeek);
+
+    return (
+      <Pressable
+        onPress={() => {
+          if (item.status === AttendanceStatus.ABSENT && !item.hasAdjustment) {
+            openAdjustDialog(item.date);
+          }
+        }}
+        className={`items-center justify-center py-1.5 rounded-lg ${
+          isWeekend ? 'bg-muted/30' : 'bg-card'
+        } border border-border mb-0.5`}
+      >
+        <Text variant="muted" className="text-[10px] text-muted-foreground">
+          {item.dayOfWeek}
+        </Text>
+        <Text className={`text-sm font-medium ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}`}>
+          {item.dayOfMonth}
+        </Text>
+        <View className="flex-row items-center gap-1 mt-0.5">
+          <Badge variant={item.status === AttendanceStatus.PRESENT ? 'secondary' : statusVariant} className="min-w-[28px] items-center">
+            <Text className="text-[8px] leading-[8px]">
+              {item.status === AttendanceStatus.PRESENT ? 'P' : item.status === AttendanceStatus.HALF_DAY ? 'H' : item.status === AttendanceStatus.ABSENT ? 'A' : item.hasAdjustment ? '✓' : '—'}
+            </Text>
+          </Badge>
+          {item.hasAdjustment && (
+            <Text className="text-[8px] text-emerald-500 font-bold">
+              {item.wageEarned >= 0 ? '+' : ''}{formatCurrency(item.wageEarned)}
+            </Text>
+          )}
+        </View>
+        {item.wageEarned > 0 && !item.hasAdjustment && (
+          <Text className="text-[8px] text-muted-foreground mt-0.5">
+            {formatCurrency(item.wageEarned)}
+          </Text>
+        )}
+      </Pressable>
+    );
+  }, []);
 
   if ((loadingEmployee || loading) && !refreshing) {
     return (
@@ -145,6 +302,9 @@ export default function EmployeeWageDetailScreen() {
     );
   }
 
+  // Build weekday headers
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   return (
     <View className="flex-1 bg-background">
       <ScrollView
@@ -153,44 +313,22 @@ export default function EmployeeWageDetailScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Employee Header */}
         <View className="px-4 py-4 bg-card border-b border-border">
           <Text variant="h3" className="font-bold text-foreground">
             {employee.name}
           </Text>
           <Text variant="muted" className="mt-1">
-            {employee.role} • {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
+            {employee.role} · {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
           </Text>
         </View>
 
-        <View className="px-4 py-3">
-          <View className="flex-row rounded-lg border border-border bg-background overflow-hidden">
-            {(['week', 'month'] as PeriodType[]).map((p) => (
-              <Pressable
-                key={p}
-                onPress={() => setPeriod(p)}
-                className={`flex-1 py-2.5 items-center justify-center ${
-                  period === p ? 'bg-primary' : 'bg-background'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    period === p ? 'text-primary-foreground' : 'text-foreground'
-                  }`}
-                >
-                  {p === 'week' ? t('wages.thisWeek') : t('wages.thisMonth')}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        <Card className="mx-4 mb-3">
+        {/* Monthly Summary */}
+        <Card className="mx-4 mt-4 mb-2">
           <CardContent className="p-4">
             <View className="items-center mb-4">
-              <Text variant="muted" className="mb-1">
-                {t('wages.totalWage')}
-              </Text>
-              <Text variant="h2" className="font-bold text-emerald-500">
+              <Text variant="muted">{t('wages.totalWage')}</Text>
+              <Text variant="h2" className="font-bold text-emerald-500 mt-1">
                 {formatCurrency(wageData.totalWage)}
               </Text>
             </View>
@@ -213,7 +351,7 @@ export default function EmployeeWageDetailScreen() {
                     {formatCurrency(remainingAmount)}
                   </Text>
                 </View>
-                <View className="border-t border-border pt-3" />
+                <View className="border-t border-border pt-2" />
               </>
             )}
 
@@ -262,16 +400,15 @@ export default function EmployeeWageDetailScreen() {
 
             {isFullyPaid && (
               <View className="mt-4 items-center py-2 bg-emerald-500/15 rounded-lg">
-                <Text className="text-emerald-500 font-bold">
-                  {t('wages.fullyPaid')}
-                </Text>
+                <Text className="text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
               </View>
             )}
           </CardContent>
         </Card>
 
+        {/* Payments History */}
         {payments.length > 0 && (
-          <Card className="mx-4 mb-3">
+          <Card className="mx-4 mb-2">
             <CardContent className="p-4">
               <Text variant="large" className="font-semibold text-foreground mb-3">
                 {t('wages.paymentHistory')}
@@ -295,31 +432,40 @@ export default function EmployeeWageDetailScreen() {
           </Card>
         )}
 
+        {/* Monthly Calendar Grid */}
         <Text variant="large" className="font-semibold text-muted-foreground px-4 mb-2">
           {t('wages.dailyBreakdown')}
         </Text>
 
-        {wageData.details.length === 0 ? (
-          <View className="px-4 py-4 items-center">
-            <Text className="text-muted-foreground">{t('wages.noAttendanceRecords')}</Text>
-          </View>
-        ) : (
-          wageData.details.map((item) => (
-            <Card key={item.date} className="mx-4 mb-2">
-              <CardContent className="p-4 flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <Text variant="p" className="font-medium text-foreground">
-                    {formatDateShort(item.date)}
+        <Card className="mx-4 mb-2">
+          <CardContent className="p-3">
+            {/* Weekday Headers */}
+            <View className="flex-row mb-1">
+              {weekDays.map((d) => (
+                <View key={d} className="flex-1 items-center py-1">
+                  <Text
+                    className={`text-[10px] font-medium ${
+                      d === 'Sat' || d === 'Sun' ? 'text-muted-foreground' : 'text-foreground'
+                    }`}
+                  >
+                    {d}
                   </Text>
-                  <StatusChip type="attendance" status={item.status} />
                 </View>
-                <Text variant="p" className="font-semibold text-foreground">
-                  {formatCurrency(item.wageEarned)}
-                </Text>
-              </CardContent>
-            </Card>
-          ))
-        )}
+              ))}
+            </View>
+
+            {/* Calendar Grid - 6 rows × 7 cols */}
+            <FlatList
+              data={monthData}
+              keyExtractor={(item) => item.date}
+              renderItem={renderDay}
+              numColumns={7}
+              scrollEnabled={false}
+              contentContainerClassName="gap-y-0.5"
+              columnWrapperClassName="flex-row gap-x-0.5 justify-between"
+            />
+          </CardContent>
+        </Card>
       </ScrollView>
 
       {/* Payment Dialog */}
@@ -373,6 +519,50 @@ export default function EmployeeWageDetailScreen() {
                 disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) <= 0}
               >
                 {t('wages.confirmPayment')}
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Day Adjustment Dialog */}
+      <Modal
+        visible={adjustDialogVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAdjustDialogVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          <View className="w-full bg-card rounded-xl p-5 border border-border">
+            <Text variant="h3" className="font-bold text-foreground mb-4">
+              {t('wages.adjustWage')}
+            </Text>
+            <Text variant="p" className="text-muted-foreground mb-4">
+              {t('wages.adjustmentNote')}
+            </Text>
+            <TextInput
+              placeholder="0.00"
+              value={adjustAmount}
+              onChangeText={setAdjustAmount}
+              keyboardType="decimal-pad"
+              placeholderTextColor="hsl(215 16% 47%)"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground mb-2"
+            />
+            <TextInput
+              placeholder={t('wages.adjustmentNote')}
+              value={adjustNote}
+              onChangeText={setAdjustNote}
+              multiline
+              numberOfLines={2}
+              placeholderTextColor="hsl(215 16% 47%)"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground mb-4"
+            />
+            <View className="flex-row gap-3">
+              <Button variant="outline" className="flex-1" onPress={() => setAdjustDialogVisible(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button className="flex-1" onPress={handleAdjustDay} isLoading={payLoading}>
+                {t('common.save')}
               </Button>
             </View>
           </View>

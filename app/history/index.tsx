@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import { useLogs } from '../../src/hooks';
+import { useLogs, useRefresh } from '../../src/hooks';
 import { Log, LogActionType } from '../../src/models';
 import { t } from '../../src/i18n';
 import { Text } from '../../src/components/ui/text';
@@ -20,6 +20,11 @@ export default function HistoryScreen() {
 
     const entityType = filter === 'all' ? undefined : filter;
     const { logs, loading, loadingMore, error, hasMore, refresh, loadMore } = useLogs(entityType);
+
+    // Separate refreshing state prevents flickering
+    const { refreshing, onRefresh } = useRefresh(async () => {
+      await refresh();
+    });
 
     const getLogMessage = useCallback((item: Log) => {
         try {
@@ -138,11 +143,12 @@ export default function HistoryScreen() {
                 ))}
             </View>
 
-            {loading && logs.length === 0 ? (
+            {/* Initial loading: show spinner only, no list */}
+            {loading && !refreshing && logs.length === 0 ? (
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
                     <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
                 </View>
-            ) : error ? (
+            ) : error && !loading ? (
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
                     <Text className="text-destructive text-center">{error}</Text>
                 </View>
@@ -151,9 +157,9 @@ export default function HistoryScreen() {
                     data={logs}
                     renderItem={renderLogItem}
                     keyExtractor={item => item.id}
-                    contentContainerClassName="px-4 pb-4"
+                    contentContainerClassName="px-4 pb-4 min-h-[200px]"
                     refreshControl={
-                        <RefreshControl refreshing={loading && logs.length > 0} onRefresh={refresh} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
                     ListEmptyComponent={
                         <View className="flex-1 justify-center items-center p-5 min-h-[200px]">

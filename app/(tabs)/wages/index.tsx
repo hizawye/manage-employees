@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, FlatList, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
+import { View, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useRefresh } from '../../../src/hooks';
@@ -8,7 +8,6 @@ import { EmployeeStatus, WageCalculation } from '../../../src/models';
 import {
   formatCurrency,
   formatDate,
-  getWeekRange,
   getMonthRange,
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
@@ -17,9 +16,9 @@ import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
 import { Card, CardContent } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
+import { Button } from '../../../src/components/ui/button';
 import { Badge } from '../../../src/components/ui/badge';
-
-type PeriodType = 'week' | 'month';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface WageWithPayment extends WageCalculation {
   paidAmount: number;
@@ -31,13 +30,10 @@ export default function WageSummaryScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
-  const [period, setPeriod] = useState<PeriodType>('week');
   const [calculations, setCalculations] = useState<WageWithPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const dateRange = useMemo(() => {
-    return period === 'week' ? getWeekRange() : getMonthRange();
-  }, [period]);
+  const dateRange = useMemo(() => getMonthRange(), []);
 
   const loadWages = useCallback(async () => {
     if (!user || employees.length === 0) {
@@ -103,42 +99,48 @@ export default function WageSummaryScreen() {
     [calculations]
   );
 
-  const renderWageCard = useCallback(({ item }: { item: WageWithPayment }) => (
-    <Pressable onPress={() => router.push(`/wages/${item.employeeId}`)}>
-      <Card className="mb-3">
-        <CardContent className="p-4">
-          <View className="flex-row justify-between items-center">
-            <View className="flex-1">
-              <Text variant="large" className="font-semibold text-foreground">
-                {item.employeeName}
-              </Text>
-              <Text variant="muted" className="mt-0.5">
-                {item.totalDaysPresent} {t('wages.daysPresent')} • {item.totalHalfDays} {t('wages.halfDays')}
-              </Text>
-              {item.paidAmount > 0 && (
-                <Text variant="muted" className="mt-0.5">
-                  {t('wages.paid')}: {formatCurrency(item.paidAmount)} • {t('wages.remaining')}: {formatCurrency(item.remaining)}
+  const renderWageCard = useCallback(({ item }: { item: WageWithPayment }) => {
+    const handlePress = () => {
+      router.push({ pathname: '/wages/[employeeId]', params: { employeeId: item.employeeId } });
+    };
+
+    return (
+      <Pressable onPress={handlePress}>
+        <Card className="mb-3">
+          <CardContent className="p-4">
+            <View className="flex-row justify-between items-center">
+              <View className="flex-1">
+                <Text variant="large" className="font-semibold text-foreground">
+                  {item.employeeName}
                 </Text>
-              )}
+                <Text variant="muted" className="mt-0.5">
+                  {item.totalDaysPresent} {t('wages.daysPresent')} · {item.totalHalfDays} {t('wages.halfDays')}
+                </Text>
+                {item.paidAmount > 0 && (
+                  <Text variant="muted" className="mt-0.5">
+                    {t('wages.paid')}: {formatCurrency(item.paidAmount)} · {t('wages.remaining')}: {formatCurrency(item.remaining)}
+                  </Text>
+                )}
+              </View>
+              <View className="items-end">
+                <Text variant="h3" className="font-bold text-emerald-500">
+                  {formatCurrency(item.totalWage)}
+                </Text>
+                {item.totalWage > 0 && (
+                  <Badge
+                    variant={item.isFullyPaid ? 'success' : 'destructive'}
+                    className="mt-1"
+                  >
+                    {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
+                  </Badge>
+                )}
+              </View>
             </View>
-            <View className="items-end">
-              <Text variant="large" className="font-bold text-emerald-500">
-                {formatCurrency(item.totalWage)}
-              </Text>
-              {item.totalWage > 0 && (
-                <Badge
-                  variant={item.isFullyPaid ? 'success' : 'destructive'}
-                  className="mt-1"
-                >
-                  {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
-                </Badge>
-              )}
-            </View>
-          </View>
-        </CardContent>
-      </Card>
-    </Pressable>
-  ), [router]);
+          </CardContent>
+        </Card>
+      </Pressable>
+    );
+  }, [router]);
 
   if ((loadingEmployees || loading) && !refreshing) {
     return (
@@ -150,34 +152,18 @@ export default function WageSummaryScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Period Selector */}
+      {/* Header */}
       <View className="px-4 py-4 bg-card border-b border-border">
-        <View className="flex-row rounded-lg border border-border bg-background overflow-hidden">
-          {(['week', 'month'] as PeriodType[]).map((p) => (
-            <Pressable
-              key={p}
-              onPress={() => setPeriod(p)}
-              className={`flex-1 py-2.5 items-center justify-center ${
-                period === p ? 'bg-primary' : 'bg-background'
-              }`}
-            >
-              <Text
-                className={`text-sm font-medium ${
-                  period === p ? 'text-primary-foreground' : 'text-foreground'
-                }`}
-              >
-                {p === 'week' ? t('wages.thisWeek') : t('wages.thisMonth')}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text variant="muted" className="text-center mt-2">
-          {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
+        <Text variant="h3" className="font-bold text-foreground text-center">
+          {t('wages.title')}
+        </Text>
+        <Text variant="muted" className="text-center mt-1">
+          {t('wages.thisMonth')}: {formatDate(dateRange.start)} – {formatDate(dateRange.end)}
         </Text>
       </View>
 
       {/* Summary */}
-      <Card className="mx-4 mt-4 mb-2">
+      <Card className="mx-4 mt-3">
         <CardContent className="p-4">
           <View className="flex-row gap-3">
             <StatCard
@@ -189,7 +175,6 @@ export default function WageSummaryScreen() {
             <StatCard
               value={totalDaysWorked.toFixed(1)}
               label={t('wages.daysWorked')}
-              color="#3b82f6"
               icon="calendar-check"
             />
             <StatCard
@@ -224,3 +209,6 @@ export default function WageSummaryScreen() {
     </View>
   );
 }
+
+// Local import needed for Pressable
+import { Pressable } from 'react-native';

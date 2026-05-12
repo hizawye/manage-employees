@@ -78,7 +78,6 @@ export default {
   wages: {
     title: 'Wage Summary',
     wageDetails: 'Wage Details',
-    thisWeek: 'This Week',
     thisMonth: 'This Month',
     totalWages: 'Total Wages',
     daysWorked: 'Days Worked',
@@ -101,6 +100,10 @@ export default {
     paymentAmount: 'Payment Amount',
     notesOptional: 'Notes (optional)',
     confirmPayment: 'Confirm Payment',
+    adjustment: 'Adjustment',
+    adjustmentNote: 'Reason',
+    adjustWage: 'Adjust Wage',
+    noRecord: 'Off',
   },
 
   // Validation

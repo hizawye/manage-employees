@@ -1,4 +1,4 @@
-import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail } from '../models';
+import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail, MonthlyDayData } from '../models';
 import { getAttendanceByEmployee } from '../database/repositories';
 
 // Cache for wage calculations
@@ -75,6 +75,13 @@ export async function calculateWagesForPeriod(
 
   const attendanceRecords = await getAttendanceByEmployee(userId, employee.id, startDate, endDate);
 
+  // Build a map of date -> attendance record for quick lookup
+  const attendanceMap = new Map<string, Attendance>();
+  for (const record of attendanceRecords) {
+    attendanceMap.set(record.date, record);
+  }
+
+  // Generate ALL days in the period (including days with no attendance)
   const details: WageDetail[] = [];
   let totalWage = 0;
   let totalDaysPresent = 0;
@@ -82,32 +89,56 @@ export async function calculateWagesForPeriod(
   let totalHalfDays = 0;
   let totalHoursWorked = 0;
 
-  for (const record of attendanceRecords) {
-    const wageEarned = calculateWageForDay(employee, record);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-    details.push({
-      date: record.date,
-      status: record.status,
-      hoursWorked: record.hoursWorked,
-      wageEarned,
-    });
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = toISODate(d);
+    const record = attendanceMap.get(dateStr);
 
-    totalWage += wageEarned;
+    let wageEarned: number;
+    let status: AttendanceStatus;
+    let hoursWorked: number | undefined;
 
-    switch (record.status) {
-      case AttendanceStatus.PRESENT:
-        totalDaysPresent++;
-        break;
-      case AttendanceStatus.ABSENT:
-        totalDaysAbsent++;
-        break;
-      case AttendanceStatus.HALF_DAY:
-        totalHalfDays++;
-        break;
+    if (record) {
+      wageEarned = calculateWageForDay(employee, record);
+      status = record.status;
+      hoursWorked = record.hoursWorked;
+    } else {
+      // No attendance record for this day - not worked
+      wageEarned = 0;
+      status = AttendanceStatus.ABSENT;
+      hoursWorked = undefined;
     }
 
-    if (record.hoursWorked) {
-      totalHoursWorked += record.hoursWorked;
+    const detail: WageDetail = {
+      date: dateStr,
+      status,
+      hoursWorked,
+      wageEarned,
+    };
+
+    details.push(detail);
+    totalWage += wageEarned;
+
+    if (record) {
+      switch (record.status) {
+        case AttendanceStatus.PRESENT:
+          totalDaysPresent++;
+          break;
+        case AttendanceStatus.ABSENT:
+          totalDaysAbsent++;
+          break;
+        case AttendanceStatus.HALF_DAY:
+          totalHalfDays++;
+          break;
+      }
+
+      if (record.hoursWorked) {
+        totalHoursWorked += record.hoursWorked;
+      }
+    } else {
+      totalDaysAbsent++;
     }
   }
 
@@ -145,4 +176,20 @@ export async function calculateWagesForAllEmployees(
 
 export function getTotalWages(calculations: WageCalculation[]): number {
   return calculations.reduce((sum, calc) => sum + calc.totalWage, 0);
+}
+
+export function getMonthlyDayData(calc: WageCalculation): MonthlyDayData[] {
+  return calc.details.map((d) => ({
+    ...d,
+    dayOfMonth: new Date(d.date).getDate(),
+    dayOfWeek: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    hasAttendance: d.status !== AttendanceStatus.ABSENT || d.hoursWorked !== undefined,
+  }));
+}
+
+function toISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }

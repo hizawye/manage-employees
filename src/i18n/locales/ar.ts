@@ -78,7 +78,6 @@ export default {
   wages: {
     title: 'ملخص الأجور',
     wageDetails: 'تفاصيل الأجور',
-    thisWeek: 'هذا الأسبوع',
     thisMonth: 'هذا الشهر',
     totalWages: 'إجمالي الأجور',
     daysWorked: 'أيام العمل',
@@ -101,6 +100,10 @@ export default {
     paymentAmount: 'مبلغ الدفع',
     notesOptional: 'ملاحظات (اختياري)',
     confirmPayment: 'تأكيد الدفع',
+    adjustment: 'تعديل',
+    adjustmentNote: 'السبب',
+    adjustWage: 'تعديل الأجر',
+    noRecord: 'إجازة',
   },
 
   // Validation - التحقق
