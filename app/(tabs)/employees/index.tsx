@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, FlatList, RefreshControl, Pressable, I18nManager } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployees, useRefresh, useDebounce } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
@@ -16,12 +15,6 @@ export default function EmployeeListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery, 300);
-
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [refresh])
-  );
 
   const { refreshing, onRefresh } = useRefresh(refresh);
 

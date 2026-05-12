@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
@@ -63,11 +63,29 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   if (isLoading) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.text}>Manage Employees</Text>
+      </View>
+    );
   }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#023c69',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+});
 
 export const useThemeContext = (): ThemeContextType => {
   const context = useContext(ThemeContext);

@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployees, useAttendanceByDate, useRefresh } from '../../../src/hooks';
 import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../src/models';
@@ -20,11 +19,7 @@ export default function AttendanceScreen() {
   const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshEmployees();
-    }, [refreshEmployees])
-  );
+  const { refreshing, onRefresh } = useRefresh(refresh);
 
   const attendanceMap = useMemo(() => {
     const map = new Map<string, { status: AttendanceStatus; hoursWorked?: number }>();
@@ -36,8 +31,6 @@ export default function AttendanceScreen() {
     }
     return map;
   }, [attendance]);
-
-  const { refreshing, onRefresh } = useRefresh(refresh);
 
   const changeDate = (days: number) => {
     const current = parseISO(selectedDate);

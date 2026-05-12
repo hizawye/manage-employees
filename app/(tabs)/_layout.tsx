@@ -1,4 +1,4 @@
-import { Tabs, useNavigation } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { I18nManager } from 'react-native';
 import { useThemeContext } from '../../src/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';

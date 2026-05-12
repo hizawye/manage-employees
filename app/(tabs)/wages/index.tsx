@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
@@ -80,12 +79,6 @@ export default function WageSummaryScreen() {
   useEffect(() => {
     loadWages();
   }, [loadWages]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshEmployees();
-    }, [refreshEmployees])
-  );
 
   const { refreshing, onRefresh } = useRefresh(loadWages);
 
