@@ -1,13 +1,13 @@
-import { Tabs } from 'expo-router';
-import { I18nManager, useColorScheme } from 'react-native';
+import { Tabs, useNavigation } from 'expo-router';
+import { I18nManager } from 'react-native';
+import { useThemeContext } from '../../src/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { t } from '../../src/i18n';
 
 const isRTL = I18nManager.isRTL;
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark } = useThemeContext();
 
   const primary = '#3b82f6';
   const inactive = isDark ? '#94a3b8' : '#64748b';
