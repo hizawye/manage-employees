@@ -59,7 +59,7 @@ export default function WageSummaryScreen() {
             dateRange.start,
             dateRange.end
           );
-          const remaining = Math.max(0, calc.totalWage - paid);
+          const remaining = calc.totalWage - paid;
           return {
             ...calc,
             paidAmount: paid,
