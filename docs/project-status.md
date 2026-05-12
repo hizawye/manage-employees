@@ -438,14 +438,35 @@ manage-employees/
 ### Known Issues
 - Jest test execution still blocked by babel config (pre-existing)
 
+## 2026-05-12: TypeScript Verification & Android Build (v2.0.1)
+
+### What Changed
+- **Zero TypeScript errors** — `npx tsc --noEmit` passes cleanly
+- **Android release build successful** — 72MB APK generated (`android/app/build/outputs/apk/release/app-release.apk`)
+- **All 8 tests passing** — `npm test` green
+
+### Fixes Applied
+- ✅ Fixed `DayData.status` type: `number` → `AttendanceStatus` enum
+- ✅ Fixed all numeric enum comparisons (1,2,3) → `AttendanceStatus.PRESENT/HALF_DAY/ABSENT`
+- ✅ Added missing `openPayDialog` function reference
+- ✅ Fixed `app/history/index.tsx`: added `Pressable` import and `useRefresh` hook import
+- ✅ Created `android/local.properties` with `sdk.dir=/opt/android-sdk`
+- ✅ Added `patch-package` + `postinstall` script for RN 0.81 reanimated/css-interop patches
+
+### Verification
+- `npx tsc --noEmit` → 0 errors
+- `npm test` → 8/8 passed
+- `./gradlew assembleRelease` → BUILD SUCCESSFUL (72MB APK)
+
 ### Next Session Start Point
-Full UI rewrite complete. Android build compiles successfully.
+All TypeScript errors resolved, Android build successful, tests passing.
 
 **Immediate:**
-1. Verify dark mode toggle works across all screens
-2. Verify RTL layout still correct
-3. Test payment dialog modal on wage detail screen
-4. Install APK on device/emulator and test full app flow
+1. Install APK on device/emulator for manual QA
+2. Verify dark mode toggle across all screens
+3. Verify RTL layout correctness
+4. Test payment dialog modal on wage detail screen
+5. Test full app flow end-to-end
 
 **Future Enhancements:**
 - Add more UI primitives (Select, Switch, Dialog) as needed
