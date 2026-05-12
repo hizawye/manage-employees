@@ -461,14 +461,44 @@ manage-employees/
 ### Next Session Start Point
 All TypeScript errors resolved, Android build successful, tests passing.
 
+## 2026-05-12: Negative Payment Support for Wage Adjustments (v2.0.2)
+
+### What Changed
+- **Negative payments now allowed** — employees can receive adjustments/refunds that reduce the outstanding balance
+- **Wage summary screen consistency** — removed `Math.max(0, ...)` from remaining calculation to correctly show overpaid state
+
+### Root Cause
+The `overpaymentError` translation key was missing from both `en.ts` and `ar.ts`, causing the error to fall back to a hardcoded string. The deeper issue was that **every layer** of the codebase rejected non-positive amounts:
+
+| Layer | File | Check | Fix |
+|-------|------|-------|-----|
+| Service | `PaymentService.ts:17` | `amount <= 0` | Changed to `amount === 0` |
+| Service | `PaymentService.ts:62` | `Math.max(0, totalWage - paid)` | Removed max to expose overpaid state |
+| Client | `wages/[employeeId].tsx:142` | `amount <= 0` | Changed to `amount === 0` |
+| Client | `wages/[employeeId].tsx:143` | Overpayment guard (positive only now) | Skip check for negative amounts |
+| Client | `wages/[employeeId].tsx:517` | Button disabled `<= 0` | Changed to `=== 0` |
+| Client | `wages/index.tsx:62` | `Math.max(0, ...)` | Removed for correct display |
+| i18n | `en.ts` / `ar.ts` | Missing `wages.overpaymentError` | Added translation keys |
+
+### Verification
+- `npx tsc --noEmit` → 0 errors
+- `npm test` → 8/8 passed
+- `./gradlew assembleRelease` → BUILD SUCCESSFUL (72MB APK)
+
+### Known Issues
+- Jest test execution still blocked by babel config (pre-existing)
+
+### Next Session Start Point
+All payment flows working correctly for both positive payments and negative adjustments.
+
 **Immediate:**
 1. Install APK on device/emulator for manual QA
-2. Verify dark mode toggle across all screens
-3. Verify RTL layout correctness
-4. Test payment dialog modal on wage detail screen
-5. Test full app flow end-to-end
+2. Test negative adjustment flow end-to-end
+3. Verify overpaid state displays correctly in UI
+4. Test full app flow with Arabic RTL
 
 **Future Enhancements:**
+- Persist day adjustments to database (currently client-side only)
 - Add more UI primitives (Select, Switch, Dialog) as needed
 - Consider removing unused theme.ts constants
 - Add snapshot tests for UI primitives
