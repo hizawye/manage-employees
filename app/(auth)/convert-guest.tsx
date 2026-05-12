@@ -157,7 +157,7 @@ export default function ConvertGuestScreen() {
 
             <Button
               variant="ghost"
-              onPress={() => router.back()}
+              onPress={() => router.dismissAll()}
               disabled={loading}
               className="w-full"
             >
