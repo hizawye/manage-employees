@@ -19,9 +19,10 @@ import { Button } from '../../../src/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface WageWithPayment extends WageCalculation {
-  paidAmount: number;
-  remaining: number;
-  isFullyPaid: boolean;
+   paidAmount: number;
+   remaining: number;
+   isFullyPaid: boolean;
+   isOverpaid: boolean;
 }
 
 export default function WageSummaryScreen() {
@@ -57,13 +58,14 @@ export default function WageSummaryScreen() {
             dateRange.start,
             dateRange.end
           );
-          const remaining = calc.totalWage - paid;
-          return {
-            ...calc,
-            paidAmount: paid,
-            remaining,
-            isFullyPaid: remaining <= 0 && calc.totalWage > 0,
-          };
+const remaining = calc.totalWage - paid;
+           return {
+             ...calc,
+             paidAmount: paid,
+             remaining,
+             isFullyPaid: remaining <= 0 && calc.totalWage > 0,
+             isOverpaid: remaining < 0,
+           };
         })
       );
 
@@ -108,23 +110,23 @@ export default function WageSummaryScreen() {
                 <Text variant="muted" className="mt-0.5">
                   {item.totalDaysPresent} {t('wages.daysPresent')} · {item.totalHalfDays} {t('wages.halfDays')}
                 </Text>
-                {item.paidAmount > 0 && (
-                  <Text variant="muted" className="mt-0.5">
-                    {t('wages.paid')}: {formatCurrency(item.paidAmount)} · {t('wages.remaining')}: {formatCurrency(item.remaining)}
-                  </Text>
-                )}
+{item.paidAmount > 0 && (
+                   <Text variant="muted" className="mt-0.5">
+                     {t('wages.paid')}: {formatCurrency(item.paidAmount)} · {item.isOverpaid ? t('wages.overpaid') : `${t('wages.remaining')}: ${formatCurrency(item.remaining)}`}
+                   </Text>
+                 )}
               </View>
               <View className="items-end">
                 <Text variant="h3" className="font-bold text-emerald-500">
                   {formatCurrency(item.totalWage)}
                 </Text>
-                {item.totalWage > 0 && (
-                  <View className={`mt-1 px-2 py-0.5 rounded-full ${item.isFullyPaid ? 'bg-emerald-500/15' : 'bg-red-500/15'}`}>
-                    <Text className={`text-[8px] font-semibold ${item.isFullyPaid ? 'text-emerald-700' : 'text-red-700'}`}>
-                      {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
-                    </Text>
-                  </View>
-                )}
+{item.totalWage > 0 && (
+                   <View className={`mt-1 px-2 py-0.5 rounded-full ${item.isOverpaid ? 'bg-amber-500/15' : item.isFullyPaid ? 'bg-emerald-500/15' : 'bg-red-500/15'}`}>
+                     <Text className={`text-[8px] font-semibold ${item.isOverpaid ? 'text-amber-700' : item.isFullyPaid ? 'text-emerald-700' : 'text-red-700'}`}>
+                       {item.isOverpaid ? '⚠️ ' + t('wages.overpaid') + ' ' + formatCurrency(Math.abs(item.remaining)) : item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
+                     </Text>
+                   </View>
+                 )}
               </View>
             </View>
           </View>

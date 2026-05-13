@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Text } from "./text";
 
 interface ButtonProps extends PressableProps {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "warning";
   size?: "default" | "sm" | "lg" | "icon";
   isLoading?: boolean;
 }
@@ -12,6 +12,7 @@ interface ButtonProps extends PressableProps {
 const buttonVariants = {
   default: "bg-primary active:opacity-90",
   destructive: "bg-destructive active:opacity-90",
+  warning: "bg-amber-500 active:opacity-90",
   outline: "border border-input bg-background active:bg-accent",
   secondary: "bg-secondary active:opacity-80",
   ghost: "active:bg-accent",
@@ -21,6 +22,7 @@ const buttonVariants = {
 const textVariants = {
   default: "text-primary-foreground",
   destructive: "text-destructive-foreground",
+  warning: "text-amber-100",
   outline: "text-foreground",
   secondary: "text-secondary-foreground",
   ghost: "text-foreground",

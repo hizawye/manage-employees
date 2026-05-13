@@ -117,7 +117,17 @@ export default function EmployeeWageDetailScreen() {
     return wageData.totalWage - paidAmount;
   }, [wageData, paidAmount]);
 
-  const isFullyPaid = remainingAmount <= 0;
+  const { isOverpaid, isFullyPaid, formattedRemaining, excessAmount } = useMemo(() => {
+     if (!wageData) return { isOverpaid: false, isFullyPaid: false, formattedRemaining: formatCurrency(0), excessAmount: 0 };
+     const remaining = wageData.totalWage - paidAmount;
+     const overpaid = remaining < 0;
+     return {
+       isOverpaid: overpaid,
+       isFullyPaid: remaining <= 0,
+       formattedRemaining: formatCurrency(remaining),
+       excessAmount: overpaid ? Math.abs(remaining) : 0,
+     };
+   }, [wageData, paidAmount]);
 
   const handlePay = async () => {
     if (!user || !wageData) return;
@@ -247,27 +257,34 @@ export default function EmployeeWageDetailScreen() {
               </Text>
             </View>
 
-            {paidAmount > 0 && (
-              <>
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text variant="p" className="text-muted-foreground">
-                    {t('wages.paid')}:
-                  </Text>
-                  <Text variant="p" className="font-semibold text-emerald-500">
-                    {formatCurrency(paidAmount)}
-                  </Text>
-                </View>
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text variant="p" className="text-muted-foreground">
-                    {t('wages.remaining')}:
-                  </Text>
-                  <Text variant="p" className={`font-semibold ${isFullyPaid ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {formatCurrency(remainingAmount)}
-                  </Text>
-                </View>
-                <View className="border-t border-border pt-2" />
-              </>
-            )}
+{paidAmount > 0 && (
+               <>
+                 <View className="flex-row justify-between items-center mb-1">
+                   <Text variant="p" className="text-muted-foreground">
+                     {t('wages.paid')}:
+                   </Text>
+                   <Text variant="p" className="font-semibold text-emerald-500">
+                     {formatCurrency(paidAmount)}
+                   </Text>
+                 </View>
+                 <View className="flex-row justify-between items-center mb-3">
+                   <Text variant="p" className="text-muted-foreground">
+                     {isOverpaid ? t('wages.overpaid') : t('wages.remaining')}:
+                   </Text>
+                   <Text variant="p" className={`font-semibold ${isOverpaid ? 'text-amber-500' : isFullyPaid ? 'text-emerald-500' : 'text-red-500'}`}>
+                     {formattedRemaining}
+                   </Text>
+                 </View>
+                 {isOverpaid && (
+                   <View className="mb-3 p-2 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                     <Text className="text-sm text-amber-600 text-center">
+                       ⚠️ {t('wages.overpaymentWarning', { excess: formatCurrency(excessAmount) })}
+                     </Text>
+                   </View>
+                 )}
+                 <View className="border-t border-border pt-2" />
+               </>
+             )}
 
             <View className="flex-row justify-around pt-2">
               <View className="items-center">
@@ -306,17 +323,27 @@ export default function EmployeeWageDetailScreen() {
               )}
             </View>
 
-            {!isFullyPaid && wageData.totalWage > 0 && (
-              <Button onPress={openPayDialog} className="mt-4">
-                {t('wages.markAsPaid')}
-              </Button>
-            )}
+{wageData.totalWage > 0 && (
+               <Button
+                 onPress={openPayDialog}
+                 className="mt-4"
+                 variant={isFullyPaid ? 'warning' : 'default'}
+               >
+                 {isFullyPaid ? t('wages.addAdditionalPayment') : t('wages.markAsPaid')}
+               </Button>
+             )}
 
-            {isFullyPaid && (
-              <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-                <Text className="text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
-              </View>
-            )}
+             {isFullyPaid && !isOverpaid && (
+               <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                 <Text className="text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
+               </View>
+             )}
+
+             {isOverpaid && (
+               <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                 <Text className="text-amber-600 font-bold">{t('wages.overpaid')}: {formatCurrency(excessAmount)}</Text>
+               </View>
+             )}
           </View>
         </View>
 
@@ -326,21 +353,27 @@ export default function EmployeeWageDetailScreen() {
               <Text variant="large" className="font-semibold text-foreground mb-3">
                 {t('wages.paymentHistory')}
               </Text>
-              {payments.map((p) => (
-                <View key={p.id} className="flex-row justify-between items-center py-1">
-                  <Text variant="muted" className="text-sm">
-                    {formatDate(p.paymentDate)}
-                  </Text>
-                  <View className="flex-row items-center gap-2">
-                    <Text variant="p" className="font-semibold text-emerald-500">
-                      {formatCurrency(p.amount)}
-                    </Text>
-                    <Pressable onPress={() => handleDeletePayment(p.id)} className="p-1">
-                      <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
+{payments.map((p) => {
+                 const isOverpaid = p.amount > remainingAmount;
+                 return (
+                 <View key={p.id} className="flex-row justify-between items-center py-1">
+                   <Text variant="muted" className="text-sm">
+                     {formatDate(p.paymentDate)}
+                   </Text>
+                   <View className="flex-row items-center gap-2">
+                     <Text variant="p" className={`font-semibold ${isOverpaid ? 'text-amber-500' : 'text-emerald-500'}`}>
+                       {formatCurrency(p.amount)}
+                     </Text>
+                     {isOverpaid && (
+                       <Text className="text-[8px] font-semibold text-amber-600">⚠</Text>
+                     )}
+                     <Pressable onPress={() => handleDeletePayment(p.id)} className="p-1">
+                       <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
+                     </Pressable>
+                   </View>
+                 </View>
+                 );
+               })}
             </View>
           </View>
         )}
@@ -433,22 +466,32 @@ export default function EmployeeWageDetailScreen() {
             <Text variant="p" className="text-muted-foreground mb-1">
               {t('wages.totalWage')}: {formatCurrency(wageData.totalWage)}
             </Text>
-            <Text variant="p" className="text-muted-foreground mb-4">
-              {t('wages.remaining')}: {formatCurrency(remainingAmount)}
-            </Text>
-            <TextInput
-              placeholder={t('wages.paymentAmount')}
-              value={payAmount}
-              onChangeText={setPayAmount}
-              keyboardType="decimal-pad"
-              placeholderTextColor="hsl(215 16% 47%)"
-              className={`w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground mb-1 ${
-                paymentValidationError ? 'border-destructive' : 'border-border'
-              }`}
-            />
-            {paymentValidationError && (
-              <Text className="text-sm text-destructive mb-2">{paymentValidationError}</Text>
-            )}
+<Text variant="p" className="text-muted-foreground mb-4">
+               {isOverpaid
+                 ? `${t('wages.overpaid')}: ${formatCurrency(excessAmount)}`
+                 : `${t('wages.remaining')}: ${formatCurrency(remainingAmount)}`}
+             </Text>
+             <TextInput
+               placeholder={t('wages.paymentAmount')}
+               value={payAmount}
+               onChangeText={setPayAmount}
+               keyboardType="decimal-pad"
+               placeholderTextColor="hsl(215 16% 47%)"
+               className={`w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground mb-1 ${
+                 parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid
+                   ? 'border-amber-500'
+                   : 'border-border'
+               }`}
+             />
+             {parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid && (
+               <View className="flex-row items-center gap-1.5 mb-2">
+                 <Text className="text-xs text-amber-500">⚠️</Text>
+                 <Text className="text-xs text-amber-500">{t('wages.overpaymentWarning', { excess: formatCurrency(parseFloat(payAmount) - remainingAmount) })}</Text>
+               </View>
+             )}
+             {parseFloat(payAmount) < 0 && (
+               <Text className="text-xs text-destructive mb-2">{t('validation.invalidNumber')}</Text>
+             )}
             <TextInput
               placeholder={t('wages.notesOptional')}
               value={payNotes}
@@ -462,14 +505,17 @@ export default function EmployeeWageDetailScreen() {
               <Button variant="outline" className="flex-1" onPress={() => setPayDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button
-                className="flex-1"
-                onPress={handlePay}
-                isLoading={payLoading}
-                disabled={payLoading || !!paymentValidationError || !payAmount || parseFloat(payAmount) === 0}
-              >
-                {t('wages.confirmPayment')}
-              </Button>
+<Button
+                 className="flex-1"
+                 onPress={handlePay}
+                 isLoading={payLoading}
+                 disabled={payLoading || parseFloat(payAmount) <= 0}
+                 variant={parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid ? 'warning' : 'default'}
+               >
+                 {parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid
+                   ? '⚠️ Confirm Overpayment'
+                   : t('wages.confirmPayment')}
+               </Button>
             </View>
           </View>
         </View>

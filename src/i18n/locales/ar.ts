@@ -101,6 +101,8 @@ export default {
     notesOptional: 'ملاحظات (اختياري)',
     confirmPayment: 'تأكيد الدفع',
     overpaymentError: 'المبلغ يتجاوز الرصيد المتبقي',
+     overpaymentWarning: 'المبلغ يتجاوز الرصيد المتبقي بمقدار {{excess}}',
+     overpaid: 'مدفوع زيادة',
     adjustment: 'تعديل',
     adjustmentNote: 'السبب',
     adjustWage: 'تعديل الأجر',

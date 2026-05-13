@@ -101,6 +101,8 @@ export default {
     notesOptional: 'Notes (optional)',
     confirmPayment: 'Confirm Payment',
     overpaymentError: 'Amount exceeds remaining balance',
+     overpaymentWarning: 'Amount exceeds remaining balance by {{excess}}',
+     overpaid: 'Overpaid',
     adjustment: 'Adjustment',
     adjustmentNote: 'Reason',
     adjustWage: 'Adjust Wage',
