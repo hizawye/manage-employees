@@ -51,21 +51,24 @@ export class PaymentService {
   /**
    * Check if an employee is fully paid for a period
    */
-  static async isFullyPaid(
-    userId: number,
-    employeeId: string,
-    periodStart: string,
-    periodEnd: string,
-    totalWage: number
-  ): Promise<{ paid: number; remaining: number; isFullyPaid: boolean }> {
-    const paid = await dbGetTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
-    const remaining = totalWage - paid;
-    return {
-      paid,
-      remaining,
-      isFullyPaid: remaining <= 0,
-    };
-  }
+static async isFullyPaid(
+     userId: number,
+     employeeId: string,
+     periodStart: string,
+     periodEnd: string,
+     totalWage: number
+   ): Promise<{ paid: number; remaining: number; isFullyPaid: boolean; isOverpaid: boolean; overpaidAmount: number }> {
+     const paid = await dbGetTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
+     const remaining = totalWage - paid;
+     const isOverpaid = remaining < 0;
+     return {
+       paid,
+       remaining,
+       isFullyPaid: remaining <= 0,
+       isOverpaid,
+       overpaidAmount: isOverpaid ? Math.abs(remaining) : 0,
+     };
+   }
 
   /**
    * Delete a payment record
