@@ -11,7 +11,15 @@ import { AuthProvider } from '../src/auth/AuthContext';
 import { ThemeProvider, useThemeContext } from '../src/theme';
 
 function AppContent() {
-  const { isDark } = useThemeContext();
+  const { isDark, isThemeLoading } = useThemeContext();
+
+  if (isThemeLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
 
   return (
     <View className={isDark ? "dark flex-1 bg-background" : "flex-1 bg-background"}>

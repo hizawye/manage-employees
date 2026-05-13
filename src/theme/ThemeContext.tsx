@@ -8,6 +8,7 @@ interface ThemeContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   isDark: boolean;
+  isThemeLoading: boolean;
   toggleTheme: () => Promise<void>;
 }
 
@@ -55,12 +56,13 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     ? systemColorScheme === 'dark'
     : themeMode === 'dark';
 
-  const value: ThemeContextType = {
-    themeMode,
-    setThemeMode,
-    isDark,
-    toggleTheme,
-  };
+const value: ThemeContextType = {
+     themeMode,
+     setThemeMode,
+     isDark,
+     isThemeLoading: isLoading,
+     toggleTheme,
+   };
 
   if (isLoading) {
     return (
