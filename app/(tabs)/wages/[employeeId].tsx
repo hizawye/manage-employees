@@ -3,7 +3,6 @@ import {
   View,
   ScrollView,
   RefreshControl,
-  FlatList,
   Modal,
   Pressable,
   TextInput,
@@ -138,10 +137,11 @@ export default function EmployeeWageDetailScreen() {
 
   const handlePay = async () => {
     if (!user || !wageData) return;
-const amount = parseFloat(payAmount);
+    const amount = parseFloat(payAmount);
     if (isNaN(amount) || amount === 0) return;
 
     try {
+      setPayLoading(true);
       await PaymentService.recordPayment(user.id, {
         userId: user.id,
         employeeId,
@@ -221,68 +221,11 @@ const amount = parseFloat(payAmount);
     setPayDialogVisible(true);
   };
 
-  const renderDay = useCallback(({ item }: { item: DayData }) => {
-    let statusColor: string;
-    let statusVariant: 'default' | 'success' | 'destructive' | 'outline' | 'secondary' | 'warning' = 'secondary';
-
-    switch (item.status) {
-      case AttendanceStatus.PRESENT:
-        statusColor = '#10b981';
-        statusVariant = 'success';
-        break;
-      case AttendanceStatus.HALF_DAY:
-        statusColor = '#f59e0b';
-        statusVariant = 'warning';
-        break;
-      case AttendanceStatus.ABSENT:
-        statusColor = '#ef4444';
-        statusVariant = 'destructive';
-        break;
-      default: // No record / off
-        statusColor = '#94a3b8';
-        statusVariant = 'outline';
-        break;
-    }
-
-    const isWeekend = ['Sat', 'Sun'].includes(item.dayOfWeek);
-
-    return (
-      <Pressable
-        onPress={() => {
-          if (item.status === AttendanceStatus.ABSENT && !item.hasAdjustment) {
-            openAdjustDialog(item.date);
-          }
-        }}
-        className={`items-center justify-center py-1.5 rounded-lg ${
-          isWeekend ? 'bg-muted/30' : 'bg-card'
-        } border border-border mb-0.5`}
-      >
-        <Text variant="muted" className="text-[10px] text-muted-foreground">
-          {item.dayOfWeek}
-        </Text>
-        <Text className={`text-sm font-medium ${isWeekend ? 'text-muted-foreground' : 'text-foreground'}`}>
-          {item.dayOfMonth}
-        </Text>
-        <View className="flex-row items-center gap-1 mt-0.5">
-          <Badge variant={item.status === AttendanceStatus.PRESENT ? 'secondary' : statusVariant} className="min-w-[28px] items-center">
-            <Text className="text-[8px] leading-[8px]">
-              {item.status === AttendanceStatus.PRESENT ? 'P' : item.status === AttendanceStatus.HALF_DAY ? 'H' : item.status === AttendanceStatus.ABSENT ? 'A' : item.hasAdjustment ? '✓' : '—'}
-            </Text>
-          </Badge>
-          {item.hasAdjustment && (
-            <Text className="text-[8px] text-emerald-500 font-bold">
-              {item.wageEarned >= 0 ? '+' : ''}{formatCurrency(item.wageEarned)}
-            </Text>
-          )}
-        </View>
-        {item.wageEarned > 0 && !item.hasAdjustment && (
-          <Text className="text-[8px] text-muted-foreground mt-0.5">
-            {formatCurrency(item.wageEarned)}
-          </Text>
-        )}
-      </Pressable>
+  const workedDays = useMemo(() => {
+    return monthData.filter(
+      (d) => d.status !== AttendanceStatus.ABSENT || d.hasAdjustment
     );
-  }, []);
+  }, [monthData]);
 
   if ((loadingEmployee || loading) && !refreshing) {
     return (
@@ -299,9 +242,6 @@ const amount = parseFloat(payAmount);
       </View>
     );
   }
-
-  // Build weekday headers
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
     <View className="flex-1 bg-background">
@@ -430,38 +370,77 @@ const amount = parseFloat(payAmount);
           </Card>
         )}
 
-        {/* Monthly Calendar Grid */}
+        {/* Daily Breakdown - Stacked list of worked days */}
         <Text variant="large" className="font-semibold text-muted-foreground px-4 mb-2">
           {t('wages.dailyBreakdown')}
         </Text>
 
         <Card className="mx-4 mb-2">
-          <CardContent className="p-3">
-            {/* Weekday Headers */}
-            <View className="flex-row mb-1">
-              {weekDays.map((d) => (
-                <View key={d} className="flex-1 items-center py-1">
-                  <Text
-                    className={`text-[10px] font-medium ${
-                      d === 'Sat' || d === 'Sun' ? 'text-muted-foreground' : 'text-foreground'
-                    }`}
+          <CardContent className="p-0">
+            {workedDays.length === 0 ? (
+              <View className="py-6 items-center">
+                <Text className="text-muted-foreground text-sm">
+                  {t('wages.noAttendanceRecords')}
+                </Text>
+              </View>
+            ) : (
+              workedDays.map((day) => {
+                const isWeekend = ['Sat', 'Sun'].includes(day.dayOfWeek);
+                return (
+                  <Pressable
+                    key={day.date}
+                    onPress={() => {
+                      if (day.status === AttendanceStatus.ABSENT && !day.hasAdjustment) {
+                        openAdjustDialog(day.date);
+                      }
+                    }}
+                    className={`flex-row justify-between items-center px-4 py-2.5 ${
+                      isWeekend ? 'bg-muted/15' : 'bg-card'
+                    } border-b border-border`}
                   >
-                    {d}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Calendar Grid - 6 rows × 7 cols */}
-            <FlatList
-              data={monthData}
-              keyExtractor={(item) => item.date}
-              renderItem={renderDay}
-              numColumns={7}
-              scrollEnabled={false}
-              contentContainerClassName="gap-y-0.5"
-              columnWrapperClassName="flex-row gap-x-0.5 justify-between"
-            />
+                    <View className="flex-1">
+                      <Text className="text-sm font-medium text-foreground">
+                        {formatDateShort(day.date)}
+                      </Text>
+                      <View className="flex-row items-center gap-2 mt-0.5">
+                        <Badge
+                          variant={
+                            day.status === AttendanceStatus.PRESENT
+                              ? 'success'
+                              : day.status === AttendanceStatus.HALF_DAY
+                              ? 'warning'
+                              : 'destructive'
+                          }
+                        >
+                          <Text className="text-[8px] leading-[8px]">
+                            {day.status === AttendanceStatus.PRESENT
+                              ? 'P'
+                              : day.status === AttendanceStatus.HALF_DAY
+                              ? 'H'
+                              : 'A'}
+                          </Text>
+                        </Badge>
+                        {day.status === AttendanceStatus.HALF_DAY && (
+                          <Text className="text-[10px] text-muted-foreground">
+                            {t('attendance.halfDay')}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text className="text-sm font-semibold text-foreground">
+                        {formatCurrency(day.wageEarned)}
+                      </Text>
+                      {day.hasAdjustment && (
+                        <Text className="text-[10px] text-emerald-500 font-medium">
+                          adj
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </ScrollView>
