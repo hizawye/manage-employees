@@ -181,17 +181,24 @@ manage-employees/
 - ⚠️ Jest test execution still blocked by babel config for some test patterns (infrastructure tests pass via `npm test`)
 - ⚠️ `contentContainerClassName` on FlatList requires React Native 0.72+
 
-## 2026-05-13: Cleanup & Verification (v2.0.3)
+## 2026-05-13: Cleanup, Android Build Fix & Verification (v2.0.3)
 
 ### What Changed
 - **Removed stale `react-native-paper` type import** from `src/theme/types.d.ts`
 - **Removed unused `expo-splash-screen`** dependency from `package.json`
 - **Set `userInterfaceStyle: "dark"`** as default in `app.json`
 - **Android adaptive icon background** set to `#023c69` (matches splash)
+- **Fixed Android build** — removed stale `Theme.SplashScreen` and `SplashScreenManager` references from Android resources and `MainActivity.kt`
+- **Created Expo config plugins** (`src/plugins/`) so Android fixes survive `expo prebuild` regeneration:
+  - `withRemoveSplashScreen.js` — strips SplashScreenManager import from MainActivity.kt
+  - `withFixSplashTheme.js` — replaces Theme.SplashScreen parent with AppCompat in styles.xml
+- `expo-splash-screen` removed from `package.json` (was causing EventEmitter crash)
 
 ### Verification
 - `npx tsc --noEmit` → 0 errors ✅
 - `npm test` → 8/8 passed ✅
+- `./gradlew app:assembleDebug` → BUILD SUCCESSFUL ✅
+- `grep react-native-paper src/` → 0 matches ✅
 
 ### Next Session Start Point
 All cleanup complete. Next steps are manual QA on emulator/device.
