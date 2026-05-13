@@ -5,6 +5,7 @@ import {
   getTotalPaidForPeriod as dbGetTotalPaidForPeriod,
   deletePayment as dbDeletePayment,
 } from '../database/repositories';
+import { assertEmployeeOwnedByUser } from '../database/repositories/ownership';
 
 export class PaymentService {
   /**
@@ -14,12 +15,17 @@ export class PaymentService {
     if (!input.employeeId) {
       throw new Error('Employee ID is required');
     }
-    if (input.amount === 0) {
-      throw new Error('Payment amount must not be zero');
+    if (input.amount <= 0) {
+      throw new Error('Payment amount must be greater than zero');
     }
     if (!input.periodStart || !input.periodEnd) {
       throw new Error('Period start and end dates are required');
     }
+    if (input.periodStart > input.periodEnd) {
+      throw new Error('Period start must be before period end');
+    }
+
+    await assertEmployeeOwnedByUser(userId, input.employeeId);
 
     return dbCreatePayment(userId, input);
   }

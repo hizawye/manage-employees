@@ -1,9 +1,10 @@
-const { withAndroidManifest } = require("@expo/config-plugins");
+const { withAndroidManifest, withProjectBuildGradle } = require("@expo/config-plugins");
 
 /**
- * Plugin: Fix MainActivity.kt for splash screen removal.
+ * Plugin: Fix MainActivity.kt and gradle.properties for splash screen removal.
  * - Removes SplashScreenManager import if present (from older prebuilds)
  * - Ensures setTheme(R.style.AppTheme) is called before super.onCreate
+ * - Enables newArchEnabled=true in gradle.properties (required by reanimated 4.x)
  */
 const withFixMainActivity = (config) => {
   return withAndroidManifest(config, (config) => {
@@ -45,4 +46,34 @@ const withFixMainActivity = (config) => {
   });
 };
 
-module.exports = withFixMainActivity;
+/**
+ * Plugin: Ensure newArchEnabled=true in gradle.properties.
+ * Required by react-native-reanimated 4.x and react-native-worklets.
+ */
+const withFixNewArch = (config) => {
+  return withProjectBuildGradle(config, (config) => {
+    const fs = require("fs");
+    const path = require("path");
+
+    const gradlePropsPath = path.resolve(
+      config.modRequest.platformProjectRoot,
+      "gradle.properties"
+    );
+
+    if (fs.existsSync(gradlePropsPath)) {
+      let content = fs.readFileSync(gradlePropsPath, "utf8");
+
+      if (content.includes("newArchEnabled=false")) {
+        content = content.replace("newArchEnabled=false", "newArchEnabled=true");
+      } else if (!content.includes("newArchEnabled=true")) {
+        content = content + "\nnewArchEnabled=true\n";
+      }
+
+      fs.writeFileSync(gradlePropsPath, content);
+    }
+
+    return config;
+  });
+};
+
+module.exports = { withFixMainActivity, withFixNewArch };

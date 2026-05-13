@@ -99,15 +99,20 @@ export default {
     recordPayment: 'Record Payment',
     paymentAmount: 'Payment Amount',
     notesOptional: 'Notes (optional)',
-    confirmPayment: 'Confirm Payment',
-    overpaymentError: 'Amount exceeds remaining balance',
+	    confirmPayment: 'Confirm Payment',
+	    confirmOverpayment: 'Confirm Overpayment',
+	    addAdditionalPayment: 'Add Additional Payment',
+	    deletePaymentTitle: 'Delete Payment',
+	    deletePaymentMessage: 'Delete this payment record? This cannot be undone.',
+	    overpaymentError: 'Amount exceeds remaining balance',
      overpaymentWarning: 'Amount exceeds remaining balance by {{excess}}',
      overpaid: 'Overpaid',
     adjustment: 'Adjustment',
     adjustmentNote: 'Reason',
     adjustWage: 'Adjust Wage',
-    noRecord: 'Off',
-  },
+	    noRecord: 'Off',
+	    unknownEmployee: 'Unknown employee',
+	  },
 
   // Validation
   validation: {
@@ -148,9 +153,11 @@ export default {
     arabic: 'Arabic',
     logout: 'Logout',
     loggedInAs: 'Logged in as',
-    createAccountToSave: 'Create Account to Save Data',
-    guestAccountInfo: 'You are using a guest account. Create a permanent account to save your data.',
-  },
+	    createAccountToSave: 'Create Account to Save Data',
+	    guestAccountInfo: 'You are using a guest account. Create a permanent account to save your data.',
+	    restartRequiredTitle: 'Restart Required',
+	    restartRequiredMessage: 'Restart the app to fully apply the new layout direction.',
+	  },
 
   // Theme
   theme: {

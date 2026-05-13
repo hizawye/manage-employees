@@ -49,6 +49,8 @@ const Button = React.forwardRef<React.ElementRef<typeof RNPressable>, ButtonProp
           className
         )}
         disabled={disabled || isLoading}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: disabled || isLoading, busy: !!isLoading }}
         {...props}
       >
         {isLoading ? (

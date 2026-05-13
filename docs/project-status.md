@@ -1,7 +1,37 @@
 # Project Status
 
 ## Current State
-**Status:** v2.0.3 - NativeWind v4 UI Rewrite Complete
+**Status:** v2.1.0 - Audit Remediation In Progress
+
+## 2026-05-13: Audit Remediation Pass
+
+### Fixed
+- Reworked user-isolation migration behavior so migration 003 no longer deletes employee or attendance data.
+- Added migration 007 to repair `user_id = 0` rows into a `legacy_import` account and claim those rows on first signup/guest session.
+- Replaced full-user AsyncStorage sessions with user-id-only session rehydration from SQLite.
+- Replaced the custom SHA loop with PBKDF2-SHA256 hashes via `@noble/hashes`, while keeping legacy-hash verification and rehash-on-login.
+- Changed guest mode to create a unique guest user instead of reusing one shared `guest` account.
+- Added employee ownership checks for employee-linked attendance, payment, and wage-adjustment writes.
+- Added positive payment validation and delete confirmation for payment records.
+- Made hourly absent attendance always earn zero and added stricter hourly validation/defaults.
+- Added persisted wage adjustments and included them in wage calculations.
+- Fixed wage cache keys to include `userId` and invalidated cache on wage-affecting employee changes.
+- Added auth guards for tab/history routes and auth redirects for login/signup/guest flows.
+- Added locale bootstrap before navigator render and restart notice for RTL direction changes.
+- Aligned Reanimated with Expo SDK 54, added Worklets, removed the obsolete generated Reanimated patch, and added lint/format/typecheck CI scripts.
+
+### Verification
+- `npm run typecheck` passes.
+- `npm run lint` passes.
+- `npm run test:ci` passes.
+- `npm run test:coverage -- --runInBand` passes but still reports low coverage (~2% global); more tests are still needed.
+- `npx expo install --check` passes.
+- `npm audit fix` reduced audit output to 9 remaining transitive vulnerabilities; npm only offers breaking `--force` changes for the remaining moderate items.
+
+### Remaining Work
+- Add real migration/auth/repository/UI regression tests.
+- Add an Expo-device smoke test for migrations, auth redirects, guest conversion, wage adjustments, overpayment, and RTL restart handling.
+- Decide whether to accept or replace the remaining `jest-expo`/Expo transitive audit findings once upstream compatible fixes exist.
 
 ## What's Done
 

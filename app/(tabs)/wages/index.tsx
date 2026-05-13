@@ -13,10 +13,7 @@ import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/servi
 import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
-import { Card } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
-import { Button } from '../../../src/components/ui/button';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface WageWithPayment extends WageCalculation {
    paidAmount: number;
@@ -28,7 +25,7 @@ interface WageWithPayment extends WageCalculation {
 export default function WageSummaryScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [calculations, setCalculations] = useState<WageWithPayment[]>([]);
   const [loading, setLoading] = useState(true);
 

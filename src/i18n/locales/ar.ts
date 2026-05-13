@@ -99,15 +99,20 @@ export default {
     recordPayment: 'تسجيل دفعة',
     paymentAmount: 'مبلغ الدفع',
     notesOptional: 'ملاحظات (اختياري)',
-    confirmPayment: 'تأكيد الدفع',
-    overpaymentError: 'المبلغ يتجاوز الرصيد المتبقي',
+	    confirmPayment: 'تأكيد الدفع',
+	    confirmOverpayment: 'تأكيد الدفع الزائد',
+	    addAdditionalPayment: 'إضافة دفعة إضافية',
+	    deletePaymentTitle: 'حذف الدفعة',
+	    deletePaymentMessage: 'هل تريد حذف سجل الدفعة؟ لا يمكن التراجع عن هذا الإجراء.',
+	    overpaymentError: 'المبلغ يتجاوز الرصيد المتبقي',
      overpaymentWarning: 'المبلغ يتجاوز الرصيد المتبقي بمقدار {{excess}}',
      overpaid: 'مدفوع زيادة',
     adjustment: 'تعديل',
     adjustmentNote: 'السبب',
     adjustWage: 'تعديل الأجر',
-    noRecord: 'إجازة',
-  },
+	    noRecord: 'إجازة',
+	    unknownEmployee: 'موظف غير معروف',
+	  },
 
   // Validation - التحقق
   validation: {
@@ -148,9 +153,11 @@ export default {
     arabic: 'العربية',
     logout: 'تسجيل الخروج',
     loggedInAs: 'مسجل الدخول كـ',
-    createAccountToSave: 'إنشاء حساب لحفظ البيانات',
-    guestAccountInfo: 'أنت تستخدم حساب ضيف. قم بإنشاء حساب دائم لحفظ بياناتك.',
-  },
+	    createAccountToSave: 'إنشاء حساب لحفظ البيانات',
+	    guestAccountInfo: 'أنت تستخدم حساب ضيف. قم بإنشاء حساب دائم لحفظ بياناتك.',
+	    restartRequiredTitle: 'إعادة التشغيل مطلوبة',
+	    restartRequiredMessage: 'أعد تشغيل التطبيق لتطبيق اتجاه التخطيط الجديد بالكامل.',
+	  },
 
   // Theme - المظهر
   theme: {

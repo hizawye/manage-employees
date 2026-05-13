@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, ScrollView, RefreshControl, Modal, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { View, ScrollView, RefreshControl, Modal, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useRefresh } from '../../../src/hooks';
@@ -14,10 +14,10 @@ import {
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForPeriod } from '../../../src/services/WageCalculationService';
 import { PaymentService } from '../../../src/services/PaymentService';
+import { WageAdjustmentService } from '../../../src/services/WageAdjustmentService';
 import { t } from '../../../src/i18n';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
-import { cn } from '../../../src/lib/utils';
 
 type DayData = {
   date: string;
@@ -40,6 +40,8 @@ export default function EmployeeWageDetailScreen() {
   const [payAmount, setPayAmount] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [payLoading, setPayLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
 
   const [adjustDialogVisible, setAdjustDialogVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -101,6 +103,7 @@ export default function EmployeeWageDetailScreen() {
       setMonthData(days);
     } catch (error) {
       console.error('Failed to calculate wages:', error);
+      setError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -132,7 +135,7 @@ export default function EmployeeWageDetailScreen() {
   const handlePay = async () => {
     if (!user || !wageData) return;
     const amount = parseFloat(payAmount);
-    if (isNaN(amount) || amount === 0) return;
+    if (isNaN(amount) || amount <= 0) return;
 
     try {
       setPayLoading(true);
@@ -151,27 +154,33 @@ export default function EmployeeWageDetailScreen() {
       await loadWages();
     } catch (error) {
       console.error('Failed to record payment:', error);
+      setError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setPayLoading(false);
     }
   };
 
-  const paymentValidationError = useMemo(() => {
-    const amount = parseFloat(payAmount);
-    if (payAmount && !isNaN(amount) && amount > 0 && amount > remainingAmount) {
-      return t('wages.overpaymentError') || 'Amount exceeds remaining balance';
-    }
-    return null;
-  }, [payAmount, remainingAmount]);
-
   const handleDeletePayment = async (paymentId: string) => {
     if (!user) return;
-    try {
-      await PaymentService.deletePayment(user.id, paymentId);
-      await loadWages();
-    } catch (error) {
-      console.error('Failed to delete payment:', error);
-    }
+    Alert.alert(t('wages.deletePaymentTitle'), t('wages.deletePaymentMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setDeletingPaymentId(paymentId);
+            await PaymentService.deletePayment(user.id, paymentId);
+            await loadWages();
+          } catch (error) {
+            console.error('Failed to delete payment:', error);
+            setError(error instanceof Error ? error.message : t('common.error'));
+          } finally {
+            setDeletingPaymentId(null);
+          }
+        },
+      },
+    ]);
   };
 
   const handleAdjustDay = async () => {
@@ -181,18 +190,20 @@ export default function EmployeeWageDetailScreen() {
 
     try {
       setPayLoading(true);
-      setMonthData((prev) =>
-        prev.map((day) =>
-          day.date === selectedDate
-            ? { ...day, wageEarned: day.wageEarned + amount, hasAdjustment: true }
-            : day
-        )
-      );
+      await WageAdjustmentService.saveAdjustment(user.id, {
+        userId: user.id,
+        employeeId,
+        date: selectedDate,
+        amount,
+        note: adjustNote || undefined,
+      });
       setAdjustDialogVisible(false);
       setAdjustAmount('');
       setAdjustNote('');
+      await loadWages();
     } catch (error) {
       console.error('Failed to adjust:', error);
+      setError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setPayLoading(false);
     }
@@ -247,6 +258,12 @@ export default function EmployeeWageDetailScreen() {
             {employee.role} · {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
           </Text>
         </View>
+
+        {error ? (
+          <View className="mx-4 mt-4 rounded-lg bg-destructive px-4 py-3">
+            <Text className="text-destructive-foreground text-sm">{error}</Text>
+          </View>
+        ) : null}
 
         <View className="mx-4 mt-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
           <View className="p-4">
@@ -365,11 +382,21 @@ export default function EmployeeWageDetailScreen() {
                        {formatCurrency(p.amount)}
                      </Text>
                      {isOverpaid && (
-                       <Text className="text-[8px] font-semibold text-amber-600">⚠</Text>
-                     )}
-                     <Pressable onPress={() => handleDeletePayment(p.id)} className="p-1">
-                       <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
-                     </Pressable>
+	                     <Text className="text-[8px] font-semibold text-amber-600">!</Text>
+	                     )}
+	                     <Pressable
+                          onPress={() => handleDeletePayment(p.id)}
+                          className="p-1"
+                          accessibilityRole="button"
+                          accessibilityLabel={t('wages.deletePaymentTitle')}
+                          disabled={deletingPaymentId === p.id}
+                        >
+	                       {deletingPaymentId === p.id ? (
+                            <ActivityIndicator size="small" color="#ef4444" />
+                          ) : (
+                            <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
+                          )}
+	                     </Pressable>
                    </View>
                  </View>
                  );
@@ -440,7 +467,7 @@ export default function EmployeeWageDetailScreen() {
                       </Text>
                       {day.hasAdjustment && (
                         <Text className="text-[10px] text-emerald-500 font-medium">
-                          adj
+                          {t('wages.adjustment')}
                         </Text>
                       )}
                     </View>
@@ -513,7 +540,7 @@ export default function EmployeeWageDetailScreen() {
                  variant={parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid ? 'warning' : 'default'}
                >
                  {parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid
-                   ? '⚠️ Confirm Overpayment'
+	                   ? t('wages.confirmOverpayment')
                    : t('wages.confirmPayment')}
                </Button>
             </View>

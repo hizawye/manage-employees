@@ -38,8 +38,8 @@
       "expo-router",
       "expo-sqlite",
       "expo-font",
-      "./src/plugins/withRemoveSplashScreen",
-      "./src/plugins/withFixSplashTheme"
+      "./src/plugins/withRemoveSplashScreen#withFixMainActivity",
+      "./src/plugins/withRemoveSplashScreen#withFixNewArch"
     ],
     "extra": {
       "supportsRTL": true,
