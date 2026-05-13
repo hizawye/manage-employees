@@ -1,7 +1,7 @@
 # Project Status
 
 ## Current State
-**Status:** v1.2.0 - Multi-User Authentication System
+**Status:** v2.0.3 - NativeWind v4 UI Rewrite Complete
 
 ## What's Done
 
@@ -178,81 +178,37 @@ manage-employees/
 ```
 
 ## Known Issues
-- Jest test execution blocked by babel config (infrastructure ready, needs babel fix)
+- ⚠️ Jest test execution still blocked by babel config for some test patterns (infrastructure tests pass via `npm test`)
+- ⚠️ `contentContainerClassName` on FlatList requires React Native 0.72+
 
-## Recent Fixes
-- ✅ **TypeScript strict type errors** - All 27 errors resolved, `npx tsc --noEmit` passes (2026-01-26)
-- ✅ **Migration 003 column name bug** - Fixed `employeeId` → `employee_id` in composite index (2026-01-18)
-- ✅ **Migration 003 idempotency** - Added column existence checks to handle SQLite's non-transactional ALTER TABLE (2026-01-18)
-- ✅ **Auth flow verified** - Signup and login working correctly (2026-01-18)
-- ✅ **RTL search bar - Invalid CSS property** - Removed invalid `direction` CSS property that was being silently ignored by React Native (2026-01-20)
-- ✅ **RTL search bar - I18nManager initialization timing** - Fixed module import order in app/_layout.tsx to initialize RTL before components mount (2026-01-20)
-- ✅ **RTL search bar - Custom SearchInput component** - Built custom search component with manual RTL control (writingDirection, textAlign, flexDirection) to replace react-native-paper Searchbar which had unreliable RTL detection (2026-01-20)
+## 2026-05-13: Cleanup & Verification (v2.0.3)
 
-## Next Session Start Point
-App has multi-user authentication and production-ready architecture. TypeScript compiles cleanly.
+### What Changed
+- **Removed stale `react-native-paper` type import** from `src/theme/types.d.ts`
+- **Removed unused `expo-splash-screen`** dependency from `package.json`
+- **Set `userInterfaceStyle: "dark"`** as default in `app.json`
+- **Android adaptive icon background** set to `#023c69` (matches splash)
+
+### Verification
+- `npx tsc --noEmit` → 0 errors ✅
+- `npm test` → 8/8 passed ✅
+
+### Next Session Start Point
+All cleanup complete. Next steps are manual QA on emulator/device.
 
 **Immediate:**
-1. ✅ TypeScript errors fixed - `npx tsc --noEmit` passes
-2. Test logout functionality
-3. Test second user data isolation
-4. iOS build testing
+1. Install APK on device/emulator for full manual QA
+2. Test dark mode toggle across all screens
+3. Test negative payment adjustment flow end-to-end
+4. Verify RTL layout on Arabic
+5. Test splash screen (no white flash)
 
 **Future Enhancements:**
-- Add password reset functionality
-- Add session expiry/refresh tokens
-- Add "remember me" checkbox
-- Cloud sync for multi-device support
-- Export/import for data migration
-- Add integration tests for auth flows
-- Add email validation for usernames
-
-## How to Start
-```bash
-npm start              # Local development
-npm test              # Run tests (once babel fixed)
-npm run test:coverage # Coverage report
-```
-
-## Verification Commands
-```bash
-# Check TypeScript
-npx tsc --noEmit
-
-# Run tests
-npm test
-
-# Build for Android
-eas build --platform android --profile preview
-```
-
-## Testing Auth Flow
-1. **Signup:**
-   - Open app (should show login screen)
-   - Tap "Sign up"
-   - Enter username (3-20 chars, alphanumeric + underscore)
-   - Enter password (8+ chars with number)
-   - Confirm password
-   - Tap "Sign Up" → should redirect to Employees tab
-
-2. **Data Isolation:**
-   - Create employees
-   - Mark attendance
-   - View wages
-   - Logout
-
-3. **Login:**
-   - Login with same credentials
-   - Verify data persists
-
-4. **Second User:**
-   - Signup with different username
-   - Verify empty employee list (data isolation)
-
-5. **Security:**
-   - Try invalid username (should show error)
-   - Try short password (should show error)
-   - Try wrong credentials (should show "Invalid credentials")
+- Add press ripple effect to buttons
+- Add skeleton loading states
+- Add transitions between dark/light mode
+- Consider removing unused theme.ts constants
+- Add snapshot tests for UI primitives
 
 ---
 
@@ -296,7 +252,7 @@ eas build --platform android --profile preview
 
 **Screens Optimized (10 files):**
 - ✅ app/(tabs)/wages/[employeeId].tsx
-- ✅ app/(tabs)/attendance/history.tsx  
+- ✅ app/(tabs)/attendance/history.tsx
 - ✅ app/(tabs)/employees/[id].tsx
 - ✅ src/components/cards/EmployeeCard.tsx
 - ✅ app/(tabs)/profile/index.tsx
@@ -458,9 +414,6 @@ manage-employees/
 - `npm test` → 8/8 passed
 - `./gradlew assembleRelease` → BUILD SUCCESSFUL (72MB APK)
 
-### Next Session Start Point
-All TypeScript errors resolved, Android build successful, tests passing.
-
 ## 2026-05-12: Negative Payment Support for Wage Adjustments (v2.0.2)
 
 ### What Changed
@@ -487,20 +440,3 @@ The `overpaymentError` translation key was missing from both `en.ts` and `ar.ts`
 
 ### Known Issues
 - Jest test execution still blocked by babel config (pre-existing)
-
-### Next Session Start Point
-All payment flows working correctly for both positive payments and negative adjustments.
-
-**Immediate:**
-1. Install APK on device/emulator for manual QA
-2. Test negative adjustment flow end-to-end
-3. Verify overpaid state displays correctly in UI
-4. Test full app flow with Arabic RTL
-
-**Future Enhancements:**
-- Persist day adjustments to database (currently client-side only)
-- Add more UI primitives (Select, Switch, Dialog) as needed
-- Consider removing unused theme.ts constants
-- Add snapshot tests for UI primitives
-- Polish animations and transitions
-

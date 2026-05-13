@@ -1189,7 +1189,7 @@ grep -r "from 'react-native-paper'" src/ app/
 ### Remaining Work
 
 **Known Limitations:**
-- Jest tests still blocked by babel config (pre-existing)
+- Jest tests still blocked by babel config for some test patterns (pre-existing)
 - Some animations may need re-adding (Paper had built-in ripples)
 - `contentContainerClassName` on FlatList requires React Native 0.72+
 
@@ -1197,4 +1197,26 @@ grep -r "from 'react-native-paper'" src/ app/
 - Add press ripple effect to buttons
 - Add skeleton loading states
 - Add transitions between dark/light mode
+
+---
+
+## 2026-05-13: Cleanup & Verification (v2.0.3)
+
+### Decision
+Final cleanup pass after NativeWind v4 rewrite — remove all stale react-native-paper references and set dark mode as default.
+
+### What Changed
+- **Removed stale `react-native-paper` type import** from `src/theme/types.d.ts` — no longer needed since Paper was removed from dependencies
+- **Removed unused `expo-splash-screen`** from `package.json` — was causing EventEmitter crash, not used in source code
+- **Set `userInterfaceStyle: "dark"`** in `app.json` — app is dark-mode-first by design
+- **Updated `app.json` backgroundColor** to `#023c69` for Android adaptive icon consistency
+
+### Verification
+- `npx tsc --noEmit` → 0 errors ✅
+- `npm test` → 8/8 passed ✅
+
+### Impact
+- Zero remaining references to react-native-paper anywhere in the codebase
+- Cleaner dependency tree
+- Dark mode is the canonical default experience
 
