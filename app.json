@@ -37,7 +37,9 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      "./src/plugins/withRemoveSplashScreen",
+      "./src/plugins/withFixSplashTheme"
     ],
     "extra": {
       "supportsRTL": true,
