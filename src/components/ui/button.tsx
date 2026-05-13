@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pressable, type PressableProps, ActivityIndicator } from "react-native";
+import { Pressable as RNPressable, type PressableProps, ActivityIndicator } from "react-native";
 import { cn } from "@/lib/utils";
 import { Text } from "./text";
 
@@ -34,10 +34,10 @@ const sizeVariants = {
   icon: "h-10 w-10 rounded-md",
 };
 
-const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
+const Button = React.forwardRef<React.ElementRef<typeof RNPressable>, ButtonProps>(
   ({ className, variant = "default", size = "default", isLoading, children, disabled, ...props }, ref) => {
     return (
-      <Pressable
+      <RNPressable
         ref={ref}
         className={cn(
           "flex-row items-center justify-center gap-2",
@@ -58,7 +58,7 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
         ) : (
           children
         )}
-      </Pressable>
+      </RNPressable>
     );
   }
 );

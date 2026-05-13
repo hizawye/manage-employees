@@ -1,10 +1,9 @@
-import React, { Component, ReactNode } from 'react';
-import { View } from 'react-native';
-import { Text } from '../ui/text';
-import { Button } from '../ui/button';
+import React from "react";
+import { View, Text } from "react-native";
+import { Button } from "../ui/button";
 
 interface Props {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 interface State {
@@ -12,14 +11,20 @@ interface State {
   error: Error | null;
 }
 
-function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
+function ErrorFallback({
+  error,
+  onReset,
+}: {
+  error: Error | null;
+  onReset: () => void;
+}) {
   return (
     <View className="flex-1 justify-center items-center p-6 bg-background">
       <Text className="text-2xl font-bold text-destructive mb-4 text-center">
         Something went wrong
       </Text>
       <Text className="text-base text-muted-foreground text-center mb-6">
-        {error?.message || 'An unexpected error occurred'}
+        {error?.message || "An unexpected error occurred"}
       </Text>
       {__DEV__ && error?.stack && (
         <Text
@@ -29,31 +34,23 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
           {error.stack}
         </Text>
       )}
-      <Button onPress={onReset}>
-        Try Again
-      </Button>
+      <Button onPress={onReset}>Try Again</Button>
     </View>
   );
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-    };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return {
-      hasError: true,
-      error,
-    };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   handleReset = () => {
@@ -69,7 +66,6 @@ export class ErrorBoundary extends Component<Props, State> {
         />
       );
     }
-
     return this.props.children;
   }
 }

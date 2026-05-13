@@ -2,13 +2,12 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, FlatList, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { useEmployees, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
-import { StatusChip } from '../../../src/components';
+import { StatusChip } from '../../../src/components/common/StatusChip';
 import { getAttendanceInRange } from '../../../src/database/repositories';
 import { Attendance, Employee, EmployeeStatus } from '../../../src/models';
 import { formatDate, getWeekRange } from '../../../src/utils/dateUtils';
 import { addWeeks } from 'date-fns';
 import { t } from '../../../src/i18n';
-import { Card, CardContent } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -63,8 +62,8 @@ export default function AttendanceHistoryScreen() {
   const { refreshing, onRefresh } = useRefresh(loadAttendance);
 
   const renderAttendance = useCallback(({ item }: { item: AttendanceWithEmployee }) => (
-    <Card className="mb-2">
-      <CardContent className="p-4 flex-row items-center justify-between">
+    <View className="mb-2 rounded-xl border border-border bg-card overflow-hidden">
+      <View className="p-4 flex-row items-center justify-between">
         <View className="flex-1">
           <Text variant="large" className="font-semibold text-foreground">
             {item.employeeName}
@@ -74,14 +73,14 @@ export default function AttendanceHistoryScreen() {
           </Text>
         </View>
         <StatusChip type="attendance" status={item.status} />
-      </CardContent>
-    </Card>
+      </View>
+    </View>
   ), []);
 
   if (loading && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
@@ -106,7 +105,7 @@ export default function AttendanceHistoryScreen() {
       </View>
 
       {attendance.length === 0 ? (
-        <View className="flex-1 justify-center items-center p-4">
+        <View className="flex-1 justify-center items-center px-4">
           <Text variant="h4" className="text-center text-muted-foreground mb-2">
             {t('attendance.noRecords')}
           </Text>

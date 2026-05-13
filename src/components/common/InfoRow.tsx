@@ -1,7 +1,7 @@
-import React from 'react';
-import { View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text } from '../ui/text';
+import React from "react";
+import { View, Text } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Text as ThemedText } from "../ui/text";
 
 interface InfoRowProps {
   label: string;
@@ -20,13 +20,13 @@ export const InfoRow: React.FC<InfoRowProps> = ({ label, value, icon }) => {
             className="text-muted-foreground mr-2"
           />
         )}
-        <Text variant="p" className="text-muted-foreground">
+        <ThemedText variant="p" className="text-muted-foreground">
           {label}
-        </Text>
+        </ThemedText>
       </View>
-      <Text variant="p" className="font-semibold text-foreground">
+      <ThemedText variant="p" className="font-semibold text-foreground">
         {value}
-      </Text>
+      </ThemedText>
     </View>
   );
 };

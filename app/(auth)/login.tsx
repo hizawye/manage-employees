@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, Pressable, TextInput } from 'react-native';
 import { Link } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,9 +8,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import { t } from '../../src/i18n';
 import { Text } from '../../src/components/ui/text';
-import { Input } from '../../src/components/ui/input';
 import { Button } from '../../src/components/ui/button';
-import { Card, CardContent } from '../../src/components/ui/card';
+import { cn } from '../../src/lib/utils';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'validation.required'),
@@ -18,6 +17,46 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+function AuthInput({
+  label,
+  error,
+  iconLeft,
+  iconRight,
+  secureTextEntry,
+  editable,
+  ...rest
+}: {
+  label: string;
+  error?: string;
+  iconLeft?: React.ReactNode;
+  iconRight?: React.ReactNode;
+  secureTextEntry?: boolean;
+  editable?: boolean;
+} & React.ComponentProps<typeof TextInput>) {
+  return (
+    <View className="mb-4">
+      <Text className="text-sm font-medium text-muted-foreground mb-1.5">{label}</Text>
+      <View
+        className={cn(
+          'flex-row items-center h-12 rounded-lg border bg-background px-3',
+          error ? 'border-destructive' : 'border-border'
+        )}
+      >
+        {iconLeft && <View className="mr-2">{iconLeft}</View>}
+        <TextInput
+          className="flex-1 text-base text-foreground"
+          placeholderTextColor="hsl(215 16% 47%)"
+          secureTextEntry={secureTextEntry}
+          editable={editable}
+          {...rest}
+        />
+        {iconRight && <View className="ml-2">{iconRight}</View>}
+      </View>
+      {error ? <Text className="text-sm text-destructive mt-1">{error}</Text> : null}
+    </View>
+  );
+}
 
 export default function LoginScreen() {
   const { login, continueAsGuest } = useAuth();
@@ -61,8 +100,9 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-1 justify-center px-6">
-        <Card>
-          <CardContent className="py-6">
+        {/* Card container */}
+        <View className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+          <View className="p-6">
             <View className="items-center mb-6">
               <MaterialCommunityIcons name="account-group" size={48} className="text-primary" />
               <Text variant="h2" className="mt-4">{t('auth.login')}</Text>
@@ -72,8 +112,8 @@ export default function LoginScreen() {
               control={control}
               name="username"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  placeholder={t('auth.username')}
+                <AuthInput
+                  label={t('auth.username')}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -82,7 +122,6 @@ export default function LoginScreen() {
                   editable={!loading}
                   iconLeft={<MaterialCommunityIcons name="account" size={20} className="text-muted-foreground" />}
                   error={errors.username ? t(errors.username.message || '') : undefined}
-                  className="mb-4"
                 />
               )}
             />
@@ -91,8 +130,8 @@ export default function LoginScreen() {
               control={control}
               name="password"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  placeholder={t('auth.password')}
+                <AuthInput
+                  label={t('auth.password')}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -109,7 +148,6 @@ export default function LoginScreen() {
                     </Pressable>
                   }
                   error={errors.password ? t(errors.password.message || '') : undefined}
-                  className="mb-6"
                 />
               )}
             />
@@ -143,15 +181,15 @@ export default function LoginScreen() {
                 {t('auth.continueAsGuest')}
               </Button>
             </View>
-          </CardContent>
-        </Card>
-      </View>
-
-      {error ? (
-        <View className="absolute bottom-6 left-6 right-6 bg-destructive px-4 py-3 rounded-lg">
-          <Text className="text-destructive-foreground text-sm">{error}</Text>
+          </View>
         </View>
-      ) : null}
+
+        {error ? (
+          <View className="absolute bottom-6 left-6 right-6 bg-destructive px-4 py-3 rounded-lg">
+            <Text className="text-destructive-foreground text-sm">{error}</Text>
+          </View>
+        ) : null}
+      </View>
     </KeyboardAvoidingView>
   );
 }

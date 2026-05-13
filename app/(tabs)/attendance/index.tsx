@@ -7,10 +7,9 @@ import { Employee, EmployeeStatus, AttendanceStatus, WageType } from '../../../s
 import { formatDate, getTodayString, toISODateString } from '../../../src/utils/dateUtils';
 import { addDays, parseISO } from 'date-fns';
 import { t } from '../../../src/i18n';
-import { Card, CardContent } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
-import { Badge } from '../../../src/components/ui/badge';
+import { StatusChip } from '../../../src/components/common/StatusChip';
 
 export default function AttendanceScreen() {
   const router = useRouter();
@@ -69,15 +68,9 @@ export default function AttendanceScreen() {
     const isSaving = savingId === item.id;
     const status = currentAttendance?.status;
 
-    const statusButtons = [
-      { value: AttendanceStatus.PRESENT, label: t('attendance.present'), color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
-      { value: AttendanceStatus.HALF_DAY, label: t('attendance.halfDay'), color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-      { value: AttendanceStatus.ABSENT, label: t('attendance.absent'), color: 'bg-red-500/15 text-red-600 dark:text-red-400' },
-    ];
-
     return (
-      <Card className="mb-3">
-        <CardContent className="p-4">
+      <View className="mb-3 rounded-xl border border-border bg-card overflow-hidden">
+        <View className="p-4">
           <View className="flex-row justify-between items-start mb-3">
             <View className="flex-1">
               <Text variant="large" className="font-semibold text-foreground">
@@ -87,33 +80,25 @@ export default function AttendanceScreen() {
                 {item.role} • {item.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}
               </Text>
             </View>
-            {isSaving && <ActivityIndicator size="small" className="text-primary" />}
+            {isSaving && <ActivityIndicator size="small" color="#3b82f6" />}
           </View>
 
           <View className="flex-row gap-2">
-            {statusButtons.map((btn) => {
+            {[
+              { value: AttendanceStatus.PRESENT, label: t('attendance.present'), color: 'bg-emerald-500/15 text-emerald-700' },
+              { value: AttendanceStatus.HALF_DAY, label: t('attendance.halfDay'), color: 'bg-amber-500/15 text-amber-700' },
+              { value: AttendanceStatus.ABSENT, label: t('attendance.absent'), color: 'bg-red-500/15 text-red-700' },
+            ].map((btn) => {
               const isActive = status === btn.value;
               return (
                 <Pressable
                   key={btn.value}
-                  onPress={() =>
-                    handleMarkAttendance(
-                      item.id,
-                      btn.value,
-                      item.wageType === WageType.HOURLY ? 8 : undefined
-                    )
-                  }
+                  onPress={() => handleMarkAttendance(item.id, btn.value, item.wageType === WageType.HOURLY ? 8 : undefined)}
                   className={`flex-1 py-2.5 rounded-lg items-center justify-center border ${
-                    isActive
-                      ? 'bg-primary border-primary'
-                      : 'bg-card border-border'
+                    isActive ? 'bg-primary border-primary' : 'bg-card border-border'
                   }`}
                 >
-                  <Text
-                    className={`text-sm font-medium ${
-                      isActive ? 'text-primary-foreground' : 'text-foreground'
-                    }`}
-                  >
+                  <Text className={`text-sm font-medium ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>
                     {btn.label}
                   </Text>
                 </Pressable>
@@ -137,8 +122,8 @@ export default function AttendanceScreen() {
               />
             </View>
           )}
-        </CardContent>
-      </Card>
+        </View>
+      </View>
     );
   }, [attendanceMap, savingId, handleMarkAttendance]);
 
@@ -147,14 +132,13 @@ export default function AttendanceScreen() {
   if (loading && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-background">
-      {/* Date Selector */}
       <View className="flex-row items-center justify-center py-3 bg-card border-b border-border">
         <Pressable onPress={() => changeDate(-1)} className="p-2">
           <MaterialCommunityIcons name="chevron-left" size={28} className="text-foreground" />
@@ -167,7 +151,6 @@ export default function AttendanceScreen() {
         </Pressable>
       </View>
 
-      {/* Quick Actions */}
       <View className="flex-row items-center justify-between px-4 py-2 gap-2">
         <Button variant="outline" size="sm" onPress={() => setSelectedDate(getTodayString())}>
           {t('common.today')}

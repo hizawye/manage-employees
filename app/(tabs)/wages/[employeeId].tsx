@@ -1,18 +1,9 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import {
-  View,
-  ScrollView,
-  RefreshControl,
-  Modal,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, ScrollView, RefreshControl, Modal, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
-import { StatusChip } from '../../../src/components';
 import { WageCalculation, WageType, Payment, AttendanceStatus } from '../../../src/models';
 import {
   formatCurrency,
@@ -24,19 +15,16 @@ import {
 import { calculateWagesForPeriod } from '../../../src/services/WageCalculationService';
 import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
-import { Card, CardContent } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
-import { Badge } from '../../../src/components/ui/badge';
+import { cn } from '../../../src/lib/utils';
 
 type DayData = {
   date: string;
-  dayOfMonth: number;
   dayOfWeek: string;
   status: AttendanceStatus;
   hoursWorked?: number;
   wageEarned: number;
-  // for adjustments
   hasAdjustment?: boolean;
 };
 
@@ -53,7 +41,6 @@ export default function EmployeeWageDetailScreen() {
   const [payNotes, setPayNotes] = useState('');
   const [payLoading, setPayLoading] = useState(false);
 
-  // Adjustment modal state
   const [adjustDialogVisible, setAdjustDialogVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [adjustAmount, setAdjustAmount] = useState('');
@@ -81,7 +68,6 @@ export default function EmployeeWageDetailScreen() {
       setPaidAmount(paid);
       setPayments(history);
 
-      // Build day data for the full month
       const days: DayData[] = [];
       const start = new Date(dateRange.start);
       const end = new Date(dateRange.end);
@@ -97,7 +83,6 @@ export default function EmployeeWageDetailScreen() {
         if (rec) {
           days.push({
             date: dateStr,
-            dayOfMonth: d.getDate(),
             dayOfWeek: dow,
             status: rec.status,
             hoursWorked: rec.hoursWorked,
@@ -107,7 +92,6 @@ export default function EmployeeWageDetailScreen() {
         } else {
           days.push({
             date: dateStr,
-            dayOfMonth: d.getDate(),
             dayOfWeek: dow,
             status: AttendanceStatus.ABSENT,
             wageEarned: 0,
@@ -187,16 +171,10 @@ export default function EmployeeWageDetailScreen() {
 
     try {
       setPayLoading(true);
-      // For now, we update state optimistically
-      // In a full implementation, this would be a server API call
       setMonthData((prev) =>
         prev.map((day) =>
           day.date === selectedDate
-            ? {
-                ...day,
-                wageEarned: day.wageEarned + amount,
-                hasAdjustment: true,
-              }
+            ? { ...day, wageEarned: day.wageEarned + amount, hasAdjustment: true }
             : day
         )
       );
@@ -230,7 +208,7 @@ export default function EmployeeWageDetailScreen() {
   if ((loadingEmployee || loading) && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
@@ -251,7 +229,6 @@ export default function EmployeeWageDetailScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Employee Header */}
         <View className="px-4 py-4 bg-card border-b border-border">
           <Text variant="h3" className="font-bold text-foreground">
             {employee.name}
@@ -261,9 +238,8 @@ export default function EmployeeWageDetailScreen() {
           </Text>
         </View>
 
-        {/* Monthly Summary */}
-        <Card className="mx-4 mt-4 mb-2">
-          <CardContent className="p-4">
+        <View className="mx-4 mt-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
+          <View className="p-4">
             <View className="items-center mb-4">
               <Text variant="muted">{t('wages.totalWage')}</Text>
               <Text variant="h2" className="font-bold text-emerald-500 mt-1">
@@ -337,17 +313,16 @@ export default function EmployeeWageDetailScreen() {
             )}
 
             {isFullyPaid && (
-              <View className="mt-4 items-center py-2 bg-emerald-500/15 rounded-lg">
+              <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
                 <Text className="text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
               </View>
             )}
-          </CardContent>
-        </Card>
+          </View>
+        </View>
 
-        {/* Payments History */}
         {payments.length > 0 && (
-          <Card className="mx-4 mb-2">
-            <CardContent className="p-4">
+          <View className="mx-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
+            <View className="p-4">
               <Text variant="large" className="font-semibold text-foreground mb-3">
                 {t('wages.paymentHistory')}
               </Text>
@@ -366,17 +341,16 @@ export default function EmployeeWageDetailScreen() {
                   </View>
                 </View>
               ))}
-            </CardContent>
-          </Card>
+            </View>
+          </View>
         )}
 
-        {/* Daily Breakdown - Stacked list of worked days */}
         <Text variant="large" className="font-semibold text-muted-foreground px-4 mb-2">
           {t('wages.dailyBreakdown')}
         </Text>
 
-        <Card className="mx-4 mb-2">
-          <CardContent className="p-0">
+        <View className="mx-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
+          <View className="p-0">
             {workedDays.length === 0 ? (
               <View className="py-6 items-center">
                 <Text className="text-muted-foreground text-sm">
@@ -395,7 +369,7 @@ export default function EmployeeWageDetailScreen() {
                       }
                     }}
                     className={`flex-row justify-between items-center px-4 py-2.5 ${
-                      isWeekend ? 'bg-muted/15' : 'bg-card'
+                      isWeekend ? 'bg-muted/15' : ''
                     } border-b border-border`}
                   >
                     <View className="flex-1">
@@ -403,23 +377,23 @@ export default function EmployeeWageDetailScreen() {
                         {formatDateShort(day.date)}
                       </Text>
                       <View className="flex-row items-center gap-2 mt-0.5">
-                        <Badge
-                          variant={
+                        <View
+                          className={`px-2 py-0.5 rounded-full ${
                             day.status === AttendanceStatus.PRESENT
-                              ? 'success'
+                              ? 'bg-emerald-500/15'
                               : day.status === AttendanceStatus.HALF_DAY
-                              ? 'warning'
-                              : 'destructive'
-                          }
+                              ? 'bg-amber-500/15'
+                              : 'bg-red-500/15'
+                          } self-start min-w-[28px] items-center`}
                         >
-                          <Text className="text-[8px] leading-[8px]">
+                          <Text className="text-[8px] font-semibold leading-[8px] text-center" style={{ color: day.status === AttendanceStatus.PRESENT ? '#15803d' : day.status === AttendanceStatus.HALF_DAY ? '#b45309' : '#991b1b' }}>
                             {day.status === AttendanceStatus.PRESENT
                               ? 'P'
                               : day.status === AttendanceStatus.HALF_DAY
                               ? 'H'
                               : 'A'}
                           </Text>
-                        </Badge>
+                        </View>
                         {day.status === AttendanceStatus.HALF_DAY && (
                           <Text className="text-[10px] text-muted-foreground">
                             {t('attendance.halfDay')}
@@ -441,11 +415,10 @@ export default function EmployeeWageDetailScreen() {
                 );
               })
             )}
-          </CardContent>
-        </Card>
+          </View>
+        </View>
       </ScrollView>
 
-      {/* Payment Dialog */}
       <Modal
         visible={payDialogVisible}
         transparent
@@ -502,7 +475,6 @@ export default function EmployeeWageDetailScreen() {
         </View>
       </Modal>
 
-      {/* Day Adjustment Dialog */}
       <Modal
         visible={adjustDialogVisible}
         transparent

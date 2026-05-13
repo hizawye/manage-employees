@@ -1,3 +1,9 @@
+// UI Primitives
+export { Text } from './ui/text';
+export { Button, type ButtonProps } from './ui/button';
+export { Pressable } from './ui/Pressable';
+export { Screen } from './ui/Screen';
+
 // Common components
 export { LoadingSpinner } from './common/LoadingSpinner';
 export { EmptyState } from './common/EmptyState';
@@ -12,5 +18,4 @@ export { EmployeeCard } from './cards/EmployeeCard';
 export { StatCard } from './cards/StatCard';
 
 // Form components
-export { FormInput } from './forms/FormInput';
 export { SearchInput } from './forms/SearchInput';

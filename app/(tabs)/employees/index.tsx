@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, FlatList, RefreshControl, Pressable, I18nManager } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Pressable, I18nManager, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployees, useRefresh, useDebounce } from '../../../src/hooks';
 import { Employee } from '../../../src/models';
 import { t } from '../../../src/i18n';
-import { LoadingSpinner, EmptyState, ErrorMessage, EmployeeCard, SearchInput } from '../../../src/components';
+import { EmployeeCard } from '../../../src/components/cards/EmployeeCard';
+import { SearchInput } from '../../../src/components/forms/SearchInput';
 
 const isRTL = I18nManager.isRTL;
 
@@ -30,8 +31,27 @@ export default function EmployeeListScreen() {
   ), [router]);
 
   if (loading && !refreshing) {
-    return <LoadingSpinner />;
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
   }
+
+  const emptyContent = error ? (
+    <View className="flex-1 justify-center items-center px-4">
+      <Text className="text-destructive text-center text-base">{error}</Text>
+    </View>
+  ) : (
+    <View className="flex-1 justify-center items-center px-4">
+      <Text className="text-xl font-semibold text-center text-muted-foreground mb-2">
+        {t('employee.noEmployees')}
+      </Text>
+      <Text className="text-sm text-center text-muted-foreground/60">
+        {t('employee.noEmployeesHint')}
+      </Text>
+    </View>
+  );
 
   return (
     <View className="flex-1 bg-background">
@@ -42,28 +62,23 @@ export default function EmployeeListScreen() {
         className="mx-4 mt-4 mb-2"
       />
 
-      {error ? (
-        <ErrorMessage message={error} />
-      ) : employees.length === 0 ? (
-        <EmptyState
-          title={t('employee.noEmployees')}
-          subtitle={t('employee.noEmployeesHint')}
-        />
-      ) : (
-        <FlatList
-          data={employees}
-          keyExtractor={(item) => item.id}
-          renderItem={renderEmployee}
-          contentContainerClassName="px-4 pb-4"
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          initialNumToRender={15}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        />
-      )}
+      {employees.length === 0
+        ? emptyContent
+        : (
+          <FlatList
+            data={employees}
+            keyExtractor={(item) => item.id}
+            renderItem={renderEmployee}
+            contentContainerClassName="px-4 pb-4"
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            initialNumToRender={15}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+        )}
 
       <Pressable
         onPress={() => router.push('/employees/add')}

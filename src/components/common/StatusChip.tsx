@@ -1,39 +1,46 @@
-import React from 'react';
-import { Badge } from '../ui/badge';
-import { EmployeeStatus, AttendanceStatus } from '../../models';
-import { getStatusLabel } from '../../utils/attendanceUtils';
-import { t } from '../../i18n';
+import React from "react";
+import { View, Text } from "react-native";
 
 interface StatusChipProps {
-  type: 'employee' | 'attendance';
-  status: EmployeeStatus | AttendanceStatus;
+  type: "employee" | "attendance";
+  status: string;
   compact?: boolean;
 }
 
-export const StatusChip: React.FC<StatusChipProps> = ({ type, status }) => {
-  if (type === 'attendance') {
-    const variant =
-      status === AttendanceStatus.PRESENT
-        ? 'success'
-        : status === AttendanceStatus.HALF_DAY
-        ? 'warning'
-        : status === AttendanceStatus.ABSENT
-        ? 'destructive'
-        : 'secondary';
+const attendanceVariants: Record<string, string> = {
+  present: "bg-emerald-500/15 text-emerald-700",
+  half_day: "bg-amber-500/15 text-amber-700",
+  absent: "bg-red-500/15 text-red-700",
+};
 
-    return (
-      <Badge variant={variant}>
-        {getStatusLabel(status as AttendanceStatus)}
-      </Badge>
-    );
-  }
+const employeeVariants: Record<string, string> = {
+  active: "bg-emerald-500/15 text-emerald-700",
+  inactive: "bg-red-500/15 text-red-700",
+};
 
-  const variant = status === EmployeeStatus.ACTIVE ? 'success' : 'destructive';
-  const label = status === EmployeeStatus.ACTIVE ? t('employee.active') : t('employee.inactive');
+const labelMap: Record<string, string> = {
+  present: "حاضر",
+  half_day: "نصف يوم",
+  absent: "غائب",
+  active: "نشط",
+  inactive: "غير نشط",
+};
+
+export function StatusChip({ type, status }: StatusChipProps) {
+  const variant =
+    type === "attendance"
+      ? attendanceVariants[status] || "bg-secondary text-secondary-foreground"
+      : employeeVariants[status] || "bg-secondary text-secondary-foreground";
+
+  const label = labelMap[status] || status;
 
   return (
-    <Badge variant={variant}>
-      {label}
-    </Badge>
+    <View
+      className={`px-2 py-0.5 rounded-full ${variant} self-start min-w-[28px] items-center`}
+    >
+      <Text className="text-[8px] font-semibold leading-[8px] text-center">
+        {label}
+      </Text>
+    </View>
   );
-};
+}

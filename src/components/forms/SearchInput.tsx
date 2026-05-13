@@ -1,6 +1,6 @@
-import { View, TextInput, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { cn } from '@/lib/utils';
+import { View, TextInput, TouchableOpacity } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { cn } from "@/lib/utils";
 
 interface SearchInputProps {
   placeholder: string;
@@ -9,8 +9,13 @@ interface SearchInputProps {
   className?: string;
 }
 
-export function SearchInput({ placeholder, value, onChangeText, className }: SearchInputProps) {
-  const handleClear = () => onChangeText('');
+export function SearchInput({
+  placeholder,
+  value,
+  onChangeText,
+  className,
+}: SearchInputProps) {
+  const handleClear = () => onChangeText("");
   const showClearButton = value.length > 0;
 
   return (
@@ -30,7 +35,11 @@ export function SearchInput({ placeholder, value, onChangeText, className }: Sea
       />
       {showClearButton && (
         <TouchableOpacity onPress={handleClear} className="p-1">
-          <MaterialCommunityIcons name="close-circle" size={20} className="text-muted-foreground" />
+          <MaterialCommunityIcons
+            name="close-circle"
+            size={20}
+            className="text-muted-foreground"
+          />
         </TouchableOpacity>
       )}
     </View>

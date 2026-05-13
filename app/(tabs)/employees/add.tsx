@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, ScrollView, Alert, I18nManager, Pressable } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, ScrollView, Alert, I18nManager, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,7 @@ import { useEmployees } from '../../../src/hooks';
 import { WageType, EmployeeStatus } from '../../../src/models';
 import { toISODateString } from '../../../src/utils/dateUtils';
 import { t } from '../../../src/i18n';
-import { FormInput } from '../../../src/components';
+import { FormInput } from '../../../src/components/forms/FormInput';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
 

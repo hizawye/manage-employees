@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, FlatList, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEmployees, useRefresh } from '../../../src/hooks';
-import { StatCard } from '../../../src/components';
+import { StatCard } from '../../../src/components/cards/StatCard';
 import { EmployeeStatus, WageCalculation } from '../../../src/models';
 import {
   formatCurrency,
@@ -13,10 +13,9 @@ import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/servi
 import { PaymentService } from '../../../src/services/PaymentService';
 import { t } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
-import { Card, CardContent } from '../../../src/components/ui/card';
+import { Card } from '../../../src/components/ui/card';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
-import { Badge } from '../../../src/components/ui/badge';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface WageWithPayment extends WageCalculation {
@@ -99,8 +98,8 @@ export default function WageSummaryScreen() {
 
     return (
       <Pressable onPress={handlePress}>
-        <Card className="mb-3">
-          <CardContent className="p-4">
+        <View className="mb-3 rounded-xl border border-border bg-card overflow-hidden">
+          <View className="p-4">
             <View className="flex-row justify-between items-center">
               <View className="flex-1">
                 <Text variant="large" className="font-semibold text-foreground">
@@ -120,17 +119,16 @@ export default function WageSummaryScreen() {
                   {formatCurrency(item.totalWage)}
                 </Text>
                 {item.totalWage > 0 && (
-                  <Badge
-                    variant={item.isFullyPaid ? 'success' : 'destructive'}
-                    className="mt-1"
-                  >
-                    {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
-                  </Badge>
+                  <View className={`mt-1 px-2 py-0.5 rounded-full ${item.isFullyPaid ? 'bg-emerald-500/15' : 'bg-red-500/15'}`}>
+                    <Text className={`text-[8px] font-semibold ${item.isFullyPaid ? 'text-emerald-700' : 'text-red-700'}`}>
+                      {item.isFullyPaid ? t('wages.fullyPaid') : t('wages.remaining') + ' ' + formatCurrency(item.remaining)}
+                    </Text>
+                  </View>
                 )}
               </View>
             </View>
-          </CardContent>
-        </Card>
+          </View>
+        </View>
       </Pressable>
     );
   }, [router]);
@@ -138,14 +136,13 @@ export default function WageSummaryScreen() {
   if ((loadingEmployees || loading) && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
       <View className="px-4 py-4 bg-card border-b border-border">
         <Text variant="h3" className="font-bold text-foreground text-center">
           {t('wages.title')}
@@ -155,29 +152,13 @@ export default function WageSummaryScreen() {
         </Text>
       </View>
 
-      {/* Summary */}
-      <Card className="mx-4 mt-3">
-        <CardContent className="p-4">
-          <View className="flex-row gap-3">
-            <StatCard
-              value={formatCurrency(totalWages)}
-              label={t('wages.totalWages')}
-              color="#10b981"
-              icon="cash-multiple"
-            />
-            <StatCard
-              value={totalDaysWorked.toFixed(1)}
-              label={t('wages.daysWorked')}
-              icon="calendar-check"
-            />
-            <StatCard
-              value={calculations.length}
-              label={t('wages.employees')}
-              icon="account-group"
-            />
-          </View>
-        </CardContent>
-      </Card>
+      <View className="mx-4 mt-3">
+        <View className="flex-row gap-3">
+          <StatCard value={formatCurrency(totalWages)} label={t('wages.totalWages')} color="#10b981" icon="cash-multiple" />
+          <StatCard value={totalDaysWorked.toFixed(1)} label={t('wages.daysWorked')} icon="calendar-check" />
+          <StatCard value={calculations.length} label={t('wages.employees')} icon="account-group" />
+        </View>
+      </View>
 
       {calculations.length === 0 ? (
         <View className="flex-1 justify-center items-center px-4">
@@ -202,6 +183,3 @@ export default function WageSummaryScreen() {
     </View>
   );
 }
-
-// Local import needed for Pressable
-import { Pressable } from 'react-native';
