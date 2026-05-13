@@ -180,42 +180,37 @@ manage-employees/
 ## Known Issues
 - ⚠️ Jest test execution still blocked by babel config for some test patterns (infrastructure tests pass via `npm test`)
 - ⚠️ `contentContainerClassName` on FlatList requires React Native 0.72+
+- ⚠️ Overpayment feature: currently client-side only, adjustments not persisted to database
 
-## 2026-05-13: Cleanup, Android Build Fix & Verification (v2.0.3)
+## 2026-05-14: Overpayment with Warning (v2.1.0)
 
 ### What Changed
-- **Removed stale `react-native-paper` type import** from `src/theme/types.d.ts`
-- **Removed unused `expo-splash-screen`** dependency from `package.json`
-- **Set `userInterfaceStyle: "dark"`** as default in `app.json`
-- **Android adaptive icon background** set to `#023c69` (matches splash)
-- **Fixed Android build** — removed stale `Theme.SplashScreen` and `SplashScreenManager` references from Android resources and `MainActivity.kt`
-- **Created Expo config plugins** (`src/plugins/`) so Android fixes survive `expo prebuild` regeneration:
-  - `withRemoveSplashScreen.js` — strips SplashScreenManager import from MainActivity.kt
-  - `withFixSplashTheme.js` — replaces Theme.SplashScreen parent with AppCompat in styles.xml
-- `expo-splash-screen` removed from `package.json` (was causing EventEmitter crash)
+- **Payment dialog**: Entering amount > remaining shows amber warning banner with excess amount — payment still proceeds on confirm
+- **Confirm button**: Shows "⚠️ Confirm Overpayment" in amber warning variant when overpaying
+- **Payment history**: Overpaid entries display in amber (`text-amber-500`) with ⚠️ icon
+- **Wage summary cards**: Overpaid employees show amber "Overpaid X" badge instead of green "Fully Paid"
+- **Button component**: Added `warning` variant (amber background, amber-100 text)
+- **`PaymentService.isFullyPaid`**: Now returns `isOverpaid` and `overpaidAmount` fields
+- **i18n**: Added `overpaymentWarning` and `overpaid` keys in en/ar
 
 ### Verification
 - `npx tsc --noEmit` → 0 errors ✅
 - `npm test` → 8/8 passed ✅
-- `./gradlew app:assembleDebug` → BUILD SUCCESSFUL ✅
-- `grep react-native-paper src/` → 0 matches ✅
 
 ### Next Session Start Point
-All cleanup complete. Next steps are manual QA on emulator/device.
+Manual QA on emulator/device recommended.
 
 **Immediate:**
-1. Install APK on device/emulator for full manual QA
-2. Test dark mode toggle across all screens
-3. Test negative payment adjustment flow end-to-end
-4. Verify RTL layout on Arabic
-5. Test splash screen (no white flash)
+1. Test overpayment flow end-to-end (pay more than remaining, confirm warning)
+2. Verify overpaid badge shows correctly on summary screen
+3. Test deleting an overpaid payment restores correct state
+4. Full Arabic RTL verification
 
 **Future Enhancements:**
+- Persist day adjustments to database (currently client-side only)
 - Add press ripple effect to buttons
 - Add skeleton loading states
 - Add transitions between dark/light mode
-- Consider removing unused theme.ts constants
-- Add snapshot tests for UI primitives
 
 ---
 
