@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../index';
 import { Payment, CreatePaymentInput } from '../../models';
+import { assertEmployeeOwnedByUser } from './ownership';
 
 interface PaymentRow {
   id: string;
@@ -30,6 +31,8 @@ function mapRowToPayment(row: PaymentRow): Payment {
 
 export async function createPayment(userId: number, input: CreatePaymentInput): Promise<Payment> {
   const db = await getDatabase();
+  await assertEmployeeOwnedByUser(userId, input.employeeId);
+
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -87,7 +90,10 @@ export async function getTotalPaidForPeriod(
 
 export async function deletePayment(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM payments WHERE id = ? AND user_id = ?', [id, userId]);
+  const result = await db.runAsync('DELETE FROM payments WHERE id = ? AND user_id = ?', [id, userId]);
+  if (result.changes === 0) {
+    throw new Error('Payment not found');
+  }
 }
 
 export async function getAllPaymentsByUser(userId: number, limit = 100): Promise<Payment[]> {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable, TextInput } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -71,6 +71,7 @@ function AuthInput({
 
 export default function SignupScreen() {
   const { signup } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -86,6 +87,7 @@ export default function SignupScreen() {
       setLoading(true);
       setError('');
       await signup(data.username, data.password);
+      router.replace('/(tabs)/employees');
     } catch (err: any) {
       if (err.message.includes('already exists')) {
         setError(t('auth.usernameExists'));

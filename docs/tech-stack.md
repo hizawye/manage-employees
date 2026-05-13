@@ -13,18 +13,20 @@
 - Repository pattern for data access
 
 ## UI
-- **react-native-paper** 5.x - Material Design 3 components
+- **NativeWind** 4.x - Tailwind-style React Native styling
 - **@expo/vector-icons** - Icon library
 
 ## Forms
 - **react-hook-form** 7.x - Form state management
 - **@hookform/resolvers** - Validation integration
-- **zod** 4.x - Schema validation
+- **zod** 3.x - Schema validation
 
 ## Utilities
 - **date-fns** 4.x - Date manipulation
-- **uuid** 13.x - UUID generation
+- **expo-crypto** - UUID generation and legacy hash support
+- **@noble/hashes** - PBKDF2-SHA256 password hashing
 
 ## Development
 - **ESLint** - Linting (via Expo)
-- **Prettier** - Code formatting (via Expo)
+- **Prettier** - Formatting
+- **Jest / jest-expo** - Unit tests and coverage reporting

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, KeyboardAvoidingView, Platform, Pressable, TextInput } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -60,6 +60,7 @@ function AuthInput({
 
 export default function LoginScreen() {
   const { login, continueAsGuest } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
@@ -75,6 +76,7 @@ export default function LoginScreen() {
       setLoading(true);
       setError('');
       await login(data.username, data.password);
+      router.replace('/(tabs)/employees');
     } catch (err: any) {
       setError(err.message || t('auth.invalidCredentials'));
     } finally {
@@ -87,6 +89,7 @@ export default function LoginScreen() {
       setGuestLoading(true);
       setError('');
       await continueAsGuest();
+      router.replace('/(tabs)/employees');
     } catch (err: any) {
       setError(err.message || t('common.error'));
     } finally {

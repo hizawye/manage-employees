@@ -79,9 +79,7 @@ export class MigrationRunner {
   /**
    * Get migration history
    */
-  async getMigrationHistory(): Promise<
-    Array<{ version: number; name: string; appliedAt: string }>
-  > {
+  async getMigrationHistory(): Promise<{ version: number; name: string; appliedAt: string }[]> {
     await this.initMigrationTable();
     return this.db.getAllAsync('SELECT * FROM migrations ORDER BY version ASC');
   }

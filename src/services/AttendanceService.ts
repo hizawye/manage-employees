@@ -1,4 +1,4 @@
-import { Attendance, CreateAttendanceInput, AttendanceStatus } from '../models';
+import { Attendance, CreateAttendanceInput, AttendanceStatus, WageType } from '../models';
 import {
   getAttendanceByDate as dbGetAttendanceByDate,
   getAttendanceByEmployee as dbGetAttendanceByEmployee,
@@ -6,6 +6,8 @@ import {
   deleteAttendance as dbDeleteAttendance,
 } from '../database/repositories';
 import { clearWageCache } from './WageCalculationService';
+import { EmployeeService } from './EmployeeService';
+import { APP_CONFIG } from '../config/app';
 
 // Cache for attendance records
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -87,25 +89,49 @@ export class AttendanceService {
       throw new Error('Attendance status is required');
     }
 
-    // Validate hours worked for hourly employees
-    if (input.status === AttendanceStatus.PRESENT && input.hoursWorked !== undefined) {
-      if (input.hoursWorked < 0) {
-        throw new Error('Hours worked cannot be negative');
-      }
-      if (input.hoursWorked > 24) {
-        throw new Error('Hours worked cannot exceed 24 hours');
-      }
+    const employee = await EmployeeService.getEmployeeById(userId, input.employeeId);
+    if (!employee) {
+      throw new Error('Employee not found');
     }
 
-    const result = await dbUpsertAttendance(userId, input);
+    const normalizedInput: CreateAttendanceInput = { ...input };
+
+    if (employee.wageType === WageType.HOURLY) {
+      if (normalizedInput.status === AttendanceStatus.ABSENT) {
+        normalizedInput.hoursWorked = undefined;
+      } else if (normalizedInput.hoursWorked === undefined) {
+        normalizedInput.hoursWorked =
+          normalizedInput.status === AttendanceStatus.HALF_DAY
+            ? APP_CONFIG.attendance.defaultHoursPerDay / 2
+            : APP_CONFIG.attendance.defaultHoursPerDay;
+      }
+
+      this.validateHoursWorked(normalizedInput.hoursWorked);
+    } else if (normalizedInput.status === AttendanceStatus.ABSENT) {
+      normalizedInput.hoursWorked = undefined;
+    }
+
+    const result = await dbUpsertAttendance(userId, normalizedInput);
 
     // Clear caches after mutation
-    this.clearCache(userId, input.employeeId, input.date);
+    this.clearCache(userId, normalizedInput.employeeId, normalizedInput.date);
 
     // Clear wage calculation cache for this employee
-    clearWageCache(input.employeeId);
+    clearWageCache(userId, normalizedInput.employeeId);
 
     return result;
+  }
+
+  private static validateHoursWorked(hoursWorked: number | undefined): void {
+    if (hoursWorked === undefined) {
+      throw new Error('Hours worked is required');
+    }
+    if (hoursWorked <= APP_CONFIG.attendance.minHoursPerDay) {
+      throw new Error('Hours worked must be greater than 0');
+    }
+    if (hoursWorked > APP_CONFIG.attendance.maxHoursPerDay) {
+      throw new Error('Hours worked cannot exceed 24 hours');
+    }
   }
 
   /**
@@ -120,7 +146,7 @@ export class AttendanceService {
 
     // Clear wage cache if we know the employee
     if (employeeId) {
-      clearWageCache(employeeId);
+      clearWageCache(userId, employeeId);
     } else {
       clearWageCache(); // Clear all wage caches
     }

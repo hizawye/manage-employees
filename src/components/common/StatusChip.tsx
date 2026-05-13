@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
+import { t } from "../../i18n";
 
 interface StatusChipProps {
   type: "employee" | "attendance";
@@ -18,12 +19,12 @@ const employeeVariants: Record<string, string> = {
   inactive: "bg-red-500/15 text-red-700",
 };
 
-const labelMap: Record<string, string> = {
-  present: "حاضر",
-  half_day: "نصف يوم",
-  absent: "غائب",
-  active: "نشط",
-  inactive: "غير نشط",
+const labelKeyMap: Record<string, string> = {
+  present: "attendance.present",
+  half_day: "attendance.halfDay",
+  absent: "attendance.absent",
+  active: "employee.active",
+  inactive: "employee.inactive",
 };
 
 export function StatusChip({ type, status }: StatusChipProps) {
@@ -32,7 +33,7 @@ export function StatusChip({ type, status }: StatusChipProps) {
       ? attendanceVariants[status] || "bg-secondary text-secondary-foreground"
       : employeeVariants[status] || "bg-secondary text-secondary-foreground";
 
-  const label = labelMap[status] || status;
+  const label = labelKeyMap[status] ? t(labelKeyMap[status]) : status;
 
   return (
     <View

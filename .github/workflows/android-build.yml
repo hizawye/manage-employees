@@ -38,8 +38,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check Expo dependency compatibility
+        run: npx expo install --check
+
       - name: Type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Coverage
+        run: npm run test:coverage -- --runInBand
 
       - name: Prebuild
         run: npx expo prebuild --platform android

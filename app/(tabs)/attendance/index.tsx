@@ -9,14 +9,15 @@ import { addDays, parseISO } from 'date-fns';
 import { t } from '../../../src/i18n';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
-import { StatusChip } from '../../../src/components/common/StatusChip';
 
 export default function AttendanceScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(getTodayString());
-  const { employees, loading: loadingEmployees, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
-  const { attendance, loading: loadingAttendance, markAttendance, refresh } = useAttendanceByDate(selectedDate);
+  const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { attendance, loading: loadingAttendance, error, markAttendance, refresh } = useAttendanceByDate(selectedDate);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const { refreshing, onRefresh } = useRefresh(refresh);
 
@@ -44,22 +45,30 @@ export default function AttendanceScreen() {
   ) => {
     setSavingId(employeeId);
     try {
+      setLocalError('');
       await markAttendance(employeeId, status, hoursWorked);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setSavingId(null);
     }
   }, [markAttendance]);
 
   const handleMarkAllPresent = async () => {
-    for (const emp of employees) {
-      const current = attendanceMap.get(emp.id);
-      if (!current || current.status !== AttendanceStatus.PRESENT) {
-        await handleMarkAttendance(
-          emp.id,
-          AttendanceStatus.PRESENT,
-          emp.wageType === WageType.HOURLY ? 8 : undefined
-        );
+    setBulkSaving(true);
+    try {
+      for (const emp of employees) {
+        const current = attendanceMap.get(emp.id);
+        if (!current || current.status !== AttendanceStatus.PRESENT) {
+          await handleMarkAttendance(
+            emp.id,
+            AttendanceStatus.PRESENT,
+            emp.wageType === WageType.HOURLY ? 8 : undefined
+          );
+        }
       }
+    } finally {
+      setBulkSaving(false);
     }
   };
 
@@ -114,10 +123,10 @@ export default function AttendanceScreen() {
               <TextInput
                 keyboardType="decimal-pad"
                 defaultValue={currentAttendance?.hoursWorked?.toString() || '8'}
-                onEndEditing={(e) => {
-                  const hours = parseFloat(e.nativeEvent.text) || 0;
-                  handleMarkAttendance(item.id, AttendanceStatus.PRESENT, hours);
-                }}
+	                onEndEditing={(e) => {
+	                  const hours = parseFloat(e.nativeEvent.text) || 0;
+	                  handleMarkAttendance(item.id, AttendanceStatus.PRESENT, hours);
+	                }}
                 className="w-20 h-9 rounded-md border border-border bg-background px-2 text-center text-foreground"
               />
             </View>
@@ -155,13 +164,19 @@ export default function AttendanceScreen() {
         <Button variant="outline" size="sm" onPress={() => setSelectedDate(getTodayString())}>
           {t('common.today')}
         </Button>
-        <Button variant="secondary" size="sm" onPress={handleMarkAllPresent}>
+        <Button variant="secondary" size="sm" onPress={handleMarkAllPresent} isLoading={bulkSaving}>
           {t('attendance.markAllPresent')}
         </Button>
         <Button variant="ghost" size="sm" onPress={() => router.push('/attendance/history')}>
           {t('attendance.viewHistory')}
         </Button>
       </View>
+
+      {localError || error ? (
+        <View className="mx-4 mt-3 rounded-lg bg-destructive px-4 py-3">
+          <Text className="text-destructive-foreground text-sm">{localError || error}</Text>
+        </View>
+      ) : null}
 
       {employees.length === 0 ? (
         <View className="flex-1 justify-center items-center px-4">

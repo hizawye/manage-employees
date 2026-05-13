@@ -1,13 +1,31 @@
-import { Tabs } from 'expo-router';
-import { I18nManager } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { I18nManager, View, ActivityIndicator } from 'react-native';
+import { useEffect } from 'react';
 import { useThemeContext } from '../../src/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { t } from '../../src/i18n';
+import { useAuth } from '../../src/auth/useAuth';
 
 const isRTL = I18nManager.isRTL;
 
 export default function TabLayout() {
+  const router = useRouter();
   const { isDark } = useThemeContext();
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/(auth)/login');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) {
+    return (
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
 
   const primary = '#3b82f6';
   const inactive = isDark ? '#94a3b8' : '#64748b';

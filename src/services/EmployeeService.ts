@@ -7,6 +7,7 @@ import {
   deleteEmployee as dbDeleteEmployee,
   searchEmployees as dbSearchEmployees,
 } from '../database/repositories';
+import { clearWageCache } from './WageCalculationService';
 
 // Cache for employees
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -123,6 +124,9 @@ export class EmployeeService {
 
     // Clear caches after mutation
     this.clearCache(userId, id);
+    if (input.wageRate !== undefined || input.wageType !== undefined || input.status !== undefined) {
+      clearWageCache(userId, id);
+    }
   }
 
   /**
@@ -134,6 +138,7 @@ export class EmployeeService {
 
     // Clear caches after mutation
     this.clearCache(userId, id);
+    clearWageCache(userId, id);
   }
 
   /**

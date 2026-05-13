@@ -96,7 +96,7 @@ describe('WageCalculationService', () => {
   describe('clearWageCache', () => {
     it('should clear cache without throwing error', () => {
       expect(() => clearWageCache()).not.toThrow();
-      expect(() => clearWageCache('123')).not.toThrow();
+      expect(() => clearWageCache(1, '123')).not.toThrow();
     });
   });
 });

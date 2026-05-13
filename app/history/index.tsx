@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, FlatList, RefreshControl, Pressable } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, FlatList, RefreshControl, Pressable, ActivityIndicator, I18nManager } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,15 +11,22 @@ import { Text } from '../../src/components/ui/text';
 import { Card, CardContent } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Badge } from '../../src/components/ui/badge';
+import { useAuth } from '../../src/auth/useAuth';
 
 type FilterType = 'all' | 'employee' | 'attendance';
 
 export default function HistoryScreen() {
     const router = useRouter();
+    const { user, isLoading } = useAuth();
     const [filter, setFilter] = useState<FilterType>('all');
 
     const entityType = filter === 'all' ? undefined : filter;
     const { logs, loading, loadingMore, error, hasMore, refresh, loadMore } = useLogs(entityType);
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.replace('/(auth)/login');
+        }
+    }, [isLoading, user, router]);
 
     // Separate refreshing state prevents flickering
     const { refreshing, onRefresh } = useRefresh(async () => {
@@ -50,7 +57,7 @@ export default function HistoryScreen() {
                 default:
                     return item.description;
             }
-        } catch (e) {
+        } catch {
             return item.description;
         }
     }, []);
@@ -98,7 +105,7 @@ export default function HistoryScreen() {
         if (loadingMore) {
             return (
                 <View className="py-4 items-center">
-                    <MaterialCommunityIcons name="loading" size={24} className="text-primary" />
+                    <ActivityIndicator size="small" color="#3b82f6" />
                 </View>
             );
         }
@@ -120,7 +127,7 @@ export default function HistoryScreen() {
 
             <View className="flex-row items-center px-2 py-2 bg-card border-b border-border">
                 <Pressable onPress={() => router.back()} className="p-2">
-                    <MaterialCommunityIcons name="arrow-left" size={24} className="text-foreground" />
+                    <MaterialCommunityIcons name={backIcon} size={24} className="text-foreground" />
                 </Pressable>
                 <Text variant="h3" className="font-semibold ml-2 text-foreground">
                     {t('history.title')}
@@ -144,9 +151,9 @@ export default function HistoryScreen() {
             </View>
 
             {/* Initial loading: show spinner only, no list */}
-            {loading && !refreshing && logs.length === 0 ? (
+            {(isLoading || (!user && !isLoading)) || (loading && !refreshing && logs.length === 0) ? (
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
-                    <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
+                    <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
             ) : error && !loading ? (
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
@@ -172,3 +179,4 @@ export default function HistoryScreen() {
         </SafeAreaView>
     );
 }
+    const backIcon = I18nManager.isRTL ? 'arrow-right' : 'arrow-left';

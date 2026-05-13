@@ -10,7 +10,7 @@ export const addPaymentsTableMigration: Migration = {
         id TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL,
         employee_id TEXT NOT NULL,
-        amount REAL NOT NULL,
+	        amount REAL NOT NULL CHECK(amount > 0),
         period_start TEXT NOT NULL,
         period_end TEXT NOT NULL,
         payment_date TEXT NOT NULL,

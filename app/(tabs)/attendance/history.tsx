@@ -17,7 +17,7 @@ interface AttendanceWithEmployee extends Attendance {
 
 export default function AttendanceHistoryScreen() {
   const { user } = useAuth();
-  const { employees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees, loading: loadingEmployees } = useEmployees(EmployeeStatus.ACTIVE);
   const [weekOffset, setWeekOffset] = useState(0);
   const [attendance, setAttendance] = useState<AttendanceWithEmployee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,14 +36,18 @@ export default function AttendanceHistoryScreen() {
   }, [employees]);
 
   const loadAttendance = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setAttendance([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const records = await getAttendanceInRange(user.id, dateRange.start, dateRange.end);
       const withNames = records.map((record) => ({
         ...record,
-        employeeName: employeeMap.get(record.employeeId)?.name || 'Unknown',
+        employeeName: employeeMap.get(record.employeeId)?.name || t('wages.unknownEmployee'),
       }));
       setAttendance(withNames);
     } catch (error) {
@@ -54,10 +58,10 @@ export default function AttendanceHistoryScreen() {
   }, [user, dateRange, employeeMap]);
 
   useEffect(() => {
-    if (employees.length > 0) {
+    if (!loadingEmployees) {
       loadAttendance();
     }
-  }, [loadAttendance, employees.length]);
+  }, [loadAttendance, loadingEmployees]);
 
   const { refreshing, onRefresh } = useRefresh(loadAttendance);
 

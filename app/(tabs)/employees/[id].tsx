@@ -1,6 +1,5 @@
-import { View, ScrollView, Alert, Pressable } from 'react-native';
+import { View, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEmployee, useEmployees } from '../../../src/hooks';
 import { StatusChip } from '../../../src/components/common/StatusChip';
 import { InfoRow } from '../../../src/components/common/InfoRow';
@@ -39,7 +38,7 @@ export default function EmployeeDetailScreen() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
-        <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }

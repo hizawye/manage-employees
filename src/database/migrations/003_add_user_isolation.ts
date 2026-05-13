@@ -5,9 +5,7 @@ export const addUserIsolationMigration: Migration = {
   version: 3,
   name: 'add_user_isolation',
   up: async (db: SQLite.SQLiteDatabase) => {
-    // Clear all existing data (fresh start for multi-user support)
-    await db.execAsync('DELETE FROM attendance;');
-    await db.execAsync('DELETE FROM employees;');
+    const legacyUserId = await ensureLegacyImportUser(db);
 
     // Check if user_id column exists in employees table
     const employeesColumns = await db.getAllAsync<{ name: string }>(
@@ -21,6 +19,7 @@ export const addUserIsolationMigration: Migration = {
         ALTER TABLE employees ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
       `);
     }
+    await db.runAsync('UPDATE employees SET user_id = ? WHERE user_id = 0', [legacyUserId]);
 
     // Check if user_id column exists in attendance table
     const attendanceColumns = await db.getAllAsync<{ name: string }>(
@@ -34,6 +33,7 @@ export const addUserIsolationMigration: Migration = {
         ALTER TABLE attendance ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
       `);
     }
+    await db.runAsync('UPDATE attendance SET user_id = ? WHERE user_id = 0', [legacyUserId]);
 
     // Create indices for better query performance with user_id
     await db.execAsync(`
@@ -54,3 +54,21 @@ export const addUserIsolationMigration: Migration = {
     `);
   },
 };
+
+async function ensureLegacyImportUser(db: SQLite.SQLiteDatabase): Promise<number> {
+  const existing = await db.getFirstAsync<{ id: number }>(
+    'SELECT id FROM users WHERE username = ?',
+    ['legacy_import']
+  );
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const result = await db.runAsync(
+    'INSERT INTO users (username, password_hash, salt, created_at) VALUES (?, ?, ?, ?)',
+    ['legacy_import', 'legacy_import_disabled', 'legacy_import_disabled', new Date().toISOString()]
+  );
+
+  return result.lastInsertRowId;
+}

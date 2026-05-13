@@ -153,10 +153,14 @@ export async function updateEmployee(userId: number, id: string, input: UpdateEm
   values.push(id);
   values.push(userId);
 
-  await db.runAsync(
+  const result = await db.runAsync(
     `UPDATE employees SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
+
+  if (result.changes === 0) {
+    throw new Error('Employee not found');
+  }
 
   // Fetch employee to get name for log
   const employee = await getEmployeeById(userId, id);
@@ -174,7 +178,11 @@ export async function updateEmployee(userId: number, id: string, input: UpdateEm
 export async function deleteEmployee(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
   const employee = await getEmployeeById(userId, id);
-  await db.runAsync('DELETE FROM employees WHERE id = ? AND user_id = ?', [id, userId]);
+  const result = await db.runAsync('DELETE FROM employees WHERE id = ? AND user_id = ?', [id, userId]);
+
+  if (result.changes === 0) {
+    throw new Error('Employee not found');
+  }
 
   if (employee) {
     await createLog(userId, {

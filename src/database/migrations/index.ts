@@ -5,6 +5,8 @@ import { addUserIsolationMigration } from './003_add_user_isolation';
 import { addGuestFlagMigration } from './004_add_guest_flag';
 import { addLogsTableMigration } from './005_add_logs_table';
 import { addPaymentsTableMigration } from './006_add_payments_table';
+import { repairUserIsolationMigration } from './007_repair_user_isolation';
+import { addWageAdjustmentsTableMigration } from './008_add_wage_adjustments_table';
 
 export interface Migration {
   version: number;
@@ -19,6 +21,8 @@ export const migrations: Migration[] = [
   addGuestFlagMigration,
   addLogsTableMigration,
   addPaymentsTableMigration,
+  repairUserIsolationMigration,
+  addWageAdjustmentsTableMigration,
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
@@ -45,11 +49,13 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       if (migration.version > currentVersion) {
         console.log(`Running migration ${migration.version}: ${migration.name}`);
         try {
-          await migration.up(db);
-          await db.runAsync(
-            'INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)',
-            [migration.version, migration.name, new Date().toISOString()]
-          );
+          await db.withTransactionAsync(async () => {
+            await migration.up(db);
+            await db.runAsync(
+              'INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)',
+              [migration.version, migration.name, new Date().toISOString()]
+            );
+          });
           console.log(`Migration ${migration.version} completed successfully`);
         } catch (error) {
           console.error(`Migration ${migration.version} failed:`, error);

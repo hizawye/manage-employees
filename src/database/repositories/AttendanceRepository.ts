@@ -37,6 +37,11 @@ function mapRowToAttendance(row: AttendanceRow): Attendance {
 
 export async function createAttendance(userId: number, input: CreateAttendanceInput): Promise<Attendance> {
   const db = await getDatabase();
+  const employee = await getEmployeeById(userId, input.employeeId);
+  if (!employee) {
+    throw new Error('Employee not found');
+  }
+
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -56,8 +61,6 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
     ]
   );
 
-  // Get employee name for better log description
-  const employee = await getEmployeeById(userId, input.employeeId);
   await createLog(userId, {
     action: LogActionType.MARK_ATTENDANCE,
     description: `Marked attendance for ${employee?.name || input.employeeId}: ${input.status}`,
@@ -151,10 +154,14 @@ export async function updateAttendance(userId: number, id: string, input: Update
   values.push(id);
   values.push(userId);
 
-  await db.runAsync(
+  const result = await db.runAsync(
     `UPDATE attendance SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
     values
   );
+
+  if (result.changes === 0) {
+    throw new Error('Attendance record not found');
+  }
 
   // Get attendance to find employeeId, then get Employee Name
   // Note: 'id' here is attendance id. We need to fetch attendance first if we want employeeId, 
@@ -162,7 +169,7 @@ export async function updateAttendance(userId: number, id: string, input: Update
   // Use a targeted query just for user/log if needed.
   // Actually, let's fetch the attendance record first to get employee_id
   const attendance = await db.getFirstAsync<{ employee_id: string }>(
-    'SELECT employee_id FROM attendance WHERE id = ?', [id]
+    'SELECT employee_id FROM attendance WHERE id = ? AND user_id = ?', [id, userId]
   );
   let employeeName = 'Unknown';
   if (attendance) {
@@ -181,7 +188,10 @@ export async function updateAttendance(userId: number, id: string, input: Update
 
 export async function deleteAttendance(userId: number, id: string): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM attendance WHERE id = ? AND user_id = ?', [id, userId]);
+  const result = await db.runAsync('DELETE FROM attendance WHERE id = ? AND user_id = ?', [id, userId]);
+  if (result.changes === 0) {
+    throw new Error('Attendance record not found');
+  }
 }
 
 export async function upsertAttendance(userId: number, input: CreateAttendanceInput): Promise<Attendance> {

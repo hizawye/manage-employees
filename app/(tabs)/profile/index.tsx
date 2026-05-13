@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, ScrollView, RefreshControl, Pressable, ActivityIndicator, Alert, I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEmployees, useAttendanceStats } from '../../../src/hooks';
@@ -36,8 +36,12 @@ export default function ProfileScreen() {
   );
 
   const handleLanguageChange = async (locale: 'en' | 'ar') => {
+    const directionWillChange = (locale === 'ar') !== I18nManager.isRTL;
     await setLocale(locale);
     setCurrentLocale(locale);
+    if (directionWillChange) {
+      Alert.alert(t('profile.restartRequiredTitle'), t('profile.restartRequiredMessage'));
+    }
   };
 
   const handleLogout = async () => {
@@ -103,7 +107,7 @@ export default function ProfileScreen() {
   if ((loadingAll || loadingActive || loadingStats || loadingAttendanceStats) && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
-        <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }

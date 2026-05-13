@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, ScrollView, Alert, Pressable, TextInput } from 'react-native';
+import { View, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +10,6 @@ import { t } from '../../../../src/i18n';
 import { FormInput } from '../../../../src/components/forms/FormInput';
 import { Text } from '../../../../src/components/ui/text';
 import { Button } from '../../../../src/components/ui/button';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'validation.nameRequired'),
@@ -95,7 +94,7 @@ export default function EditEmployeeScreen() {
   if (loadingEmployee) {
     return (
       <View className="flex-1 justify-center items-center">
-        <MaterialCommunityIcons name="loading" size={32} className="text-primary" />
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }

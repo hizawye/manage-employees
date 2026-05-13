@@ -15,7 +15,7 @@ export default function Index() {
         router.replace('/(auth)/login');
       }
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   return (
     <View className="flex-1 justify-center items-center bg-background">

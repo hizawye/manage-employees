@@ -36,8 +36,8 @@ async function loadSavedLocale() {
   }
 }
 
-// Run immediately
-loadSavedLocale();
+// Run immediately and expose readiness so navigation does not render with stale direction.
+export const localeReady = loadSavedLocale();
 
 // Check if the current language is RTL
 export const isRTL = i18n.locale === 'ar';

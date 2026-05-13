@@ -1,5 +1,5 @@
 import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail, MonthlyDayData } from '../models';
-import { getAttendanceByEmployee } from '../database/repositories';
+import { getAttendanceByEmployee, getWageAdjustmentsByEmployee } from '../database/repositories';
 
 // Cache for wage calculations
 const wageCalculationCache = new Map<string, { result: WageCalculation; timestamp: number }>();
@@ -15,11 +15,17 @@ function cleanExpiredWageCache(): void {
 }
 
 // Function to clear cache for specific employee (call when attendance changes)
-export function clearWageCache(employeeId?: string) {
-  if (employeeId) {
+export function clearWageCache(userId?: number, employeeId?: string) {
+  if (userId && employeeId) {
+    for (const key of wageCalculationCache.keys()) {
+      if (key.startsWith(`${userId}-${employeeId}-`)) {
+        wageCalculationCache.delete(key);
+      }
+    }
+  } else if (employeeId) {
     // Clear all cache entries for this employee
     for (const key of wageCalculationCache.keys()) {
-      if (key.startsWith(`${employeeId}-`)) {
+      if (key.includes(`-${employeeId}-`)) {
         wageCalculationCache.delete(key);
       }
     }
@@ -50,6 +56,10 @@ export function calculateWageForDay(
   employee: Employee,
   attendance: Attendance
 ): number {
+  if (attendance.status === AttendanceStatus.ABSENT) {
+    return 0;
+  }
+
   if (employee.wageType === WageType.DAILY) {
     return calculateDailyWage(employee.wageRate, attendance.status);
   } else {
@@ -65,7 +75,7 @@ export async function calculateWagesForPeriod(
 ): Promise<WageCalculation> {
   cleanExpiredWageCache();
   // Check cache first
-  const cacheKey = `${employee.id}-${startDate}-${endDate}`;
+  const cacheKey = `${userId}-${employee.id}-${startDate}-${endDate}`;
   const cached = wageCalculationCache.get(cacheKey);
   const now = Date.now();
 
@@ -73,12 +83,20 @@ export async function calculateWagesForPeriod(
     return cached.result;
   }
 
-  const attendanceRecords = await getAttendanceByEmployee(userId, employee.id, startDate, endDate);
+  const [attendanceRecords, adjustments] = await Promise.all([
+    getAttendanceByEmployee(userId, employee.id, startDate, endDate),
+    getWageAdjustmentsByEmployee(userId, employee.id, startDate, endDate),
+  ]);
 
   // Build a map of date -> attendance record for quick lookup
   const attendanceMap = new Map<string, Attendance>();
   for (const record of attendanceRecords) {
     attendanceMap.set(record.date, record);
+  }
+
+  const adjustmentMap = new Map<string, { amount: number; note?: string }>();
+  for (const adjustment of adjustments) {
+    adjustmentMap.set(adjustment.date, { amount: adjustment.amount, note: adjustment.note });
   }
 
   // Generate ALL days in the period (including days with no attendance)
@@ -95,6 +113,7 @@ export async function calculateWagesForPeriod(
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = toISODate(d);
     const record = attendanceMap.get(dateStr);
+    const adjustment = adjustmentMap.get(dateStr);
 
     let wageEarned: number;
     let status: AttendanceStatus;
@@ -111,11 +130,17 @@ export async function calculateWagesForPeriod(
       hoursWorked = undefined;
     }
 
+    if (adjustment) {
+      wageEarned += adjustment.amount;
+    }
+
     const detail: WageDetail = {
       date: dateStr,
       status,
       hoursWorked,
       wageEarned,
+      adjustment: adjustment?.amount,
+      adjustmentNote: adjustment?.note,
     };
 
     details.push(detail);
