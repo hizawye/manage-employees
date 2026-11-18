@@ -1,76 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { getAttendanceInRange } from '../database/repositories';
 import { useAuth } from '../auth/useAuth';
+import { t } from '../i18n';
 
-interface AttendanceStats {
-  weeklyPresent: number;
-  weeklyTotal: number;
-  monthlyPresent: number;
-  monthlyTotal: number;
-}
+const emptyStats = { weeklyPresent: 0, weeklyTotal: 0, monthlyPresent: 0, monthlyTotal: 0 };
 
 export function useAttendanceStats(weekStart: string, weekEnd: string, monthStart: string, monthEnd: string) {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<AttendanceStats>({
-    weeklyPresent: 0,
-    weeklyTotal: 0,
-    monthlyPresent: 0,
-    monthlyTotal: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadStats = useCallback(async () => {
-    if (!user) {
-      setStats({
-        weeklyPresent: 0,
-        weeklyTotal: 0,
-        monthlyPresent: 0,
-        monthlyTotal: 0,
-      });
-      setLoading(false);
-      return;
-    }
-
+  const owner = useAuth().user?.id;
+  const key = JSON.stringify([owner, weekStart, weekEnd, monthStart, monthEnd]);
+  const [snapshot, setSnapshot] = useState<{ key: string; stats: typeof emptyStats; loading: boolean; error: string | null }>();
+  const version = useRef(0);
+  const refresh = useCallback(async () => {
+    const ticket = ++version.current;
+    if (owner === undefined) return;
+    setSnapshot(old => ({ key, stats: old?.key === key ? old.stats : emptyStats, loading: true, error: null }));
     try {
-      setLoading(true);
-      setError(null);
-
-      const [weeklyAttendance, monthlyAttendance] = await Promise.all([
-        getAttendanceInRange(user.id, weekStart, weekEnd),
-        getAttendanceInRange(user.id, monthStart, monthEnd),
+      const [week, month] = await Promise.all([
+        getAttendanceInRange(owner, weekStart, weekEnd), getAttendanceInRange(owner, monthStart, monthEnd),
       ]);
-
-      const weeklyPresent = weeklyAttendance.filter(a => a.status === 'present').length;
-      const weeklyHalf = weeklyAttendance.filter(a => a.status === 'half_day').length;
-      const monthlyPresent = monthlyAttendance.filter(a => a.status === 'present').length;
-      const monthlyHalf = monthlyAttendance.filter(a => a.status === 'half_day').length;
-
-      setStats({
-        weeklyPresent: weeklyPresent + weeklyHalf * 0.5,
-        weeklyTotal: weeklyAttendance.length,
-        monthlyPresent: monthlyPresent + monthlyHalf * 0.5,
-        monthlyTotal: monthlyAttendance.length,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load attendance stats');
-    } finally {
-      setLoading(false);
+      if (version.current !== ticket) return;
+      const present = (records: typeof week) => records.reduce((sum, day) =>
+        sum + (day.status === 'present' ? 1 : day.status === 'half_day' ? 0.5 : 0), 0);
+      setSnapshot({ key, loading: false, error: null, stats: {
+        weeklyPresent: present(week), weeklyTotal: week.length, monthlyPresent: present(month), monthlyTotal: month.length,
+      } });
+    } catch {
+      if (version.current === ticket) setSnapshot({ key, stats: emptyStats, loading: false, error: t('attendance.historyLoadError') });
     }
-  }, [user, weekStart, weekEnd, monthStart, monthEnd]);
-
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
-
-  const refresh = useCallback(() => {
-    return loadStats();
-  }, [loadStats]);
-
-  return {
-    stats,
-    loading,
-    error,
-    refresh,
-  };
+  }, [key, owner, weekStart, weekEnd, monthStart, monthEnd]);
+  useFocusEffect(useCallback(() => {
+    void refresh();
+    return () => { version.current++; };
+  }, [refresh]));
+  const current = snapshot?.key === key ? snapshot : undefined;
+  return { stats: current?.stats ?? emptyStats, loading: current?.loading ?? owner !== undefined, error: current?.error ?? null, refresh };
 }

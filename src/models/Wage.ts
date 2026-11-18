@@ -2,6 +2,7 @@ import { WageType } from './Employee';
 import { AttendanceStatus } from './Attendance';
 
 export interface WageDetail {
+  hasAttendance: boolean;
   date: string;
   status: AttendanceStatus;
   hoursWorked?: number;
@@ -10,16 +11,9 @@ export interface WageDetail {
   adjustmentNote?: string;
 }
 
-export interface MonthlyDayData {
-  date: string;
+export interface MonthlyDayData extends WageDetail {
   dayOfMonth: number;
   dayOfWeek: string;
-  status: AttendanceStatus;
-  hoursWorked?: number;
-  wageEarned: number;
-  adjustment?: number;
-  adjustmentNote?: string;
-  hasAttendance: boolean;
 }
 
 export interface WageCalculation {

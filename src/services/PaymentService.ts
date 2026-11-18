@@ -1,85 +1,58 @@
 import { Payment, CreatePaymentInput } from '../models';
 import {
-  createPayment as dbCreatePayment,
-  getPaymentsByEmployee as dbGetPaymentsByEmployee,
-  getTotalPaidForPeriod as dbGetTotalPaidForPeriod,
-  deletePayment as dbDeletePayment,
+  createPayment,
+  getPaymentsByEmployee,
+  getTotalPaidForPeriod,
+  deletePayment,
 } from '../database/repositories';
-import { assertEmployeeOwnedByUser } from '../database/repositories/ownership';
+import { isCurrencyAmount, toCentimes } from '../utils/money';
+import { isPayrollDate } from '../utils/payrollDate';
+
+export function getPaymentBalance(totalWage: number, paid: number) {
+  const remaining = (Math.max(0, toCentimes(totalWage)) - toCentimes(paid)) / 100;
+  return {
+    paid,
+    remaining,
+    isFullyPaid: paid > 0 && remaining <= 0,
+    isOverpaid: remaining < 0,
+    overpaidAmount: Math.max(0, -remaining),
+  };
+}
+
+// Repository history is newest first. Attribute excess to the payments that crossed
+// or followed settlement, using the balance at each payment in chronological order.
+export function getPaymentHistoryBalance(totalWage: number, payments: Payment[]) {
+  const payableCentimes = Math.max(0, toCentimes(totalWage));
+  let paidCentimes = 0;
+  const overpaidPaymentIds = new Set<string>();
+  for (let i = payments.length - 1; i >= 0; i--) {
+    paidCentimes += toCentimes(payments[i].amount);
+    if (paidCentimes > payableCentimes) overpaidPaymentIds.add(payments[i].id);
+  }
+  return { ...getPaymentBalance(totalWage, paidCentimes / 100), overpaidPaymentIds };
+}
 
 export class PaymentService {
-  /**
-   * Record a payment for an employee
-   */
   static async recordPayment(userId: number, input: CreatePaymentInput): Promise<Payment> {
-    if (!input.employeeId) {
-      throw new Error('Employee ID is required');
+    if (!input.employeeId) throw new Error('Employee ID is required');
+    if (!isCurrencyAmount(input.amount) || input.amount <= 0) {
+      throw new Error('Payment must be a positive amount in whole centimes');
     }
-    if (input.amount <= 0) {
-      throw new Error('Payment amount must be greater than zero');
+    if (!isPayrollDate(input.periodStart) || !isPayrollDate(input.periodEnd) ||
+        !isPayrollDate(input.paymentDate) || input.periodStart > input.periodEnd) {
+      throw new Error('Invalid payment date or payroll period');
     }
-    if (!input.periodStart || !input.periodEnd) {
-      throw new Error('Period start and end dates are required');
-    }
-    if (input.periodStart > input.periodEnd) {
-      throw new Error('Period start must be before period end');
-    }
-
-    await assertEmployeeOwnedByUser(userId, input.employeeId);
-
-    return dbCreatePayment(userId, input);
+    return createPayment(userId, input);
   }
 
-  /**
-   * Get payment history for an employee
-   */
-  static async getEmployeePayments(
-    userId: number,
-    employeeId: string,
-    periodStart?: string,
-    periodEnd?: string
-  ): Promise<Payment[]> {
-    return dbGetPaymentsByEmployee(userId, employeeId, periodStart, periodEnd);
-  }
+  static getEmployeePayments = getPaymentsByEmployee;
+  static getPaidAmount = getTotalPaidForPeriod;
+  static deletePayment = deletePayment;
 
-  /**
-   * Get total amount already paid for a specific period
-   */
-  static async getPaidAmount(
-    userId: number,
-    employeeId: string,
-    periodStart: string,
-    periodEnd: string
-  ): Promise<number> {
-    return dbGetTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
-  }
-
-  /**
-   * Check if an employee is fully paid for a period
-   */
-static async isFullyPaid(
-     userId: number,
-     employeeId: string,
-     periodStart: string,
-     periodEnd: string,
-     totalWage: number
-   ): Promise<{ paid: number; remaining: number; isFullyPaid: boolean; isOverpaid: boolean; overpaidAmount: number }> {
-     const paid = await dbGetTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
-     const remaining = totalWage - paid;
-     const isOverpaid = remaining < 0;
-     return {
-       paid,
-       remaining,
-       isFullyPaid: remaining <= 0,
-       isOverpaid,
-       overpaidAmount: isOverpaid ? Math.abs(remaining) : 0,
-     };
-   }
-
-  /**
-   * Delete a payment record
-   */
-  static async deletePayment(userId: number, id: string): Promise<void> {
-    await dbDeletePayment(userId, id);
+  static async isFullyPaid(
+    userId: number, employeeId: string, periodStart: string, periodEnd: string, totalWage: number
+  ) {
+    const paid = await getTotalPaidForPeriod(userId, employeeId, periodStart, periodEnd);
+    return getPaymentBalance(totalWage, paid);
   }
 }

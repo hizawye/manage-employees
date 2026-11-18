@@ -89,6 +89,10 @@ export default {
 
   // Wages
   wages: {
+    adjustmentHint: 'Choose a day to add or edit an adjustment.',
+    invalidAmount: 'Enter an amount with up to two decimal places.',
+    adjustmentAmount: 'Adjustment amount (+ / −)',
+    unmarked: 'Unmarked',
     title: 'Wage Summary',
     wageDetails: 'Wage Details',
     thisMonth: 'This Month',
@@ -145,6 +149,7 @@ export default {
 
   // Profile
   profile: {
+    earnedWages: 'Wages earned',
     title: 'Profile',
     stats: 'Statistics',
     employeeStats: 'Employee Statistics',

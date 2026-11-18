@@ -4,16 +4,18 @@ import {
   upsertWageAdjustment as dbUpsertWageAdjustment,
 } from '../database/repositories';
 import { clearWageCache } from './WageCalculationService';
+import { isCurrencyAmount } from '../utils/money';
+import { isPayrollDate } from '../utils/payrollDate';
 
 export class WageAdjustmentService {
   static async saveAdjustment(userId: number, input: CreateWageAdjustmentInput): Promise<WageAdjustment> {
     if (!input.employeeId) {
       throw new Error('Employee ID is required');
     }
-    if (!input.date) {
+    if (!isPayrollDate(input.date)) {
       throw new Error('Date is required');
     }
-    if (!Number.isFinite(input.amount)) {
+    if (!isCurrencyAmount(input.amount)) {
       throw new Error('Adjustment amount must be a valid number');
     }
 

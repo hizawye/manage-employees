@@ -89,6 +89,10 @@ export default {
 
   // Wages - الأجور
   wages: {
+    adjustmentHint: 'اختر يوماً لإضافة تسوية الأجر أو تعديلها.',
+    invalidAmount: 'أدخل مبلغاً يحتوي على منزلتين عشريتين كحد أقصى.',
+    adjustmentAmount: 'مبلغ تسوية الأجر (+ / −)',
+    unmarked: 'غير مسجّل',
     title: 'ملخص الأجور',
     wageDetails: 'تفاصيل الأجور',
     thisMonth: 'هذا الشهر',
@@ -145,6 +149,7 @@ export default {
 
   // Profile - الملف الشخصي
   profile: {
+    earnedWages: 'الأجور المستحقة عن العمل',
     title: 'الملف الشخصي',
     stats: 'الإحصائيات',
     employeeStats: 'إحصائيات الموظفين',

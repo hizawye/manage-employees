@@ -44,6 +44,7 @@ export async function createPayment(userId: number, input: CreatePaymentInput): 
 
   return {
     ...input,
+    userId,
     id,
     createdAt: now,
   };
@@ -68,7 +69,7 @@ export async function getPaymentsByEmployee(
     params.push(periodEnd);
   }
 
-  query += ' ORDER BY payment_date DESC';
+  query += ' ORDER BY payment_date DESC, created_at DESC, rowid DESC';
 
   const rows = await db.getAllAsync<PaymentRow>(query, params);
   return rows.map(mapRowToPayment);
@@ -82,10 +83,10 @@ export async function getTotalPaidForPeriod(
 ): Promise<number> {
   const db = await getDatabase();
   const result = await db.getFirstAsync<{ total: number }>(
-    'SELECT SUM(amount) as total FROM payments WHERE user_id = ? AND employee_id = ? AND period_start = ? AND period_end = ?',
+    'SELECT SUM(CAST(ROUND(ROUND(amount, 2) * 100) AS INTEGER)) as total FROM payments WHERE user_id = ? AND employee_id = ? AND period_start = ? AND period_end = ?',
     [userId, employeeId, periodStart, periodEnd]
   );
-  return result?.total || 0;
+  return (result?.total ?? 0) / 100;
 }
 
 export async function deletePayment(userId: number, id: string): Promise<void> {

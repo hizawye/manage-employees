@@ -1,3 +1,4 @@
+import { parseISO } from 'date-fns';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, ScrollView, RefreshControl, Pressable, ActivityIndicator, Alert, I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -5,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useEmployees, useAttendanceStats } from '../../../src/hooks';
 import { StatCard } from '../../../src/components';
 import { EmployeeStatus } from '../../../src/models';
-import { formatCurrency, getWeekRange, getMonthRange } from '../../../src/utils/dateUtils';
+import { formatCurrency, getWeekRange, getMonthRange, getTodayString } from '../../../src/utils/dateUtils';
 import { calculateWagesForAllEmployees, getTotalWages } from '../../../src/services/WageCalculationService';
 import { t, getLocale, setLocale } from '../../../src/i18n';
 import { useAuth } from '../../../src/auth/useAuth';
@@ -18,17 +19,18 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout, isGuest } = useAuth();
   const { themeMode, setThemeMode } = useThemeContext();
-  const { employees: allEmployees, loading: loadingAll } = useEmployees();
-  const { employees: activeEmployees, loading: loadingActive } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees: allEmployees, loading: loadingAll, refresh: refreshEmployees } = useEmployees();
+  const activeCount = allEmployees.filter(employee => employee.status === EmployeeStatus.ACTIVE).length;
   const [refreshing, setRefreshing] = useState(false);
-  const [weeklyWages, setWeeklyWages] = useState(0);
-  const [monthlyWages, setMonthlyWages] = useState(0);
+  const [weeklyWages, setWeeklyWages] = useState<number | null>(null);
+  const [monthlyWages, setMonthlyWages] = useState<number | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [currentLocale, setCurrentLocale] = useState(getLocale());
 
-  const weekRange = useMemo(() => getWeekRange(), []);
-  const monthRange = useMemo(() => getMonthRange(), []);
-  const { stats: attendanceStats, loading: loadingAttendanceStats, refresh: refreshAttendanceStats } = useAttendanceStats(
+  const day = getTodayString();
+  const weekRange = useMemo(() => getWeekRange(parseISO(day)), [day]);
+  const monthRange = useMemo(() => getMonthRange(parseISO(day)), [day]);
+  const { stats: attendanceStats, error: attendanceError, loading: loadingAttendanceStats, refresh: refreshAttendanceStats } = useAttendanceStats(
     weekRange.start,
     weekRange.end,
     monthRange.start,
@@ -57,40 +59,42 @@ export default function ProfileScreen() {
     return allEmployees.filter(e => e.status === EmployeeStatus.INACTIVE).length;
   }, [allEmployees]);
 
-  const loadWageStats = useCallback(async () => {
-    if (!user || activeEmployees.length === 0) {
-      setWeeklyWages(0);
-      setMonthlyWages(0);
-      setLoadingStats(false);
-      return;
-    }
-
-    try {
-      setLoadingStats(true);
-
-      const [weeklyCalcs, monthlyCalcs] = await Promise.all([
-        calculateWagesForAllEmployees(user.id, activeEmployees, weekRange.start, weekRange.end),
-        calculateWagesForAllEmployees(user.id, activeEmployees, monthRange.start, monthRange.end),
-      ]);
-
-      setWeeklyWages(getTotalWages(weeklyCalcs));
-      setMonthlyWages(getTotalWages(monthlyCalcs));
-    } catch (error) {
-      console.error('Failed to load wage stats:', error);
-    } finally {
-      setLoadingStats(false);
-    }
-  }, [user, activeEmployees, weekRange, monthRange]);
-
   useEffect(() => {
-    loadWageStats();
-  }, [loadWageStats]);
+    let active = true;
+    const loadWageStats = async () => {
+      if (!user || allEmployees.length === 0) {
+        setWeeklyWages(0);
+        setMonthlyWages(0);
+        setLoadingStats(false);
+        return;
+      }
+
+      try {
+        setLoadingStats(true);
+
+        const [weeklyCalcs, monthlyCalcs] = await Promise.all([
+          calculateWagesForAllEmployees(user.id, allEmployees, weekRange.start, weekRange.end),
+          calculateWagesForAllEmployees(user.id, allEmployees, monthRange.start, monthRange.end),
+        ]);
+
+        if (!active) return;
+        setWeeklyWages(getTotalWages(weeklyCalcs));
+        setMonthlyWages(getTotalWages(monthlyCalcs));
+      } catch {
+        if (active) { setWeeklyWages(null); setMonthlyWages(null); }
+      } finally {
+        if (active) setLoadingStats(false);
+      }
+    };
+    void loadWageStats();
+    return () => { active = false; };
+  }, [user, allEmployees, weekRange, monthRange]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadWageStats(), refreshAttendanceStats()]);
+    await Promise.all([refreshEmployees(), refreshAttendanceStats()]);
     setRefreshing(false);
-  }, [loadWageStats, refreshAttendanceStats]);
+  }, [refreshEmployees, refreshAttendanceStats]);
 
   const weeklyAttendanceRate = useMemo(() => {
     return attendanceStats.weeklyTotal > 0
@@ -104,7 +108,7 @@ export default function ProfileScreen() {
       : 0;
   }, [attendanceStats.monthlyPresent, attendanceStats.monthlyTotal]);
 
-  if ((loadingAll || loadingActive || loadingStats || loadingAttendanceStats) && !refreshing) {
+  if ((loadingAll || loadingStats || loadingAttendanceStats) && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
@@ -173,7 +177,7 @@ export default function ProfileScreen() {
           <SectionHeader icon="account-group" title={t('profile.employeeStats')} />
           <View className="flex-row gap-3">
             <StatCard value={allEmployees.length} label={t('profile.totalEmployees')} icon="account-group" />
-            <StatCard value={activeEmployees.length} label={t('profile.activeEmployees')} color="#10b981" icon="account-check" />
+            <StatCard value={activeCount} label={t('profile.activeEmployees')} color="#10b981" icon="account-check" />
             <StatCard value={inactiveCount} label={t('profile.inactiveEmployees')} color="#ef4444" icon="account-off" />
           </View>
         </CardContent>
@@ -182,14 +186,14 @@ export default function ProfileScreen() {
       {/* Wage Stats */}
       <Card className="mb-4">
         <CardContent className="p-4">
-          <SectionHeader icon="cash-multiple" title={t('profile.wageStats')} />
+          <SectionHeader icon="cash-multiple" title={t('profile.earnedWages')} />
           <View className="flex-row items-center">
             <View className="flex-1 items-center py-2">
               <Text variant="muted" className="mb-2">
                 {t('profile.thisWeek')}
               </Text>
               <Text variant="h3" className="font-bold text-emerald-500">
-                {formatCurrency(weeklyWages)}
+                {weeklyWages === null ? '—' : formatCurrency(weeklyWages)}
               </Text>
             </View>
             <View className="w-px h-14 bg-border" />
@@ -198,7 +202,7 @@ export default function ProfileScreen() {
                 {t('profile.thisMonth')}
               </Text>
               <Text variant="h3" className="font-bold text-emerald-500">
-                {formatCurrency(monthlyWages)}
+                {monthlyWages === null ? '—' : formatCurrency(monthlyWages)}
               </Text>
             </View>
           </View>
@@ -215,7 +219,7 @@ export default function ProfileScreen() {
                 {t('profile.thisWeek')}
               </Text>
               <Text variant="h2" className="font-bold text-emerald-500">
-                {weeklyAttendanceRate}%
+                {attendanceError ? '—' : weeklyAttendanceRate + '%'}
               </Text>
               <Text variant="muted" className="mt-1">
                 {attendanceStats.weeklyPresent} / {attendanceStats.weeklyTotal}
@@ -226,7 +230,7 @@ export default function ProfileScreen() {
                 {t('profile.thisMonth')}
               </Text>
               <Text variant="h2" className="font-bold text-emerald-500">
-                {monthlyAttendanceRate}%
+                {attendanceError ? '—' : monthlyAttendanceRate + '%'}
               </Text>
               <Text variant="muted" className="mt-1">
                 {attendanceStats.monthlyPresent} / {attendanceStats.monthlyTotal}

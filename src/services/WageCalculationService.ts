@@ -1,8 +1,10 @@
 import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail, MonthlyDayData } from '../models';
 import { getAttendanceByEmployee, getWageAdjustmentsByEmployee } from '../database/repositories';
+import { toCentimes } from '../utils/money';
+import { isPayrollDate } from '../utils/payrollDate';
 
 // Cache for wage calculations
-const wageCalculationCache = new Map<string, { result: WageCalculation; timestamp: number }>();
+const wageCalculationCache = new Map<string, { result: Promise<WageCalculation>; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function cleanExpiredWageCache(): void {
@@ -75,7 +77,7 @@ export async function calculateWagesForPeriod(
 ): Promise<WageCalculation> {
   cleanExpiredWageCache();
   // Check cache first
-  const cacheKey = `${userId}-${employee.id}-${startDate}-${endDate}`;
+  const cacheKey = `${userId}-${employee.id}-${JSON.stringify([startDate, endDate, employee.name, employee.wageType, employee.wageRate])}`;
   const cached = wageCalculationCache.get(cacheKey);
   const now = Date.now();
 
@@ -83,108 +85,80 @@ export async function calculateWagesForPeriod(
     return cached.result;
   }
 
+  if (!isPayrollDate(startDate) || !isPayrollDate(endDate) || startDate > endDate) {
+    throw new Error('Invalid payroll period');
+  }
+
+  // Publish the pending read before awaiting SQLite. A write that clears the
+  // cache while this read is in flight must also invalidate the pending result.
+  const result = readWagesForPeriod(userId, employee, startDate, endDate);
+  wageCalculationCache.set(cacheKey, { result, timestamp: now });
+  try {
+    return await result;
+  } catch (error) {
+    if (wageCalculationCache.get(cacheKey)?.result === result) wageCalculationCache.delete(cacheKey);
+    throw error;
+  }
+}
+
+async function readWagesForPeriod(
+  userId: number, employee: Employee, startDate: string, endDate: string
+): Promise<WageCalculation> {
   const [attendanceRecords, adjustments] = await Promise.all([
     getAttendanceByEmployee(userId, employee.id, startDate, endDate),
     getWageAdjustmentsByEmployee(userId, employee.id, startDate, endDate),
   ]);
 
-  // Build a map of date -> attendance record for quick lookup
-  const attendanceMap = new Map<string, Attendance>();
-  for (const record of attendanceRecords) {
-    attendanceMap.set(record.date, record);
-  }
-
-  const adjustmentMap = new Map<string, { amount: number; note?: string }>();
-  for (const adjustment of adjustments) {
-    adjustmentMap.set(adjustment.date, { amount: adjustment.amount, note: adjustment.note });
-  }
-
-  // Generate ALL days in the period (including days with no attendance)
+  const attendanceMap = new Map(attendanceRecords.map((record) => [record.date, record]));
+  const adjustmentMap = new Map(adjustments.map((adjustment) => [adjustment.date, adjustment]));
   const details: WageDetail[] = [];
-  let totalWage = 0;
+  let totalCentimes = 0;
   let totalDaysPresent = 0;
   let totalDaysAbsent = 0;
   let totalHalfDays = 0;
   let totalHoursWorked = 0;
 
-  const start = new Date(startDate);
+  // These are calendar dates. Use UTC for the entire iteration, including DST boundaries.
   const end = new Date(endDate);
-
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = toISODate(d);
-    const record = attendanceMap.get(dateStr);
-    const adjustment = adjustmentMap.get(dateStr);
-
-    let wageEarned: number;
-    let status: AttendanceStatus;
-    let hoursWorked: number | undefined;
-
-    if (record) {
-      wageEarned = calculateWageForDay(employee, record);
-      status = record.status;
-      hoursWorked = record.hoursWorked;
-    } else {
-      // No attendance record for this day - not worked
-      wageEarned = 0;
-      status = AttendanceStatus.ABSENT;
-      hoursWorked = undefined;
-    }
-
-    if (adjustment) {
-      wageEarned += adjustment.amount;
-    }
-
-    const detail: WageDetail = {
-      date: dateStr,
-      status,
+  for (const day = new Date(startDate); day <= end; day.setUTCDate(day.getUTCDate() + 1)) {
+    const date = day.toISOString().slice(0, 10);
+    const record = attendanceMap.get(date);
+    const adjustment = adjustmentMap.get(date);
+    const earned = record ? toCentimes(calculateWageForDay(employee, record)) : 0;
+    const dayCentimes = earned + toCentimes(adjustment?.amount ?? 0);
+    const hoursWorked = record?.status === AttendanceStatus.ABSENT ? undefined : record?.hoursWorked;
+    details.push({
+      date,
+      hasAttendance: !!record,
+      status: record?.status ?? AttendanceStatus.ABSENT,
       hoursWorked,
-      wageEarned,
+      wageEarned: dayCentimes / 100,
       adjustment: adjustment?.amount,
       adjustmentNote: adjustment?.note,
-    };
-
-    details.push(detail);
-    totalWage += wageEarned;
-
-    if (record) {
-      switch (record.status) {
-        case AttendanceStatus.PRESENT:
-          totalDaysPresent++;
-          break;
-        case AttendanceStatus.ABSENT:
-          totalDaysAbsent++;
-          break;
-        case AttendanceStatus.HALF_DAY:
-          totalHalfDays++;
-          break;
-      }
-
-      if (record.hoursWorked) {
-        totalHoursWorked += record.hoursWorked;
-      }
-    } else {
-      totalDaysAbsent++;
+    });
+    totalCentimes += dayCentimes;
+    totalHoursWorked += hoursWorked ?? 0;
+    switch (record?.status) {
+      case AttendanceStatus.PRESENT: totalDaysPresent++; break;
+      case AttendanceStatus.HALF_DAY: totalHalfDays++; break;
+      case AttendanceStatus.ABSENT: totalDaysAbsent++; break;
     }
   }
 
-  const result: WageCalculation = {
+  return {
     employeeId: employee.id,
     employeeName: employee.name,
     wageType: employee.wageType,
     wageRate: employee.wageRate,
     period: { start: startDate, end: endDate },
     details,
-    totalWage,
+    totalWage: totalCentimes / 100,
     totalDaysPresent,
     totalDaysAbsent,
     totalHalfDays,
     totalHoursWorked: employee.wageType === WageType.HOURLY ? totalHoursWorked : undefined,
   };
 
-  // Cache the result
-  wageCalculationCache.set(cacheKey, { result, timestamp: now });
-
-  return result;
 }
 
 export async function calculateWagesForAllEmployees(
@@ -200,21 +174,13 @@ export async function calculateWagesForAllEmployees(
 }
 
 export function getTotalWages(calculations: WageCalculation[]): number {
-  return calculations.reduce((sum, calc) => sum + calc.totalWage, 0);
+  return calculations.reduce((sum, calc) => sum + toCentimes(calc.totalWage), 0) / 100;
 }
 
 export function getMonthlyDayData(calc: WageCalculation): MonthlyDayData[] {
   return calc.details.map((d) => ({
     ...d,
-    dayOfMonth: new Date(d.date).getDate(),
-    dayOfWeek: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    hasAttendance: d.status !== AttendanceStatus.ABSENT || d.hoursWorked !== undefined,
+    dayOfMonth: new Date(d.date).getUTCDate(),
+    dayOfWeek: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
   }));
-}
-
-function toISODate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }

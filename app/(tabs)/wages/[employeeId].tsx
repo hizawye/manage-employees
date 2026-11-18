@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { View, ScrollView, RefreshControl, Modal, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEmployee, useRefresh } from '../../../src/hooks';
+import { useRefresh } from '../../../src/hooks';
 import { useAuth } from '../../../src/auth/useAuth';
-import { WageCalculation, WageType, Payment, AttendanceStatus } from '../../../src/models';
+import { Employee, WageCalculation, WageDetail, WageType, Payment } from '../../../src/models';
 import {
   formatCurrency,
   formatDateShort,
@@ -13,28 +13,24 @@ import {
   getTodayString,
 } from '../../../src/utils/dateUtils';
 import { calculateWagesForPeriod } from '../../../src/services/WageCalculationService';
-import { PaymentService } from '../../../src/services/PaymentService';
+import { EmployeeService } from '../../../src/services/EmployeeService';
+import { getStatusLabel } from '../../../src/utils/attendanceUtils';
+import { isCurrencyAmount, toCentimes } from '../../../src/utils/money';
+import { parseLocalizedDecimal } from '../../../src/utils/numberUtils';
+import { getPaymentHistoryBalance, PaymentService } from '../../../src/services/PaymentService';
 import { WageAdjustmentService } from '../../../src/services/WageAdjustmentService';
 import { t } from '../../../src/i18n';
 import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
 
-type DayData = {
-  date: string;
-  dayOfWeek: string;
-  status: AttendanceStatus;
-  hoursWorked?: number;
-  wageEarned: number;
-  hasAdjustment?: boolean;
-};
-
 export default function EmployeeWageDetailScreen() {
   const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
   const { user } = useAuth();
-  const { employee, loading: loadingEmployee } = useEmployee(employeeId);
+  const [employee, setEmployee] = useState<Employee | null>(null);
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paidAmount, setPaidAmount] = useState(0);
+  const loadVersion = useRef(0);
+  const saving = useRef(false);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [payDialogVisible, setPayDialogVisible] = useState(false);
   const [payAmount, setPayAmount] = useState('');
@@ -48,103 +44,72 @@ export default function EmployeeWageDetailScreen() {
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustNote, setAdjustNote] = useState('');
 
-  const [monthData, setMonthData] = useState<DayData[]>([]);
-
-  const dateRange = useMemo(() => getMonthRange(), []);
-
   const loadWages = useCallback(async () => {
-    if (!employee || !user) {
-      setWageData(null);
-      setLoading(false);
-      return;
-    }
-
+    const version = ++loadVersion.current;
+    setError('');
+    setLoading(true);
     try {
-      setLoading(true);
-      const [result, paid, history] = await Promise.all([
-        calculateWagesForPeriod(user.id, employee, dateRange.start, dateRange.end),
-        PaymentService.getPaidAmount(user.id, employeeId, dateRange.start, dateRange.end),
-        PaymentService.getEmployeePayments(user.id, employeeId, dateRange.start, dateRange.end),
-      ]);
-      setWageData(result);
-      setPaidAmount(paid);
-      setPayments(history);
-
-      const days: DayData[] = [];
-      const start = new Date(dateRange.start);
-      const end = new Date(dateRange.end);
-      const detailMap = new Map<string, typeof result.details[0]>();
-      for (const d of result.details) {
-        detailMap.set(d.date, d);
-      }
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const rec = detailMap.get(dateStr);
-        const dow = d.toLocaleDateString('en-US', { weekday: 'short' });
-        if (rec) {
-          days.push({
-            date: dateStr,
-            dayOfWeek: dow,
-            status: rec.status,
-            hoursWorked: rec.hoursWorked,
-            wageEarned: rec.wageEarned + (rec.adjustment || 0),
-            hasAdjustment: !!rec.adjustment,
-          });
-        } else {
-          days.push({
-            date: dateStr,
-            dayOfWeek: dow,
-            status: AttendanceStatus.ABSENT,
-            wageEarned: 0,
-          });
+      const currentEmployee = user && employeeId
+        ? await EmployeeService.getEmployeeById(user.id, employeeId, true)
+        : null;
+      if (!user || !currentEmployee) {
+        if (version === loadVersion.current) {
+          setWageData(null);
+          setEmployee(null);
+          setPayments([]);
         }
+        return;
       }
-      setMonthData(days);
-    } catch (error) {
-      console.error('Failed to calculate wages:', error);
-      setError(error instanceof Error ? error.message : t('common.error'));
+      const { start, end } = getMonthRange();
+      const [result, history] = await Promise.all([
+        calculateWagesForPeriod(user.id, currentEmployee, start, end),
+        PaymentService.getEmployeePayments(user.id, employeeId, start, end),
+      ]);
+      if (version === loadVersion.current) {
+        setEmployee(currentEmployee);
+        setWageData(result);
+        setPayments(history);
+      }
+    } catch (cause) {
+      console.error('Failed to calculate wages:', cause);
+      if (version === loadVersion.current) {
+        setWageData(null);
+        setError(t('common.error'));
+      }
     } finally {
-      setLoading(false);
+      if (version === loadVersion.current) setLoading(false);
     }
-  }, [employee, user, dateRange, employeeId]);
+  }, [user, employeeId]);
 
-  useEffect(() => {
-    loadWages();
-  }, [loadWages]);
+  useFocusEffect(useCallback(() => {
+    void loadWages();
+    return () => { loadVersion.current++; };
+  }, [loadWages]));
 
   const { refreshing, onRefresh } = useRefresh(loadWages);
-
-  const remainingAmount = useMemo(() => {
-    if (!wageData) return 0;
-    return wageData.totalWage - paidAmount;
-  }, [wageData, paidAmount]);
-
-  const { isOverpaid, isFullyPaid, formattedRemaining, excessAmount } = useMemo(() => {
-     if (!wageData) return { isOverpaid: false, isFullyPaid: false, formattedRemaining: formatCurrency(0), excessAmount: 0 };
-     const remaining = wageData.totalWage - paidAmount;
-     const overpaid = remaining < 0;
-     return {
-       isOverpaid: overpaid,
-       isFullyPaid: remaining <= 0,
-       formattedRemaining: formatCurrency(remaining),
-       excessAmount: overpaid ? Math.abs(remaining) : 0,
-     };
-   }, [wageData, paidAmount]);
+  const { paid: paidAmount, remaining: remainingAmount, isOverpaid, isFullyPaid,
+    overpaidAmount: excessAmount, overpaidPaymentIds } = useMemo(
+    () => getPaymentHistoryBalance(wageData?.totalWage ?? 0, payments),
+    [wageData, payments]
+  );
+  const payment = parseLocalizedDecimal(payAmount);
+  const adjustment = parseLocalizedDecimal(adjustAmount);
+  const paymentValid = isCurrencyAmount(payment) && payment > 0;
+  const adjustmentValid = isCurrencyAmount(adjustment);
+  const projectedExcess = paymentValid
+    ? Math.max(0, toCentimes(payment) - toCentimes(remainingAmount)) / 100 : 0;
 
   const handlePay = async () => {
-    if (!user || !wageData) return;
-    const amount = parseFloat(payAmount);
-    if (isNaN(amount) || amount <= 0) return;
-
+    if (!user || !wageData || !paymentValid || saving.current) return;
+    saving.current = true;
     try {
       setPayLoading(true);
       await PaymentService.recordPayment(user.id, {
         userId: user.id,
-        employeeId,
-        amount,
-        periodStart: dateRange.start,
-        periodEnd: dateRange.end,
+        employeeId: wageData.employeeId,
+        amount: payment,
+        periodStart: wageData.period.start,
+        periodEnd: wageData.period.end,
         paymentDate: getTodayString(),
         notes: payNotes || undefined,
       });
@@ -154,8 +119,9 @@ export default function EmployeeWageDetailScreen() {
       await loadWages();
     } catch (error) {
       console.error('Failed to record payment:', error);
-      setError(error instanceof Error ? error.message : t('common.error'));
+      Alert.alert(t('common.error'));
     } finally {
+      saving.current = false;
       setPayLoading(false);
     }
   };
@@ -174,7 +140,7 @@ export default function EmployeeWageDetailScreen() {
             await loadWages();
           } catch (error) {
             console.error('Failed to delete payment:', error);
-            setError(error instanceof Error ? error.message : t('common.error'));
+            Alert.alert(t('common.error'));
           } finally {
             setDeletingPaymentId(null);
           }
@@ -184,17 +150,15 @@ export default function EmployeeWageDetailScreen() {
   };
 
   const handleAdjustDay = async () => {
-    if (!user || !selectedDate) return;
-    const amount = parseFloat(adjustAmount);
-    if (isNaN(amount)) return;
-
+    if (!user || !wageData || !selectedDate || !adjustmentValid || saving.current) return;
+    saving.current = true;
     try {
       setPayLoading(true);
       await WageAdjustmentService.saveAdjustment(user.id, {
         userId: user.id,
-        employeeId,
+        employeeId: wageData.employeeId,
         date: selectedDate,
-        amount,
+        amount: adjustment,
         note: adjustNote || undefined,
       });
       setAdjustDialogVisible(false);
@@ -203,30 +167,27 @@ export default function EmployeeWageDetailScreen() {
       await loadWages();
     } catch (error) {
       console.error('Failed to adjust:', error);
-      setError(error instanceof Error ? error.message : t('common.error'));
+      Alert.alert(t('common.error'));
     } finally {
+      saving.current = false;
       setPayLoading(false);
     }
   };
 
-  const openAdjustDialog = (date: string) => {
-    setSelectedDate(date);
-    setAdjustAmount('');
-    setAdjustNote('');
+  const openAdjustDialog = (day: WageDetail) => {
+    setSelectedDate(day.date);
+    setAdjustAmount(day.adjustment?.toString() ?? '');
+    setAdjustNote(day.adjustmentNote ?? '');
     setAdjustDialogVisible(true);
   };
 
   const openPayDialog = () => {
+    setPayAmount(remainingAmount > 0 ? remainingAmount.toFixed(2) : '');
+    setPayNotes('');
     setPayDialogVisible(true);
   };
 
-  const workedDays = useMemo(() => {
-    return monthData.filter(
-      (d) => d.status !== AttendanceStatus.ABSENT || d.hasAdjustment
-    );
-  }, [monthData]);
-
-  if ((loadingEmployee || loading) && !refreshing) {
+  if (loading && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#3b82f6" />
@@ -237,7 +198,8 @@ export default function EmployeeWageDetailScreen() {
   if (!employee || !wageData) {
     return (
       <View className="flex-1 justify-center items-center p-4">
-        <Text className="text-destructive text-center">{t('employee.employeeNotFound')}</Text>
+        <Text className="text-destructive text-center">{error || t('employee.employeeNotFound')}</Text>
+        <Button variant="outline" onPress={onRefresh}>{t('common.retry')}</Button>
       </View>
     );
   }
@@ -259,12 +221,6 @@ export default function EmployeeWageDetailScreen() {
           </Text>
         </View>
 
-        {error ? (
-          <View className="mx-4 mt-4 rounded-lg bg-destructive px-4 py-3">
-            <Text className="text-destructive-foreground text-sm">{error}</Text>
-          </View>
-        ) : null}
-
         <View className="mx-4 mt-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
           <View className="p-4">
             <View className="items-center mb-4">
@@ -274,34 +230,20 @@ export default function EmployeeWageDetailScreen() {
               </Text>
             </View>
 
-{paidAmount > 0 && (
-               <>
-                 <View className="flex-row justify-between items-center mb-1">
-                   <Text variant="p" className="text-muted-foreground">
-                     {t('wages.paid')}:
-                   </Text>
-                   <Text variant="p" className="font-semibold text-emerald-500">
-                     {formatCurrency(paidAmount)}
-                   </Text>
-                 </View>
-                 <View className="flex-row justify-between items-center mb-3">
-                   <Text variant="p" className="text-muted-foreground">
-                     {isOverpaid ? t('wages.overpaid') : t('wages.remaining')}:
-                   </Text>
-                   <Text variant="p" className={`font-semibold ${isOverpaid ? 'text-amber-500' : isFullyPaid ? 'text-emerald-500' : 'text-red-500'}`}>
-                     {formattedRemaining}
-                   </Text>
-                 </View>
-                 {isOverpaid && (
-                   <View className="mb-3 p-2 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-                     <Text className="text-sm text-amber-600 text-center">
-                       ⚠️ {t('wages.overpaymentWarning', { excess: formatCurrency(excessAmount) })}
-                     </Text>
-                   </View>
-                 )}
-                 <View className="border-t border-border pt-2" />
-               </>
-             )}
+            {paidAmount > 0 && (
+              <View className="border-b border-border pb-2">
+                <View className="flex-row justify-between items-center mb-1">
+                  <Text variant="muted">{t('wages.paid')}</Text>
+                  <Text className="font-semibold text-emerald-500">{formatCurrency(paidAmount)}</Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text variant="muted">{isOverpaid ? t('wages.overpaid') : t('wages.remaining')}</Text>
+                  <Text className="font-semibold text-foreground">
+                    {formatCurrency(isOverpaid ? excessAmount : remainingAmount)}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <View className="flex-row justify-around pt-2">
               <View className="items-center">
@@ -340,27 +282,18 @@ export default function EmployeeWageDetailScreen() {
               )}
             </View>
 
-{wageData.totalWage > 0 && (
-               <Button
-                 onPress={openPayDialog}
-                 className="mt-4"
-                 variant={isFullyPaid ? 'warning' : 'default'}
-               >
-                 {isFullyPaid ? t('wages.addAdditionalPayment') : t('wages.markAsPaid')}
-               </Button>
-             )}
-
-             {isFullyPaid && !isOverpaid && (
-               <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-                 <Text className="text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
-               </View>
-             )}
-
-             {isOverpaid && (
-               <View className="mt-4 items-center py-2 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-                 <Text className="text-amber-600 font-bold">{t('wages.overpaid')}: {formatCurrency(excessAmount)}</Text>
-               </View>
-             )}
+            {wageData.totalWage > 0 && (
+              <Button
+                onPress={openPayDialog}
+                className="mt-4"
+                variant={isFullyPaid ? 'warning' : 'default'}
+              >
+                {isFullyPaid ? t('wages.addAdditionalPayment') : t('wages.markAsPaid')}
+              </Button>
+            )}
+            {isFullyPaid && !isOverpaid && (
+              <Text className="mt-4 text-center text-emerald-500 font-bold">{t('wages.fullyPaid')}</Text>
+            )}
           </View>
         </View>
 
@@ -370,37 +303,30 @@ export default function EmployeeWageDetailScreen() {
               <Text variant="large" className="font-semibold text-foreground mb-3">
                 {t('wages.paymentHistory')}
               </Text>
-{payments.map((p) => {
-                 const isOverpaid = p.amount > remainingAmount;
-                 return (
-                 <View key={p.id} className="flex-row justify-between items-center py-1">
-                   <Text variant="muted" className="text-sm">
-                     {formatDate(p.paymentDate)}
-                   </Text>
-                   <View className="flex-row items-center gap-2">
-                     <Text variant="p" className={`font-semibold ${isOverpaid ? 'text-amber-500' : 'text-emerald-500'}`}>
-                       {formatCurrency(p.amount)}
-                     </Text>
-                     {isOverpaid && (
-	                     <Text className="text-[8px] font-semibold text-amber-600">!</Text>
-	                     )}
-	                     <Pressable
-                          onPress={() => handleDeletePayment(p.id)}
-                          className="p-1"
-                          accessibilityRole="button"
-                          accessibilityLabel={t('wages.deletePaymentTitle')}
-                          disabled={deletingPaymentId === p.id}
-                        >
-	                       {deletingPaymentId === p.id ? (
-                            <ActivityIndicator size="small" color="#ef4444" />
-                          ) : (
-                            <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
-                          )}
-	                     </Pressable>
-                   </View>
-                 </View>
-                 );
-               })}
+              {payments.map((payment) => (
+                <View key={payment.id} className="flex-row justify-between items-center py-1">
+                  <Text variant="muted">{formatDate(payment.paymentDate)}</Text>
+                  <View className="flex-row items-center gap-2">
+                    {overpaidPaymentIds.has(payment.id) && (
+                      <Text className="text-xs text-amber-500">{t('wages.overpaid')}</Text>
+                    )}
+                    <Text className="font-semibold text-foreground">{formatCurrency(payment.amount)}</Text>
+                    <Pressable
+                      onPress={() => handleDeletePayment(payment.id)}
+                      className="p-2"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('wages.deletePaymentTitle')}
+                      disabled={deletingPaymentId === payment.id}
+                    >
+                      {deletingPaymentId === payment.id ? (
+                        <ActivityIndicator size="small" color="#ef4444" />
+                      ) : (
+                        <MaterialCommunityIcons name="delete-outline" size={18} className="text-destructive" />
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -409,73 +335,29 @@ export default function EmployeeWageDetailScreen() {
           {t('wages.dailyBreakdown')}
         </Text>
 
+        <Text variant="muted" className="px-4 mb-2">{t('wages.adjustmentHint')}</Text>
         <View className="mx-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
-          <View className="p-0">
-            {workedDays.length === 0 ? (
-              <View className="py-6 items-center">
-                <Text className="text-muted-foreground text-sm">
-                  {t('wages.noAttendanceRecords')}
-                </Text>
+          {wageData.details.map((day) => (
+            <Pressable
+              key={day.date}
+              onPress={() => openAdjustDialog(day)}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('wages.adjustWage')} · ${formatDate(day.date)}`}
+              className="flex-row justify-between items-center px-4 py-2.5 border-b border-border"
+            >
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-foreground">{formatDateShort(day.date)}</Text>
+                <Text variant="muted">{day.hasAttendance ? getStatusLabel(day.status) : t('wages.unmarked')}</Text>
               </View>
-            ) : (
-              workedDays.map((day) => {
-                const isWeekend = ['Sat', 'Sun'].includes(day.dayOfWeek);
-                return (
-                  <Pressable
-                    key={day.date}
-                    onPress={() => {
-                      if (day.status === AttendanceStatus.ABSENT && !day.hasAdjustment) {
-                        openAdjustDialog(day.date);
-                      }
-                    }}
-                    className={`flex-row justify-between items-center px-4 py-2.5 ${
-                      isWeekend ? 'bg-muted/15' : ''
-                    } border-b border-border`}
-                  >
-                    <View className="flex-1">
-                      <Text className="text-sm font-medium text-foreground">
-                        {formatDateShort(day.date)}
-                      </Text>
-                      <View className="flex-row items-center gap-2 mt-0.5">
-                        <View
-                          className={`px-2 py-0.5 rounded-full ${
-                            day.status === AttendanceStatus.PRESENT
-                              ? 'bg-emerald-500/15'
-                              : day.status === AttendanceStatus.HALF_DAY
-                              ? 'bg-amber-500/15'
-                              : 'bg-red-500/15'
-                          } self-start min-w-[28px] items-center`}
-                        >
-                          <Text className="text-[8px] font-semibold leading-[8px] text-center" style={{ color: day.status === AttendanceStatus.PRESENT ? '#15803d' : day.status === AttendanceStatus.HALF_DAY ? '#b45309' : '#991b1b' }}>
-                            {day.status === AttendanceStatus.PRESENT
-                              ? 'P'
-                              : day.status === AttendanceStatus.HALF_DAY
-                              ? 'H'
-                              : 'A'}
-                          </Text>
-                        </View>
-                        {day.status === AttendanceStatus.HALF_DAY && (
-                          <Text className="text-[10px] text-muted-foreground">
-                            {t('attendance.halfDay')}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-sm font-semibold text-foreground">
-                        {formatCurrency(day.wageEarned)}
-                      </Text>
-                      {day.hasAdjustment && (
-                        <Text className="text-[10px] text-emerald-500 font-medium">
-                          {t('wages.adjustment')}
-                        </Text>
-                      )}
-                    </View>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
+              <View className="items-end">
+                <Text className="text-sm font-semibold text-foreground">{formatCurrency(day.wageEarned)}</Text>
+                {day.adjustment !== undefined && (
+                  <Text variant="muted">{t('wages.adjustment')} · {formatCurrency(day.adjustment)}</Text>
+                )}
+              </View>
+              <MaterialCommunityIcons name="pencil-outline" size={16} className="ms-2 text-muted-foreground" />
+            </Pressable>
+          ))}
         </View>
       </ScrollView>
 
@@ -493,32 +375,30 @@ export default function EmployeeWageDetailScreen() {
             <Text variant="p" className="text-muted-foreground mb-1">
               {t('wages.totalWage')}: {formatCurrency(wageData.totalWage)}
             </Text>
-<Text variant="p" className="text-muted-foreground mb-4">
-               {isOverpaid
-                 ? `${t('wages.overpaid')}: ${formatCurrency(excessAmount)}`
-                 : `${t('wages.remaining')}: ${formatCurrency(remainingAmount)}`}
-             </Text>
-             <TextInput
-               placeholder={t('wages.paymentAmount')}
-               value={payAmount}
-               onChangeText={setPayAmount}
-               keyboardType="decimal-pad"
-               placeholderTextColor="hsl(215 16% 47%)"
-               className={`w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground mb-1 ${
-                 parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid
-                   ? 'border-amber-500'
-                   : 'border-border'
-               }`}
-             />
-             {parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid && (
-               <View className="flex-row items-center gap-1.5 mb-2">
-                 <Text className="text-xs text-amber-500">⚠️</Text>
-                 <Text className="text-xs text-amber-500">{t('wages.overpaymentWarning', { excess: formatCurrency(parseFloat(payAmount) - remainingAmount) })}</Text>
-               </View>
-             )}
-             {parseFloat(payAmount) < 0 && (
-               <Text className="text-xs text-destructive mb-2">{t('validation.invalidNumber')}</Text>
-             )}
+            <Text variant="muted" className="mb-4">
+              {isOverpaid
+                ? `${t('wages.overpaid')}: ${formatCurrency(excessAmount)}`
+                : `${t('wages.remaining')}: ${formatCurrency(remainingAmount)}`}
+            </Text>
+            <TextInput
+              placeholder={t('wages.paymentAmount')}
+              accessibilityLabel={t('wages.paymentAmount')}
+              value={payAmount}
+              onChangeText={setPayAmount}
+              keyboardType="decimal-pad"
+              placeholderTextColor="hsl(215 16% 47%)"
+              className={`w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground mb-1 ${projectedExcess > 0 ? 'border-amber-500' : 'border-border'}`}
+            />
+            {projectedExcess > 0 && (
+              <Text className="text-xs text-amber-500 mb-2">
+                {t('wages.overpaymentWarning', { excess: formatCurrency(projectedExcess) })}
+              </Text>
+            )}
+            {payAmount.length > 0 && !paymentValid && (
+              <Text className="text-xs text-destructive mb-2">
+                {isCurrencyAmount(payment) && payment <= 0 ? t('validation.invalidNumber') : t('wages.invalidAmount')}
+              </Text>
+            )}
             <TextInput
               placeholder={t('wages.notesOptional')}
               value={payNotes}
@@ -532,17 +412,15 @@ export default function EmployeeWageDetailScreen() {
               <Button variant="outline" className="flex-1" onPress={() => setPayDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>
-<Button
-                 className="flex-1"
-                 onPress={handlePay}
-                 isLoading={payLoading}
-                 disabled={payLoading || parseFloat(payAmount) <= 0}
-                 variant={parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid ? 'warning' : 'default'}
-               >
-                 {parseFloat(payAmount) > 0 && parseFloat(payAmount) > remainingAmount && !isOverpaid
-	                   ? t('wages.confirmOverpayment')
-                   : t('wages.confirmPayment')}
-               </Button>
+              <Button
+                className="flex-1"
+                onPress={handlePay}
+                isLoading={payLoading}
+                disabled={!paymentValid}
+                variant={projectedExcess > 0 ? 'warning' : 'default'}
+              >
+                {projectedExcess > 0 ? t('wages.confirmOverpayment') : t('wages.confirmPayment')}
+              </Button>
             </View>
           </View>
         </View>
@@ -560,16 +438,20 @@ export default function EmployeeWageDetailScreen() {
               {t('wages.adjustWage')}
             </Text>
             <Text variant="p" className="text-muted-foreground mb-4">
-              {t('wages.adjustmentNote')}
+              {formatDate(selectedDate || wageData.period.start)}
             </Text>
             <TextInput
-              placeholder="0.00"
+              placeholder={t('wages.adjustmentAmount')}
+              accessibilityLabel={t('wages.adjustmentAmount')}
               value={adjustAmount}
               onChangeText={setAdjustAmount}
-              keyboardType="decimal-pad"
+              keyboardType="numeric"
               placeholderTextColor="hsl(215 16% 47%)"
               className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground mb-2"
             />
+            {adjustAmount.length > 0 && !adjustmentValid && (
+              <Text className="text-xs text-destructive mb-2">{t('wages.invalidAmount')}</Text>
+            )}
             <TextInput
               placeholder={t('wages.adjustmentNote')}
               value={adjustNote}
@@ -583,7 +465,7 @@ export default function EmployeeWageDetailScreen() {
               <Button variant="outline" className="flex-1" onPress={() => setAdjustDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button className="flex-1" onPress={handleAdjustDay} isLoading={payLoading}>
+              <Button className="flex-1" onPress={handleAdjustDay} isLoading={payLoading} disabled={!adjustmentValid}>
                 {t('common.save')}
               </Button>
             </View>
