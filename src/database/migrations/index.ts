@@ -1,3 +1,4 @@
+import { addPayrollAudit } from './009_add_payroll_audit';
 import * as SQLite from 'expo-sqlite';
 import { initialMigration } from './001_initial';
 import { addUsersMigration } from './002_add_users';
@@ -23,6 +24,7 @@ export const migrations: Migration[] = [
   addPaymentsTableMigration,
   repairUserIsolationMigration,
   addWageAdjustmentsTableMigration,
+  addPayrollAudit,
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

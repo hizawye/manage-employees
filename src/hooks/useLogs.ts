@@ -1,82 +1,66 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Log } from '../models';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Log, LogCategory } from '../models';
 import { LogService } from '../services/LogService';
 import { useAuth } from '../auth/useAuth';
+import { t } from '../i18n';
 
 const PAGE_SIZE = 50;
+type Page = {
+  key: string;
+  logs: Log[];
+  loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
+  error: string | null;
+};
 
-export function useLogs(entityType?: 'employee' | 'attendance') {
+export function useLogs(category?: LogCategory) {
   const { user } = useAuth();
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-
-  const loadLogs = useCallback(async (refresh = false) => {
-    if (!user) {
-      setLogs([]);
-      setLoading(false);
-      return;
-    }
-
+  const owner = user?.id;
+  const key = JSON.stringify([owner, category]);
+  const [page, setPage] = useState<Page>();
+  const version = useRef(0);
+  const loadingNext = useRef(false);
+  const load = useCallback(async (before?: Log) => {
+    if (owner === undefined || (before && loadingNext.current)) return;
+    const token = ++version.current;
+    loadingNext.current = !!before;
+    setPage(prev => ({
+      key, logs: prev?.key === key ? prev.logs : [], hasMore: false,
+      loading: !before, loadingMore: !!before, error: null,
+    }));
     try {
-      if (refresh) {
-        setLoading(true);
-        setPage(0);
-      } else {
-        setLoadingMore(true);
-      }
-      setError(null);
-
-      const offset = refresh ? 0 : page * PAGE_SIZE;
-      const newLogs = await LogService.getLogs(user.id, PAGE_SIZE, offset);
-
-      // Client-side filtering
-      let filteredLogs = newLogs;
-      if (entityType) {
-        filteredLogs = newLogs.filter(l => l.entityType === entityType);
-      }
-
-      if (refresh) {
-        setLogs(filteredLogs);
-        setPage(1);
-      } else {
-        setLogs(prev => [...prev, ...filteredLogs]);
-        setPage(prev => prev + 1);
-      }
-
-      setHasMore(newLogs.length === PAGE_SIZE);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load logs');
+      const rows = await LogService.getPage(owner, PAGE_SIZE + 1, category, before);
+      if (token !== version.current) return;
+      setPage(prev => ({
+        key, logs: [...(before && prev?.key === key ? prev.logs : []), ...rows.slice(0, PAGE_SIZE)],
+        hasMore: rows.length > PAGE_SIZE, error: null, loading: false, loadingMore: false,
+      }));
+    } catch {
+      if (token === version.current) setPage(prev => ({
+        key, logs: prev?.key === key ? prev.logs : [], error: t('history.loadError'),
+        hasMore: !!before, loading: false, loadingMore: false,
+      }));
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (token === version.current) loadingNext.current = false;
     }
-  }, [user, entityType, page]);
-
+  }, [owner, category, key]);
+  const invalidate = useCallback(() => {
+    version.current++;
+    loadingNext.current = false;
+  }, []);
   useEffect(() => {
-    loadLogs(true);
-  }, [loadLogs]);
-
-  const refresh = useCallback(() => {
-    return loadLogs(true);
-  }, [loadLogs]);
-
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      return loadLogs(false);
-    }
-  }, [loadingMore, hasMore, loadLogs]);
-
+    void load();
+    return invalidate;
+  }, [load, invalidate]);
+  const visible = page?.key === key ? page : undefined;
+  const refresh = useCallback(() => load(), [load]);
+  const loadMore = () => {
+    if (visible?.hasMore) return load(visible.logs[visible.logs.length - 1]);
+  };
   return {
-    logs,
-    loading,
-    loadingMore,
-    error,
-    hasMore,
-    refresh,
-    loadMore,
+    logs: visible?.logs ?? [], loading: visible?.loading ?? owner !== undefined,
+    loadingMore: visible?.loadingMore ?? false, hasMore: visible?.hasMore ?? false,
+    error: visible?.error ?? null, refresh, loadMore,
   };
 }

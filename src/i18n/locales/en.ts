@@ -218,6 +218,9 @@ export default {
     notGuest: 'You are not logged in as guest',
   },
   history: {
+    filterPayroll: 'Payroll',
+    loadError: 'Could not load the activity log.',
+    unknownEmployee: 'Employee',
     title: 'Audit Log',
     empty: 'No activity logs found',
     filterAll: 'All Actions',
@@ -225,6 +228,11 @@ export default {
     filterAttendance: 'Attendance',
     details: 'Details',
     logTemplates: {
+      create_payment: 'Recorded {{amount}} for {{name}}',
+      delete_payment: 'Removed payment of {{amount}} for {{name}}',
+      create_adjustment: 'Adjusted wages for {{name}} by {{amount}}',
+      update_adjustment: 'Changed the adjustment for {{name}} from {{previous}} to {{amount}}',
+      delete_adjustment: 'Removed the {{amount}} adjustment for {{name}}',
       create_employee: 'Added employee: {{name}}',
       update_employee: 'Updated employee: {{name}}',
       delete_employee: 'Deleted employee: {{name}}',

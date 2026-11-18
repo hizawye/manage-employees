@@ -218,6 +218,9 @@ export default {
     notGuest: 'أنت لست مسجلاً كضيف',
   },
   history: {
+    filterPayroll: 'الأجور',
+    loadError: 'تعذّر تحميل سجل العمليات.',
+    unknownEmployee: 'موظف',
     title: 'سجل النشاط',
     empty: 'لا توجد سجلات نشاط',
     filterAll: 'كل الأنشطة',
@@ -225,6 +228,11 @@ export default {
     filterAttendance: 'الحضور',
     details: 'التفاصيل',
     logTemplates: {
+      create_payment: 'تم تسجيل دفعة بقيمة {{amount}} للموظف {{name}}',
+      delete_payment: 'تم حذف دفعة بقيمة {{amount}} للموظف {{name}}',
+      create_adjustment: 'تمت تسوية أجر {{name}} بمبلغ {{amount}}',
+      update_adjustment: 'تم تعديل تسوية أجر {{name}} من {{previous}} إلى {{amount}}',
+      delete_adjustment: 'تم حذف تسوية أجر {{name}} البالغة {{amount}}',
       create_employee: 'تم إضافة الموظف: {{name}}',
       update_employee: 'تم تحديث بيانات الموظف: {{name}}',
       delete_employee: 'تم حذف الموظف: {{name}}',

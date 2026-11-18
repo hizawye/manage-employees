@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../index';
-import { Log, CreateLogInput } from '../../models';
+import { Log, LogCategory, CreateLogInput } from '../../models';
 
 interface LogRow {
     id: string;
@@ -19,7 +19,7 @@ function mapRowToLog(row: LogRow): Log {
         userId: row.user_id,
         action: row.action,
         description: row.description,
-        entityType: row.entity_type as any || undefined,
+        entityType: row.entity_type === 'employee' || row.entity_type === 'attendance' || row.entity_type === 'payroll' ? row.entity_type : undefined,
         entityId: row.entity_id || undefined,
         details: row.details || undefined,
         createdAt: row.created_at,
@@ -73,6 +73,25 @@ export async function getLogs(
     params.push(limit, offset);
 
     const rows = await db.getAllAsync<LogRow>(query, params);
+    return rows.map(mapRowToLog);
+}
+
+export async function getLogPage(userId: number, limit: number, category?: LogCategory, before?: Pick<Log, 'createdAt' | 'id'>): Promise<Log[]> {
+    const db = await getDatabase();
+    const conditions = ['user_id = ?'];
+    const params: (number | string)[] = [userId];
+    if (category) {
+        conditions.push('entity_type = ?');
+        params.push(category);
+    }
+    if (before) {
+        conditions.push('(created_at, id) < (?, ?)');
+        params.push(before.createdAt, before.id);
+    }
+    const rows = await db.getAllAsync<LogRow>(
+        `SELECT * FROM logs WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC, id DESC LIMIT ?`,
+        [...params, limit],
+    );
     return rows.map(mapRowToLog);
 }
 

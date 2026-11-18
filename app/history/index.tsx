@@ -3,20 +3,22 @@ import { View, FlatList, RefreshControl, Pressable, ActivityIndicator, I18nManag
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { format } from 'date-fns';
+import { formatCurrency, formatDate } from '../../src/utils/dateUtils';
 import { useLogs, useRefresh } from '../../src/hooks';
-import { Log, LogActionType } from '../../src/models';
-import { t } from '../../src/i18n';
+import { Log, LogActionType, LogCategory } from '../../src/models';
+import { getLocale, t } from '../../src/i18n';
 import { Text } from '../../src/components/ui/text';
 import { Card, CardContent } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Badge } from '../../src/components/ui/badge';
 import { useAuth } from '../../src/auth/useAuth';
 
-type FilterType = 'all' | 'employee' | 'attendance';
+type FilterType = 'all' | LogCategory;
+const filters = { all: 'history.filterAll', employee: 'history.filterEmployee', attendance: 'history.filterAttendance', payroll: 'history.filterPayroll' } as const;
 
 export default function HistoryScreen() {
     const router = useRouter();
+    const backIcon = I18nManager.isRTL ? 'arrow-right' : 'arrow-left';
     const { user, isLoading } = useAuth();
     const [filter, setFilter] = useState<FilterType>('all');
 
@@ -54,6 +56,18 @@ export default function HistoryScreen() {
                     return t('history.logTemplates.mark_attendance', { name, status });
                 case LogActionType.UPDATE_ATTENDANCE:
                     return t('history.logTemplates.update_attendance', { name, status });
+                case LogActionType.DELETE_ATTENDANCE:
+                    return t('history.logTemplates.delete_attendance');
+                case LogActionType.CREATE_PAYMENT:
+                case LogActionType.DELETE_PAYMENT:
+                case LogActionType.CREATE_ADJUSTMENT:
+                case LogActionType.UPDATE_ADJUSTMENT:
+                case LogActionType.DELETE_ADJUSTMENT:
+                    return t('history.logTemplates.' + item.action, {
+                        name: details.employeeName || t('history.unknownEmployee'),
+                        amount: formatCurrency(details.amount),
+                        previous: formatCurrency(details.previousAmount ?? 0),
+                    });
                 default:
                     return item.description;
             }
@@ -84,12 +98,12 @@ export default function HistoryScreen() {
                         <View className="flex-row items-center gap-2">
                             <MaterialCommunityIcons name={icon} size={22} className={iconColor} />
                             <Text variant="muted" className="text-sm">
-                                {format(new Date(item.createdAt), 'MMM dd, HH:mm')}
+                                {formatDate(item.createdAt)} · {new Date(item.createdAt).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })}
                             </Text>
                         </View>
                         {item.entityType && (
                             <Badge variant="secondary">
-                                {item.entityType === 'employee' ? t('history.filterEmployee') : item.entityType === 'attendance' ? t('history.filterAttendance') : item.entityType}
+                                {t(filters[item.entityType])}
                             </Badge>
                         )}
                     </View>
@@ -109,6 +123,12 @@ export default function HistoryScreen() {
                 </View>
             );
         }
+        if (error && logs.length) {
+            return <View className="items-center p-4">
+                <Text className="text-destructive">{error}</Text>
+                <Button variant="ghost" onPress={hasMore ? loadMore : refresh}>{t('common.retry')}</Button>
+            </View>;
+        }
         if (hasMore && logs.length > 0) {
             return (
                 <View className="py-4 items-center">
@@ -126,7 +146,7 @@ export default function HistoryScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             <View className="flex-row items-center px-2 py-2 bg-card border-b border-border">
-                <Pressable onPress={() => router.back()} className="p-2">
+                <Pressable accessibilityRole="button" accessibilityLabel={t('common.goBack')} onPress={() => router.back()} className="p-2">
                     <MaterialCommunityIcons name={backIcon} size={24} className="text-foreground" />
                 </Pressable>
                 <Text variant="h3" className="font-semibold ml-2 text-foreground">
@@ -134,17 +154,18 @@ export default function HistoryScreen() {
                 </Text>
             </View>
 
-            <View className="flex-row p-4 gap-2">
-                {(['all', 'employee', 'attendance'] as FilterType[]).map((f) => (
+            <View className="flex-row flex-wrap px-3 py-3 gap-1">
+                {(Object.keys(filters) as FilterType[]).map((f) => (
                     <Pressable
                         key={f}
+                        accessibilityRole="button" accessibilityState={{ selected: filter === f }}
                         onPress={() => setFilter(f)}
                         className={`flex-1 py-2 rounded-lg items-center justify-center border ${
                             filter === f ? 'bg-primary border-primary' : 'bg-card border-border'
                         }`}
                     >
                         <Text className={`text-sm font-medium ${filter === f ? 'text-primary-foreground' : 'text-foreground'}`}>
-                            {f === 'all' ? t('history.filterAll') : f === 'employee' ? t('history.filterEmployee') : t('history.filterAttendance')}
+                            {t(filters[f])}
                         </Text>
                     </Pressable>
                 ))}
@@ -155,9 +176,10 @@ export default function HistoryScreen() {
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
                     <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
-            ) : error && !loading ? (
+            ) : error && !loading && logs.length === 0 ? (
                 <View className="flex-1 justify-center items-center p-5 min-h-[200px]">
                     <Text className="text-destructive text-center">{error}</Text>
+                    <Button variant="ghost" onPress={refresh}>{t('common.retry')}</Button>
                 </View>
             ) : (
                 <FlatList
@@ -179,4 +201,3 @@ export default function HistoryScreen() {
         </SafeAreaView>
     );
 }
-    const backIcon = I18nManager.isRTL ? 'arrow-right' : 'arrow-left';

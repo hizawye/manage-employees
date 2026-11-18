@@ -1,7 +1,9 @@
 import { Log, CreateLogInput } from '../models';
-import { getLogs as dbGetLogs, createLog as dbCreateLog, clearLogs as dbClearLogs } from '../database/repositories';
+import { getLogPage, getLogs as dbGetLogs, createLog as dbCreateLog, clearLogs as dbClearLogs } from '../database/repositories';
 
 export class LogService {
+  static getPage = getLogPage;
+
   static async getLogs(
     userId: number,
     limit: number = 50,
