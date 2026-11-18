@@ -1,3 +1,4 @@
+import { isClosedPeriodError } from '../../../src/database/repositories/FrozenWageRepository';
 import { useState, useCallback, useMemo } from 'react';
 import { View, FlatList, RefreshControl, Pressable, TextInput, ActivityIndicator, I18nManager } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -42,7 +43,7 @@ function ShiftHoursInput({ savedHours, disabled, onSave }: {
 export default function AttendanceScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(getTodayString());
-  const { employees, loading: loadingEmployees, error: employeeError, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE);
+  const { employees, loading: loadingEmployees, error: employeeError, refresh: refreshEmployees } = useEmployees(EmployeeStatus.ACTIVE, selectedDate);
   const { attendance, loading: loadingAttendance, error, markAttendance, refresh } = useAttendanceByDate(selectedDate);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -81,7 +82,7 @@ export default function AttendanceScreen() {
       await markAttendance(employeeId, status, hoursWorked);
       return true;
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : t('common.error'));
+      setLocalError(isClosedPeriodError(error) ? t('periods.locked') : error instanceof Error ? error.message : t('common.error'));
       return false;
     } finally {
       setSavingId(null);
@@ -99,7 +100,7 @@ export default function AttendanceScreen() {
         }
       }
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : t('common.error'));
+      setLocalError(isClosedPeriodError(error) ? t('periods.locked') : error instanceof Error ? error.message : t('common.error'));
     } finally {
       setBulkSaving(false);
     }

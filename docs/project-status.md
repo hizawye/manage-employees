@@ -1,5 +1,11 @@
 # Project Status
 
+## Workforce tools (1.1)
+
+The Work tab brings together schedules, availability, open shifts, leave, clock entries, employee CSV import and reports. Pay periods can be reviewed, closed and reopened. See [the workflow and research notes](workforce-features.md) for the manager flow and report date conventions.
+
+The 1.1 verification run passed 88 tests in 23 suites. It covers upgrading a populated version-9 database, repeat imports, overnight work across a month boundary, and corrections after reopening a pay period.
+
 ## November 18, 2026
 
 - Employees can be filtered by active or inactive status and searched by name, role or phone number. Search accepts Arabic and Latin digits. Returning from an edit refreshes the directory and the employee detail screen.

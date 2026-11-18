@@ -4,9 +4,33 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import en from './locales/en';
 import ar from './locales/ar';
 
+import { periodsEn, periodsAr } from './workforce/periods';
+import { coverageEn, coverageAr } from './workforce/coverage';
+import { hubEn, hubAr } from './workforce/hub';
+
+import { scheduleEn, scheduleAr } from './workforce/schedule';
+import { leaveEn, leaveAr } from './workforce/leave';
+import { clockEn, clockAr } from './workforce/clock';
+
 const i18n = new I18n({
-  en,
-  ar,
+  en: {
+    ...en,
+    work: hubEn,
+    schedule: scheduleEn,
+    leave: leaveEn,
+    clock: clockEn,
+    coverage: coverageEn,
+    periods: periodsEn,
+  },
+  ar: {
+    ...ar,
+    work: hubAr,
+    schedule: scheduleAr,
+    leave: leaveAr,
+    clock: clockAr,
+    coverage: coverageAr,
+    periods: periodsAr,
+  },
 });
 
 i18n.enableFallback = true;
@@ -49,7 +73,10 @@ if (isRTL) {
 }
 
 // Translation function
-export function t(key: string, options?: Record<string, string | number>): string {
+export function t(
+  key: string,
+  options?: Record<string, string | number>
+): string {
   return i18n.t(key, options);
 }
 

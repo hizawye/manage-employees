@@ -1,4 +1,5 @@
 import { parseISO } from 'date-fns';
+import appConfig from '../../../app.json';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, ScrollView, RefreshControl, Pressable, ActivityIndicator, Alert, I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -298,7 +299,7 @@ export default function ProfileScreen() {
               {t('profile.version')}
             </Text>
             <Text variant="p" className="font-semibold text-foreground">
-              1.0.0
+              {appConfig.expo.version}
             </Text>
           </View>
         </CardContent>

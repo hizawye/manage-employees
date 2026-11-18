@@ -14,7 +14,7 @@ import { Badge } from '../../src/components/ui/badge';
 import { useAuth } from '../../src/auth/useAuth';
 
 type FilterType = 'all' | LogCategory;
-const filters = { all: 'history.filterAll', employee: 'history.filterEmployee', attendance: 'history.filterAttendance', payroll: 'history.filterPayroll' } as const;
+const filters = { all: 'history.filterAll', employee: 'history.filterEmployee', attendance: 'history.filterAttendance', payroll: 'history.filterPayroll', workforce: 'work.title' } as const;
 
 export default function HistoryScreen() {
     const router = useRouter();
@@ -45,6 +45,13 @@ export default function HistoryScreen() {
             else if (status === 'absent') status = t('attendance.absent');
             else if (status === 'half_day') status = t('attendance.halfDay');
 
+            if (item.entityType === 'workforce') {
+                const prefix = item.action.split('_')[0];
+                const sections: Record<string,string> = {shift:'schedule',template:'schedule',availability:'schedule',leave:'leave',clock:'clock',period:'periods',offer:'coverage'};
+                const section = sections[prefix];
+                if (!section) return item.description;
+                return t(`${section}.${item.action}`, { name: name || t('history.unknownEmployee'), date: details.date || '' });
+            }
             switch (item.action) {
                 case LogActionType.CREATE_EMPLOYEE:
                     return t('history.logTemplates.create_employee', { name });

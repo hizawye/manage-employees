@@ -7,9 +7,10 @@ import { WageAdjustmentService } from '../../src/services/WageAdjustmentService'
 import { PaymentService } from '../../src/services/PaymentService';
 
 jest.setTimeout(20000);
+let mockMonth: string | undefined;
 
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ employeeId: 'emp' }),
+  useLocalSearchParams: () => ({ employeeId: 'emp', month: mockMonth }),
   useFocusEffect: (callback: () => () => void) => jest.requireActual('react').useEffect(callback, [callback]),
 }));
 jest.mock('../../src/auth/useAuth', () => {
@@ -27,7 +28,7 @@ jest.mock('../../src/services/PaymentService', () => ({
   PaymentService: { getEmployeePayments: jest.fn(), recordPayment: jest.fn() },
 }));
 jest.mock('../../src/utils/dateUtils', () => ({
-  getMonthRange: () => ({ start: '2025-11-01', end: '2025-11-30' }),
+  getMonthRange: (date?: Date) => date ? jest.requireActual('../../src/utils/dateUtils').getMonthRange(date) : ({ start: '2025-11-01', end: '2025-11-30' }),
   getTodayString: () => '2025-11-10',
   formatDate: (date: string) => date,
   formatDateShort: (date: string) => date,
@@ -43,6 +44,7 @@ const employee = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockMonth = undefined;
   jest.mocked(EmployeeService.getEmployeeById).mockResolvedValue(employee);
   jest.mocked(calculateWagesForPeriod).mockResolvedValue({
     employeeId: employee.id, employeeName: employee.name, wageType: employee.wageType,
@@ -87,4 +89,22 @@ it('prefills the outstanding balance and requires a valid explicit confirmation 
     userId: 10, employeeId: 'emp', amount: 126.5, periodStart: '2025-11-01', periodEnd: '2025-11-30',
     paymentDate: '2025-11-10', notes: undefined,
   }));
+});
+
+
+it('opens a completed pay period and applies its payment against those exact dates', async () => {
+  mockMonth = '2025-02';
+  const period = { start: '2025-02-01', end: '2025-02-28' };
+  jest.mocked(calculateWagesForPeriod).mockResolvedValue({
+    employeeId: employee.id, employeeName: employee.name, wageType: WageType.DAILY, wageRate: 100,
+    totalWage: 75, period, details: [], totalDaysPresent: 1, totalDaysAbsent: 0, totalHalfDays: 0,
+  });
+  render(<WageDetailScreen />);
+  fireEvent.press(await screen.findByText('wages.markAsPaid'));
+  expect(calculateWagesForPeriod).toHaveBeenCalledWith(10, employee, period.start, period.end);
+  expect(PaymentService.getEmployeePayments).toHaveBeenCalledWith(10, employee.id, period.start, period.end);
+  fireEvent.press(screen.getByText('wages.confirmPayment'));
+  await waitFor(() => expect(PaymentService.recordPayment).toHaveBeenCalledWith(10, expect.objectContaining({
+    amount: 75, periodStart: period.start, periodEnd: period.end, paymentDate: '2025-11-10',
+  })));
 });

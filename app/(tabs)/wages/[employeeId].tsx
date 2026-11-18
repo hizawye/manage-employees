@@ -1,3 +1,6 @@
+import { parseISO } from 'date-fns';
+import { isPayrollDate } from '../../../src/utils/payrollDate';
+import { isClosedPeriodError } from '../../../src/database/repositories/FrozenWageRepository';
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { View, ScrollView, RefreshControl, Modal, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -24,7 +27,7 @@ import { Text } from '../../../src/components/ui/text';
 import { Button } from '../../../src/components/ui/button';
 
 export default function EmployeeWageDetailScreen() {
-  const { employeeId } = useLocalSearchParams<{ employeeId: string }>();
+  const { employeeId, month } = useLocalSearchParams<{ employeeId: string; month?: string }>();
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [wageData, setWageData] = useState<WageCalculation | null>(null);
@@ -60,7 +63,8 @@ export default function EmployeeWageDetailScreen() {
         }
         return;
       }
-      const { start, end } = getMonthRange();
+      const requestedMonth = typeof month === 'string' && isPayrollDate(month + '-01') ? parseISO(month + '-01') : undefined;
+      const { start, end } = getMonthRange(requestedMonth);
       const [result, history] = await Promise.all([
         calculateWagesForPeriod(user.id, currentEmployee, start, end),
         PaymentService.getEmployeePayments(user.id, employeeId, start, end),
@@ -79,7 +83,7 @@ export default function EmployeeWageDetailScreen() {
     } finally {
       if (version === loadVersion.current) setLoading(false);
     }
-  }, [user, employeeId]);
+  }, [user, employeeId, month]);
 
   useFocusEffect(useCallback(() => {
     void loadWages();
@@ -166,8 +170,7 @@ export default function EmployeeWageDetailScreen() {
       setAdjustNote('');
       await loadWages();
     } catch (error) {
-      console.error('Failed to adjust:', error);
-      Alert.alert(t('common.error'));
+      Alert.alert(t('common.error'), isClosedPeriodError(error) ? t('periods.locked') : t('periods.failed'));
     } finally {
       saving.current = false;
       setPayLoading(false);
@@ -217,14 +220,14 @@ export default function EmployeeWageDetailScreen() {
             {employee.name}
           </Text>
           <Text variant="muted" className="mt-1">
-            {employee.role} · {employee.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(employee.wageRate)}
+            {employee.role} · {wageData.wageType === WageType.DAILY ? t('attendance.daily') : t('attendance.hourly')}: {formatCurrency(wageData.wageRate)}
           </Text>
         </View>
 
         <View className="mx-4 mt-4 mb-2 rounded-xl border border-border bg-card overflow-hidden">
           <View className="p-4">
             <View className="items-center mb-4">
-              <Text variant="muted">{t('wages.totalWage')}</Text>
+              <Text variant="muted">{t('wages.totalWage')} · {formatDateShort(wageData.period.start)} – {formatDate(wageData.period.end)}</Text>
               <Text variant="h2" className="font-bold text-emerald-500 mt-1">
                 {formatCurrency(wageData.totalWage)}
               </Text>
@@ -270,7 +273,7 @@ export default function EmployeeWageDetailScreen() {
                   {t('wages.daysAbsent')}
                 </Text>
               </View>
-              {employee.wageType === WageType.HOURLY && (
+              {wageData.wageType === WageType.HOURLY && (
                 <View className="items-center">
                   <Text variant="h3" className="font-bold text-foreground">
                     {wageData.totalHoursWorked?.toFixed(1) || 0}

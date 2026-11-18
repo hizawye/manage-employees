@@ -1,3 +1,4 @@
+import { isClosedPeriodError } from '../../../src/database/repositories/FrozenWageRepository';
 import { View, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEmployee, useEmployees } from '../../../src/hooks';
@@ -26,8 +27,12 @@ export default function EmployeeDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             if (id) {
-              await removeEmployee(id);
-              router.back();
+              try {
+                await removeEmployee(id);
+                router.back();
+              } catch (error) {
+                Alert.alert(t('common.error'), isClosedPeriodError(error) ? t('periods.locked') : t('common.error'));
+              }
             }
           },
         },

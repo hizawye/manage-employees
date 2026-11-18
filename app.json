@@ -2,7 +2,7 @@
   "expo": {
     "name": "Manage Employees",
     "slug": "manage-employees",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -30,7 +30,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW"
       ],
-      "supportsRTL": true
+      "supportsRTL": true,
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png",

@@ -35,6 +35,7 @@ export default function TabLayout() {
   const tabs = [
     { name: 'employees', title: t('tabs.employees'), icon: 'account-group' as const },
     { name: 'attendance', title: t('tabs.attendance'), icon: 'calendar-check' as const },
+    { name: 'work', title: t('work.title'), icon: 'briefcase-clock' as const },
     { name: 'wages', title: t('tabs.wages'), icon: 'cash-multiple' as const },
     { name: 'profile', title: t('tabs.profile'), icon: 'account-circle' as const },
   ];
@@ -68,7 +69,7 @@ export default function TabLayout() {
           name={tab.name}
           options={{
             title: tab.title,
-            headerShown: false,
+            headerShown: tab.name === 'work',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name={tab.icon} size={size} color={color} />
             ),
