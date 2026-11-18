@@ -1,0 +1,103 @@
+name: Publish Android release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-stable-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate stable tag and version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$GITHUB_REF_TYPE" == tag ]] || { echo 'Select an existing release tag.'; exit 1; }
+          git merge-base --is-ancestor HEAD origin/main
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
+          python3 scripts/release/android_version.py "$GITHUB_REF_NAME" --published-pages "$RUNNER_TEMP/releases.json"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-android-release-${{ hashFiles('package-lock.json', 'android/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-android-release-
+            ${{ runner.os }}-gradle-
+      - name: Test tagged source
+        run: |
+          npm ci
+          npx --no-install expo install --check
+          npm run typecheck
+          npm run lint
+          npm run test:ci
+      - name: Build universal APK
+        env:
+          NODE_ENV: production
+        run: |
+          npx --no-install expo prebuild --platform android --no-install
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --max-workers=2 -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+      - name: Sign and verify public APKs
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
+        run: |
+          umask 077
+          export ANDROID_RELEASE_KEYSTORE="$RUNNER_TEMP/publisher.p12"
+          trap 'rm -f -- "$ANDROID_RELEASE_KEYSTORE"' EXIT
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$ANDROID_RELEASE_KEYSTORE"
+          unset KEYSTORE_B64
+          scripts/package-android-release.sh "$GITHUB_REF_NAME" android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/release-assets"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-android-release
+          path: ${{ runner.temp }}/release-assets/
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+          overwrite: true
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-android-release
+          path: ${{ runner.temp }}/release-assets
+      - name: Publish verified assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: scripts/release/publish-android.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-assets"
