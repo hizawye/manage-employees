@@ -1,5 +1,8 @@
 export default {
   updates: {
+    migrationTitle: 'Finish signing migration',
+    migrationHint: 'Install the standard APK for this version to complete the one-time switch. Your employee records stay on this device.',
+    migrationAction: 'Download standard APK',
     installHint: 'Open the downloaded APK to finish updating.',
     title: 'App updates',
     available: 'Version %{version} is available.',

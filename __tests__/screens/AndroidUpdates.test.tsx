@@ -18,6 +18,11 @@ import {
   fetchPublishedVersion,
 } from '../../src/updates/androidRelease';
 
+let mockNeedsBridge = false;
+jest.mock('../../src/updates/signingMigration', () => ({
+  needsSigningMigration: () => mockNeedsBridge,
+}));
+
 let mockPathname = '/employees';
 jest.mock('expo-router', () => ({ usePathname: () => mockPathname }));
 jest.mock('expo-application', () => ({ nativeApplicationVersion: '1.2.3' }));
@@ -54,6 +59,7 @@ function mount(profile = false) {
 beforeEach(async () => {
   await AsyncStorage.clear();
   fetchVersion.mockReset();
+  mockNeedsBridge = false;
   Platform.OS = 'android';
   AppState.currentState = 'active';
 });
@@ -162,4 +168,25 @@ test('coalesces foreground requests and automatically refreshes an expired check
     resume();
   });
   expect(await screen.findByText('updates.available 1.4.0')).toBeTruthy();
+});
+
+test('a signing bridge offers only the standard APK for its installed version, even offline or on the latest release', async () => {
+  mockNeedsBridge = true;
+  fetchVersion
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValueOnce('1.2.3');
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  const banner = mount();
+  expect(screen.getByText('updates.migrationTitle')).toBeTruthy();
+  fireEvent.press(screen.getByText('updates.migrationAction'));
+  expect(open).toHaveBeenCalledWith(apkUrl('1.2.3'));
+  await act(async () => {});
+  expect(screen.queryByText('updates.dismiss')).toBeNull();
+  banner.unmount();
+  mount(true);
+  expect(screen.getAllByText('updates.migrationTitle')).toHaveLength(1);
+  fireEvent.press(screen.getByText('updates.migrationAction'));
+  expect(open).toHaveBeenLastCalledWith(apkUrl('1.2.3'));
+  expect(screen.queryByText('updates.current')).toBeNull();
+  await act(async () => {});
 });

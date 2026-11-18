@@ -1,5 +1,8 @@
 export default {
   updates: {
+    migrationTitle: 'إكمال نقل توقيع التطبيق',
+    migrationHint: 'ثبّت ملف APK الأساسي لهذا الإصدار لإتمام الانتقال مرة واحدة. تبقى سجلات الموظفين على هذا الجهاز.',
+    migrationAction: 'تنزيل ملف APK الأساسي',
     installHint: 'افتح ملف APK بعد التنزيل لإكمال التحديث.',
     title: 'تحديثات التطبيق',
     available: 'يتوفر الإصدار %{version}.',

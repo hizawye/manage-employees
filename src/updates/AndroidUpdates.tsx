@@ -15,6 +15,7 @@ import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import appConfig from '../../app.json';
 import { t } from '../i18n';
+import { needsSigningMigration } from './signingMigration';
 import { Button } from '../components/ui/button';
 import { Text } from '../components/ui/text';
 import {
@@ -69,6 +70,7 @@ interface UpdateState {
   result: CheckResult;
   checking: boolean;
   dismissed: string | null;
+  migration: boolean;
   check: (manual?: boolean) => Promise<void>;
   dismiss: (version: string) => void;
 }
@@ -79,6 +81,7 @@ export function AndroidUpdatesProvider({ children }: PropsWithChildren) {
     Platform.OS === 'android' &&
     Constants.executionEnvironment !== ExecutionEnvironment.StoreClient &&
     isReleaseVersion(installedVersion);
+  const [migration] = useState(needsSigningMigration);
   const [result, setResult] = useState<CheckResult>(idle);
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -174,7 +177,11 @@ export function AndroidUpdatesProvider({ children }: PropsWithChildren) {
   }, []);
   return (
     <Updates.Provider
-      value={enabled ? { result, checking, dismissed, check, dismiss } : null}
+      value={
+        enabled
+          ? { result, checking, dismissed, check, dismiss, migration }
+          : null
+      }
     >
       {children}
     </Updates.Provider>
@@ -189,9 +196,35 @@ async function download(version: string) {
   }
 }
 
+function SigningMigrationNotice() {
+  return (
+    <>
+      <Text
+        accessibilityLiveRegion="polite"
+        className="font-semibold text-foreground"
+      >
+        {t('updates.migrationTitle')}
+      </Text>
+      <Text variant="muted">{t('updates.migrationHint')}</Text>
+      <Button onPress={() => void download(installedVersion)}>
+        {t('updates.migrationAction')}
+      </Button>
+    </>
+  );
+}
+
 export function AndroidUpdateBanner() {
   const pathname = usePathname();
   const updates = useContext(Updates);
+  if (updates?.migration && pathname !== '/profile') {
+    return (
+      <SafeAreaView edges={['bottom']} className="bg-card">
+        <View className="border-t border-border px-4 py-2 gap-2">
+          <SigningMigrationNotice />
+        </View>
+      </SafeAreaView>
+    );
+  }
   const version = updates?.result.available;
   if (
     !updates ||
@@ -229,6 +262,12 @@ export function AndroidUpdateBanner() {
 export function AndroidUpdateSettings() {
   const updates = useContext(Updates);
   if (!updates) return null;
+  if (updates.migration)
+    return (
+      <View className="gap-2 mt-2 pt-3 border-t border-border">
+        <SigningMigrationNotice />
+      </View>
+    );
   const { result, checking } = updates;
   return (
     <View className="gap-2 mt-2 pt-3 border-t border-border">
