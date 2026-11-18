@@ -40,12 +40,9 @@ verify_signer() {
 "$signer" verify --min-sdk-version 28 "$tmp/$bridge"
 for api in 24 28 35; do verify_signer "$tmp/$apk_name" "$api"; done
 for api in 28 35; do verify_signer "$tmp/$bridge" "$api"; done
-lineage=$("$signer" lineage --in "$tmp/$bridge" --print-certs | sed -n 's/^Signer #[[:digit:]]* in lineage certificate SHA-256 digest: //p')
-old_cert=fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
-if [[ $lineage != "$old_cert"$'\n'"$ANDROID_RELEASE_CERT_SHA256" ]]; then
-  echo 'Migration APK does not carry the original-to-publisher certificate lineage' >&2
-  exit 1
-fi
+# Validate signature capabilities on the packaged artifact, after signing.
+"$signer" lineage --in "$tmp/$bridge" --print-certs | \
+  python3 scripts/release/verify_lineage.py "$ANDROID_RELEASE_CERT_SHA256"
 for file in "$apk_name" "$bridge"; do "$build_tools/zipalign" -c -P 16 4 "$tmp/$file"; done
 python3 scripts/release/android_version.py "$tag" --apk "$tmp/$apk_name" \
   --cert "$ANDROID_RELEASE_CERT_SHA256" --aapt "$build_tools/aapt"

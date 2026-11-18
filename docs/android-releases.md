@@ -28,7 +28,7 @@ gh workflow run android-release.yml --ref v1.1.1
 | New install on Android 7.0 or newer, or update to a publisher-signed install | `Manage-Employees.apk` |
 | One-time upgrade of an original development install on Android 9.0 or newer, retaining its local workspace | `Manage-Employees-Migrate-Android9Plus.apk` |
 
-The migration download carries the original-to-publisher signing lineage. After the first migration, use the standard download for later releases. Android 7 and 8 cannot use signing-key rotation to migrate the historical development install in place. Uninstalling the old app deletes its local data.
+For an original development installation, install the migration APK, then **immediately install `Manage-Employees.apk` from the same release**. Both confirmations are required, including when Android shows the same version name. The first installation preserves app data and transfers ownership of its existing AndroidX signature permission. The second installation completes the transition to the private publisher certificate. These two steps were verified on a Samsung Galaxy S23 Ultra. Use `Manage-Employees.apk` for every later update. Android 7 and 8 cannot use signing-key rotation to migrate the historical development install in place. Uninstalling the old app deletes its local data.
 
 Both APKs use the same compiled app. `release.json` records package, version, version code, the publisher certificate fingerprint and the APK hashes. `SHA256SUMS` contains the checksums for both downloads.
 
