@@ -89,7 +89,7 @@ export class EmployeeService {
     if (!input.role?.trim()) {
       throw new Error('Employee role is required');
     }
-    if (input.wageRate <= 0) {
+    if (!Number.isFinite(input.wageRate) || input.wageRate <= 0) {
       throw new Error('Wage rate must be greater than 0');
     }
 
@@ -116,7 +116,7 @@ export class EmployeeService {
     if (input.role !== undefined && !input.role.trim()) {
       throw new Error('Employee role cannot be empty');
     }
-    if (input.wageRate !== undefined && input.wageRate <= 0) {
+    if (input.wageRate !== undefined && (!Number.isFinite(input.wageRate) || input.wageRate <= 0)) {
       throw new Error('Wage rate must be greater than 0');
     }
 

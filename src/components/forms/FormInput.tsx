@@ -32,6 +32,7 @@ export function FormInput({
         {label}
       </Text>
       <TextInput
+        accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
         onBlur={onBlur}

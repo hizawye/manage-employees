@@ -31,6 +31,11 @@ export default {
 
   // Employee
   employee: {
+    clearSearch: 'Clear search',
+    allStatuses: 'All',
+    noMatches: 'No matching employees',
+    clearFilters: 'Clear filters',
+    loadError: 'Could not load employees.',
     title: 'Employees',
     addEmployee: 'Add Employee',
     editEmployee: 'Edit Employee',

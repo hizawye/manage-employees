@@ -1,3 +1,4 @@
+import { parseLocalizedDecimal } from '../../../../src/utils/numberUtils';
 import { useState, useEffect } from 'react';
 import { View, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,12 +13,12 @@ import { Text } from '../../../../src/components/ui/text';
 import { Button } from '../../../../src/components/ui/button';
 
 const employeeSchema = z.object({
-  name: z.string().min(1, 'validation.nameRequired'),
-  phone: z.string().min(1, 'validation.phoneRequired'),
-  role: z.string().min(1, 'validation.roleRequired'),
+  name: z.string().trim().min(1, 'validation.nameRequired'),
+  phone: z.string().trim().min(1, 'validation.phoneRequired'),
+  role: z.string().trim().min(1, 'validation.roleRequired'),
   wageType: z.nativeEnum(WageType),
   wageRate: z.string().min(1, 'validation.wageRateRequired').refine(
-    (val) => !isNaN(Number(val)) && Number(val) > 0,
+    (val) => parseLocalizedDecimal(val) > 0,
     'validation.invalidNumber'
   ),
   status: z.nativeEnum(EmployeeStatus),
@@ -78,7 +79,7 @@ export default function EditEmployeeScreen() {
         phone: data.phone,
         role: data.role,
         wageType: data.wageType,
-        wageRate: Number(data.wageRate),
+        wageRate: parseLocalizedDecimal(data.wageRate),
         status: data.status,
         notes: data.notes,
       });

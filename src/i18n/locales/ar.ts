@@ -31,6 +31,11 @@ export default {
 
   // Employee - الموظف
   employee: {
+    clearSearch: 'مسح البحث',
+    allStatuses: 'الكل',
+    noMatches: 'لا يوجد موظفون مطابقون',
+    clearFilters: 'مسح عوامل التصفية',
+    loadError: 'تعذّر تحميل قائمة الموظفين.',
     title: 'الموظفين',
     addEmployee: 'إضافة موظف',
     editEmployee: 'تعديل الموظف',

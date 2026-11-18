@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { View, TextInput, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cn } from "@/lib/utils";
@@ -29,12 +30,13 @@ export function SearchInput({
       <TextInput
         value={value}
         onChangeText={onChangeText}
+        accessibilityLabel={placeholder}
         placeholder={placeholder}
         placeholderTextColor="hsl(215 16% 47%)"
         className="flex-1 text-base text-foreground h-full"
       />
       {showClearButton && (
-        <TouchableOpacity onPress={handleClear} className="p-1">
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('employee.clearSearch')} hitSlop={10} onPress={handleClear} className="p-1">
           <MaterialCommunityIcons
             name="close-circle"
             size={20}
