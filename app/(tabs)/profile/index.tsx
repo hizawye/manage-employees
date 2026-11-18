@@ -1,5 +1,5 @@
 import { parseISO } from 'date-fns';
-import appConfig from '../../../app.json';
+import { AndroidUpdateSettings, installedVersion } from '../../../src/updates/AndroidUpdates';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, ScrollView, RefreshControl, Pressable, ActivityIndicator, Alert, I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -299,9 +299,10 @@ export default function ProfileScreen() {
               {t('profile.version')}
             </Text>
             <Text variant="p" className="font-semibold text-foreground">
-              {appConfig.expo.version}
+              {installedVersion}
             </Text>
           </View>
+          <AndroidUpdateSettings />
         </CardContent>
       </Card>
 

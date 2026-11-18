@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components';
+import { AndroidUpdateBanner, AndroidUpdatesProvider } from '../src/updates/AndroidUpdates';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { ThemeProvider, useThemeContext } from '../src/theme';
 
@@ -29,6 +30,7 @@ function AppContent() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+      <AndroidUpdateBanner />
     </View>
   );
 }
@@ -53,7 +55,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <AppContent />
+            <AndroidUpdatesProvider>
+              <AppContent />
+            </AndroidUpdatesProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

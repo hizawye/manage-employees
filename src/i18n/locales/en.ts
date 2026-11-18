@@ -1,4 +1,16 @@
 export default {
+  updates: {
+    installHint: 'Open the downloaded APK to finish updating.',
+    title: 'App updates',
+    available: 'Version %{version} is available.',
+    download: 'Download update',
+    dismiss: 'Dismiss',
+    check: 'Check for updates',
+    current: 'You have the latest version.',
+    empty: 'No Android release has been published yet.',
+    error: 'Could not check for updates. Check your connection and try again.',
+    openError: 'Could not open the download. Try again in a moment.',
+  },
   // Common
   common: {
     retry: 'Retry',
