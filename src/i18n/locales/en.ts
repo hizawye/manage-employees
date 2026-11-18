@@ -1,6 +1,7 @@
 export default {
   // Common
   common: {
+    retry: 'Retry',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
@@ -57,6 +58,13 @@ export default {
 
   // Attendance
   attendance: {
+    invalidHours: 'Enter more than zero and up to {{max}} hours.',
+    recordedHours: '{{hours}} hours worked',
+    previousDay: 'Previous day',
+    nextDay: 'Next day',
+    previousWeek: 'Previous week',
+    nextWeek: 'Next week',
+    historyLoadError: 'Could not load attendance history.',
     title: 'Mark Attendance',
     history: 'Attendance History',
     viewHistory: 'View History',

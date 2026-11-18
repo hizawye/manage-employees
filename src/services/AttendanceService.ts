@@ -8,6 +8,7 @@ import {
 import { clearWageCache } from './WageCalculationService';
 import { EmployeeService } from './EmployeeService';
 import { APP_CONFIG } from '../config/app';
+import { t } from '../i18n';
 
 // Cache for attendance records
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -96,18 +97,15 @@ export class AttendanceService {
 
     const normalizedInput: CreateAttendanceInput = { ...input };
 
-    if (employee.wageType === WageType.HOURLY) {
-      if (normalizedInput.status === AttendanceStatus.ABSENT) {
-        normalizedInput.hoursWorked = undefined;
-      } else if (normalizedInput.hoursWorked === undefined) {
-        normalizedInput.hoursWorked =
-          normalizedInput.status === AttendanceStatus.HALF_DAY
-            ? APP_CONFIG.attendance.defaultHoursPerDay / 2
-            : APP_CONFIG.attendance.defaultHoursPerDay;
+    if (employee.wageType === WageType.HOURLY && input.status !== AttendanceStatus.ABSENT) {
+      const { defaultHoursPerDay, minHoursPerDay, maxHoursPerDay } = APP_CONFIG.attendance;
+      const hours = input.hoursWorked ??
+        (input.status === AttendanceStatus.HALF_DAY ? defaultHoursPerDay / 2 : defaultHoursPerDay);
+      if (!Number.isFinite(hours) || hours <= minHoursPerDay || hours > maxHoursPerDay) {
+        throw new Error(t('attendance.invalidHours', { max: maxHoursPerDay }));
       }
-
-      this.validateHoursWorked(normalizedInput.hoursWorked);
-    } else if (normalizedInput.status === AttendanceStatus.ABSENT) {
+      normalizedInput.hoursWorked = hours;
+    } else {
       normalizedInput.hoursWorked = undefined;
     }
 
@@ -120,18 +118,6 @@ export class AttendanceService {
     clearWageCache(userId, normalizedInput.employeeId);
 
     return result;
-  }
-
-  private static validateHoursWorked(hoursWorked: number | undefined): void {
-    if (hoursWorked === undefined) {
-      throw new Error('Hours worked is required');
-    }
-    if (hoursWorked <= APP_CONFIG.attendance.minHoursPerDay) {
-      throw new Error('Hours worked must be greater than 0');
-    }
-    if (hoursWorked > APP_CONFIG.attendance.maxHoursPerDay) {
-      throw new Error('Hours worked cannot exceed 24 hours');
-    }
   }
 
   /**

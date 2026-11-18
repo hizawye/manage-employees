@@ -28,7 +28,8 @@ function mapRowToAttendance(row: AttendanceRow): Attendance {
     employeeId: row.employee_id,
     date: row.date,
     status: row.status as AttendanceStatus,
-    hoursWorked: row.hours_worked || undefined,
+    // Older versions could retain the previous shift's hours on an absence.
+    hoursWorked: row.status === AttendanceStatus.ABSENT ? undefined : row.hours_worked ?? undefined,
     notes: row.notes || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -44,6 +45,7 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
 
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
+  const hoursWorked = input.status === AttendanceStatus.ABSENT ? undefined : input.hoursWorked;
 
   await db.runAsync(
     `INSERT INTO attendance (id, user_id, employee_id, date, status, hours_worked, notes, created_at, updated_at)
@@ -54,7 +56,7 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
       input.employeeId,
       input.date,
       input.status,
-      input.hoursWorked || null,
+      hoursWorked ?? null,
       input.notes || null,
       now,
       now,
@@ -70,6 +72,7 @@ export async function createAttendance(userId: number, input: CreateAttendanceIn
 
   return {
     ...input,
+    hoursWorked,
     id,
     createdAt: now,
     updatedAt: now,
@@ -138,9 +141,9 @@ export async function updateAttendance(userId: number, id: string, input: Update
     fields.push('status = ?');
     values.push(input.status);
   }
-  if (input.hoursWorked !== undefined) {
+  if (input.status === AttendanceStatus.ABSENT || 'hoursWorked' in input) {
     fields.push('hours_worked = ?');
-    values.push(input.hoursWorked || null);
+    values.push(input.status === AttendanceStatus.ABSENT ? null : input.hoursWorked ?? null);
   }
   if (input.notes !== undefined) {
     fields.push('notes = ?');
@@ -206,6 +209,8 @@ export async function upsertAttendance(userId: number, input: CreateAttendanceIn
     return {
       ...existing,
       ...input,
+      hoursWorked: input.status === AttendanceStatus.ABSENT ? undefined : input.hoursWorked,
+      notes: input.notes ?? existing.notes,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -226,4 +231,24 @@ export async function getAttendanceInRange(
     [userId, startDate, endDate]
   );
   return rows.map(mapRowToAttendance);
+}
+
+export interface AttendanceHistoryEntry extends Attendance {
+  employeeName: string;
+}
+
+export async function getAttendanceHistoryInRange(
+  userId: number,
+  startDate: string,
+  endDate: string
+): Promise<AttendanceHistoryEntry[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<AttendanceRow & { employee_name: string }>(
+    `SELECT a.*, e.name AS employee_name
+     FROM attendance a JOIN employees e ON e.id = a.employee_id AND e.user_id = a.user_id
+     WHERE a.user_id = ? AND a.date BETWEEN ? AND ?
+     ORDER BY a.date ASC, e.name COLLATE NOCASE ASC, a.employee_id ASC`,
+    [userId, startDate, endDate]
+  );
+  return rows.map(row => ({ ...mapRowToAttendance(row), employeeName: row.employee_name }));
 }

@@ -1,6 +1,7 @@
 export default {
   // Common - عام
   common: {
+    retry: 'إعادة المحاولة',
     save: 'حفظ',
     cancel: 'إلغاء',
     delete: 'حذف',
@@ -57,6 +58,13 @@ export default {
 
   // Attendance - الحضور
   attendance: {
+    invalidHours: 'أدخل عدد ساعات أكبر من صفر ولا يتجاوز {{max}}.',
+    recordedHours: 'ساعات العمل المسجلة: {{hours}}',
+    previousDay: 'اليوم السابق',
+    nextDay: 'اليوم التالي',
+    previousWeek: 'الأسبوع السابق',
+    nextWeek: 'الأسبوع التالي',
+    historyLoadError: 'تعذّر تحميل سجل الحضور.',
     title: 'تسجيل الحضور',
     history: 'سجل الحضور',
     viewHistory: 'عرض السجل',
