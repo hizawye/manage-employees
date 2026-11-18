@@ -1,3 +1,4 @@
+import { getFrozenWageRates, wageTermsForDate } from '../database/repositories/FrozenWageRepository';
 import { Employee, Attendance, AttendanceStatus, WageType, WageCalculation, WageDetail, MonthlyDayData } from '../models';
 import { getAttendanceByEmployee, getWageAdjustmentsByEmployee } from '../database/repositories';
 import { toCentimes } from '../utils/money';
@@ -55,7 +56,7 @@ export function calculateHourlyWage(hourlyRate: number, hoursWorked: number): nu
 }
 
 export function calculateWageForDay(
-  employee: Employee,
+  employee: Pick<Employee,'wageRate'|'wageType'>,
   attendance: Attendance
 ): number {
   if (attendance.status === AttendanceStatus.ABSENT) {
@@ -104,9 +105,10 @@ export async function calculateWagesForPeriod(
 async function readWagesForPeriod(
   userId: number, employee: Employee, startDate: string, endDate: string
 ): Promise<WageCalculation> {
-  const [attendanceRecords, adjustments] = await Promise.all([
+  const [attendanceRecords, adjustments, frozenRates] = await Promise.all([
     getAttendanceByEmployee(userId, employee.id, startDate, endDate),
     getWageAdjustmentsByEmployee(userId, employee.id, startDate, endDate),
+    getFrozenWageRates(userId, startDate, endDate, employee.id),
   ]);
 
   const attendanceMap = new Map(attendanceRecords.map((record) => [record.date, record]));
@@ -117,6 +119,7 @@ async function readWagesForPeriod(
   let totalDaysAbsent = 0;
   let totalHalfDays = 0;
   let totalHoursWorked = 0;
+  let hasHourlyDays = false;
 
   // These are calendar dates. Use UTC for the entire iteration, including DST boundaries.
   const end = new Date(endDate);
@@ -124,7 +127,9 @@ async function readWagesForPeriod(
     const date = day.toISOString().slice(0, 10);
     const record = attendanceMap.get(date);
     const adjustment = adjustmentMap.get(date);
-    const earned = record ? toCentimes(calculateWageForDay(employee, record)) : 0;
+    const terms = wageTermsForDate(frozenRates, employee, date);
+    hasHourlyDays ||= terms.wageType === WageType.HOURLY;
+    const earned = record ? toCentimes(calculateWageForDay(terms, record)) : 0;
     const dayCentimes = earned + toCentimes(adjustment?.amount ?? 0);
     const hoursWorked = record?.status === AttendanceStatus.ABSENT ? undefined : record?.hoursWorked;
     details.push({
@@ -137,7 +142,7 @@ async function readWagesForPeriod(
       adjustmentNote: adjustment?.note,
     });
     totalCentimes += dayCentimes;
-    totalHoursWorked += hoursWorked ?? 0;
+    if (terms.wageType === WageType.HOURLY) totalHoursWorked += hoursWorked ?? 0;
     switch (record?.status) {
       case AttendanceStatus.PRESENT: totalDaysPresent++; break;
       case AttendanceStatus.HALF_DAY: totalHalfDays++; break;
@@ -148,15 +153,15 @@ async function readWagesForPeriod(
   return {
     employeeId: employee.id,
     employeeName: employee.name,
-    wageType: employee.wageType,
-    wageRate: employee.wageRate,
+    wageType: wageTermsForDate(frozenRates, employee, endDate).wageType,
+    wageRate: wageTermsForDate(frozenRates, employee, endDate).wageRate,
     period: { start: startDate, end: endDate },
     details,
     totalWage: totalCentimes / 100,
     totalDaysPresent,
     totalDaysAbsent,
     totalHalfDays,
-    totalHoursWorked: employee.wageType === WageType.HOURLY ? totalHoursWorked : undefined,
+    totalHoursWorked: hasHourlyDays ? totalHoursWorked : undefined,
   };
 
 }

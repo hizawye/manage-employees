@@ -1,4 +1,3 @@
-import { addPayrollAudit } from './009_add_payroll_audit';
 import * as SQLite from 'expo-sqlite';
 import { initialMigration } from './001_initial';
 import { addUsersMigration } from './002_add_users';
@@ -8,6 +7,14 @@ import { addLogsTableMigration } from './005_add_logs_table';
 import { addPaymentsTableMigration } from './006_add_payments_table';
 import { repairUserIsolationMigration } from './007_repair_user_isolation';
 import { addWageAdjustmentsTableMigration } from './008_add_wage_adjustments_table';
+import { addPayrollAudit } from './009_add_payroll_audit';
+import { workShiftsMigration } from './010_work_shifts';
+import { timeOffMigration } from './011_time_off';
+import { timeClockMigration } from './012_time_clock';
+import { shiftTemplatesMigration } from './013_shift_templates';
+import { payPeriodsMigration } from './014_pay_periods';
+import { availabilityMigration } from './015_availability';
+import { openShiftMigration } from './016_open_shifts';
 
 export interface Migration {
   version: number;
@@ -25,6 +32,13 @@ export const migrations: Migration[] = [
   repairUserIsolationMigration,
   addWageAdjustmentsTableMigration,
   addPayrollAudit,
+  workShiftsMigration,
+  timeOffMigration,
+  timeClockMigration,
+  shiftTemplatesMigration,
+  payPeriodsMigration,
+  availabilityMigration,
+  openShiftMigration,
 ];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

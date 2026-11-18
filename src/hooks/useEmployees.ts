@@ -1,3 +1,4 @@
+import { getFrozenWageRates, wageTermsForDate } from '../database/repositories/FrozenWageRepository';
 import { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Employee, EmployeeStatus, CreateEmployeeInput, UpdateEmployeeInput } from '../models';
@@ -31,11 +32,20 @@ function useEmployeeRead<T>(scope: string | null, read: () => Promise<T>) {
 }
 
 const empty: Employee[] = [];
-export function useEmployees(statusFilter?: EmployeeStatus) {
+export function useEmployees(statusFilter?: EmployeeStatus, payrollDate?: string) {
   const { user } = useAuth();
   const owner = user?.id;
-  const read = useCallback(() => owner === undefined ? Promise.resolve(empty) : EmployeeService.getAllEmployees(owner, statusFilter, true), [owner, statusFilter]);
-  const { data, ...state } = useEmployeeRead(owner === undefined ? null : JSON.stringify([owner, statusFilter]), read);
+  const read = useCallback(async () => {
+    if (owner === undefined) return empty;
+    const employees = await EmployeeService.getAllEmployees(owner, statusFilter, true);
+    if (!payrollDate) return employees;
+    const rates = await getFrozenWageRates(owner, payrollDate, payrollDate);
+    return employees.map(employee => {
+      const { wageType, wageRate } = wageTermsForDate(rates, employee, payrollDate);
+      return { ...employee, wageType, wageRate };
+    });
+  }, [owner, statusFilter, payrollDate]);
+  const { data, ...state } = useEmployeeRead(owner === undefined ? null : JSON.stringify([owner, statusFilter, payrollDate]), read);
   const { refresh } = state;
   const addEmployee = useCallback(async (input: CreateEmployeeInput) => {
     if (owner === undefined) throw new Error(t('common.error'));

@@ -1,4 +1,4 @@
-export type LogCategory = 'employee' | 'attendance' | 'payroll';
+export type LogCategory = 'employee' | 'attendance' | 'payroll' | 'workforce';
 
 export enum LogActionType {
     CREATE_PAYMENT = 'create_payment',

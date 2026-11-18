@@ -1,3 +1,4 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../index';
 import { Log, LogCategory, CreateLogInput } from '../../models';
@@ -19,15 +20,15 @@ function mapRowToLog(row: LogRow): Log {
         userId: row.user_id,
         action: row.action,
         description: row.description,
-        entityType: row.entity_type === 'employee' || row.entity_type === 'attendance' || row.entity_type === 'payroll' ? row.entity_type : undefined,
+        entityType: row.entity_type === 'employee' || row.entity_type === 'attendance' || row.entity_type === 'payroll' || row.entity_type === 'workforce' ? row.entity_type : undefined,
         entityId: row.entity_id || undefined,
         details: row.details || undefined,
         createdAt: row.created_at,
     };
 }
 
-export async function createLog(userId: number, input: CreateLogInput): Promise<Log> {
-    const db = await getDatabase();
+export async function createLog(userId: number, input: CreateLogInput, transaction?: SQLiteDatabase): Promise<Log> {
+    const db = transaction ?? await getDatabase();
     const id = Crypto.randomUUID();
     const now = new Date().toISOString();
 

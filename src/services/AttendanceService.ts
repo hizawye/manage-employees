@@ -1,3 +1,4 @@
+import { getFrozenWageRates, wageTermsForDate } from '../database/repositories/FrozenWageRepository';
 import { Attendance, CreateAttendanceInput, AttendanceStatus, WageType } from '../models';
 import {
   getAttendanceByDate as dbGetAttendanceByDate,
@@ -97,7 +98,9 @@ export class AttendanceService {
 
     const normalizedInput: CreateAttendanceInput = { ...input };
 
-    if (employee.wageType === WageType.HOURLY && input.status !== AttendanceStatus.ABSENT) {
+    const frozenRates = await getFrozenWageRates(userId, input.date, input.date, employee.id);
+    const terms = wageTermsForDate(frozenRates, employee, input.date);
+    if (terms.wageType === WageType.HOURLY && input.status !== AttendanceStatus.ABSENT) {
       const { defaultHoursPerDay, minHoursPerDay, maxHoursPerDay } = APP_CONFIG.attendance;
       const hours = input.hoursWorked ??
         (input.status === AttendanceStatus.HALF_DAY ? defaultHoursPerDay / 2 : defaultHoursPerDay);

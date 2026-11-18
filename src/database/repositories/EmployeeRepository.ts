@@ -1,3 +1,4 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../index';
 import {
@@ -41,8 +42,8 @@ function mapRowToEmployee(row: EmployeeRow): Employee {
   };
 }
 
-export async function createEmployee(userId: number, input: CreateEmployeeInput): Promise<Employee> {
-  const db = await getDatabase();
+export async function createEmployee(userId: number, input: CreateEmployeeInput, transaction?: SQLiteDatabase): Promise<Employee> {
+  const db = transaction ?? await getDatabase();
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -71,7 +72,7 @@ export async function createEmployee(userId: number, input: CreateEmployeeInput)
     entityType: 'employee',
     entityId: id,
     details: JSON.stringify({ ...input, employeeName: input.name }),
-  });
+  }, db);
 
   return {
     ...input,

@@ -75,6 +75,9 @@ export function openTestDatabase(): SQLiteDatabase {
         throw error;
       }
     },
+    async withExclusiveTransactionAsync(action: (txn: SQLiteDatabase) => Promise<void>) {
+      await db.withTransactionAsync(() => action(db as unknown as SQLiteDatabase));
+    },
     async closeAsync() {
       child.stdin.end();
       await closed;
