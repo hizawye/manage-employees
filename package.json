@@ -1,9 +1,10 @@
 {
   "name": "manage-employees",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "version": "node scripts/sync-android-version.mjs && git add -- app.json",
     "android": "expo run:android",
     "android:release": "expo prebuild --platform android --no-install && cd android && ./gradlew :app:assembleRelease",
     "android:install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk",
@@ -31,6 +32,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "expo": "~54.0.37",
+    "expo-application": "~7.0.8",
     "expo-constants": "^18.0.13",
     "expo-crypto": "~15.0.9",
     "expo-document-picker": "~14.0.8",
