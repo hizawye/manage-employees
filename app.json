@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "scheme": "manage-employees",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -25,6 +25,11 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.manageemployees.app",
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
       "supportsRTL": true
     },
     "web": {
@@ -39,7 +44,7 @@
       "expo-sqlite",
       "expo-font",
       "./src/plugins/withFixMainActivity",
-      "./src/plugins/withFixNewArch"
+      "expo-localization"
     ],
     "extra": {
       "supportsRTL": true,
