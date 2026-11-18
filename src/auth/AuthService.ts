@@ -82,7 +82,6 @@ export class AuthService {
   static async login(username: string, password: string): Promise<User> {
     const db = await getDatabase();
 
-    // Get user with password hash and salt
     const users = await db.getAllAsync<UserRow>(
       'SELECT id, username, password_hash, salt, created_at as createdAt, is_guest FROM users WHERE username = ?',
       [username]
@@ -99,8 +98,8 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    // Verify password (both hash and salt must exist for non-guest users)
-    if (!userRow.password_hash || !userRow.salt) {
+    // Modern hashes embed the salt. Legacy rows keep it in a separate column.
+    if (!userRow.password_hash) {
       throw new Error('Invalid credentials');
     }
 
@@ -368,9 +367,12 @@ export class AuthService {
 
   private static async claimLegacyData(userId: number): Promise<void> {
     const db = await getDatabase();
+    // Both historical import placeholders use this name. A registered account can use it too.
     const legacy = await db.getFirstAsync<{ id: number }>(
-      'SELECT id FROM users WHERE username = ?',
-      ['legacy_import']
+      `SELECT id FROM users WHERE username = 'legacy_import' AND (
+        (is_guest = 1 AND password_hash IS NULL AND salt IS NULL) OR
+        (password_hash = 'legacy_import_disabled' AND salt = 'legacy_import_disabled')
+      )`
     );
 
     if (!legacy || legacy.id === userId) return;
