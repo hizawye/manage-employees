@@ -1,7 +1,15 @@
 # Project Status
 
-## Current State
-**Status:** v2.1.0 - Audit Remediation In Progress
+## November 18, 2026
+
+- Employees can be filtered by active or inactive status and searched by name, role or phone number. Search accepts Arabic and Latin digits. Returning from an edit refreshes the directory and the employee detail screen.
+- Hourly attendance keeps the hours entered for full and half days. Marking an absence clears previously recorded hours. Weekly history includes former employees who worked in the selected week.
+- Wage details support adding and revising adjustments. Totals use centimes and include earnings for inactive employees. Unmarked days and absences are shown separately. Overpayments require confirmation.
+- The Payroll filter in History shows payment and adjustment changes recorded after database migration 9. Each entry is saved in the same transaction as the change. Existing payment records and balances are preserved on upgrade.
+- Registered accounts and converted guest accounts can sign back in with their existing passwords. Regression tests cover modern and legacy password formats, session persistence, and separate guest workspaces.
+- Android release builds generate the required native project from a clean checkout. Run `npm ci` followed by `npm run android:release` with an Android SDK installed.
+
+Verified on a Galaxy S23 Ultra with a disposable hourly employee. A 2.5-hour shift at 100 DZD plus a 25.25 DZD adjustment produced 275.25 DZD in earnings. After payment and a confirmed extra 10.50 DZD, the balance persisted through guest conversion, sign-in and a cold restart.
 
 ## 2026-05-13: Audit Remediation Pass
 
